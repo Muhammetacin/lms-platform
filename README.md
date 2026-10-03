@@ -44,4 +44,4 @@ tickets/                 Scoped development tickets and acceptance criteria
 
 ## Project guidance
 
-Read [AGENT_RULES.md](./AGENT_RULES.md) before making changes. The product direction is in [docs/00-product-vision.md](./docs/00-product-vision.md); decisions are recorded in [ADR-001](./docs/decisions/ADR-001-foundation.md) and [ADR-002](./docs/decisions/ADR-002-database-foundation.md). Database setup and tenant conventions are in [docs/database.md](./docs/database.md). Milestones are tracked in [LMS-001](./tickets/LMS-001.md) and [LMS-002](./tickets/LMS-002.md).
+Read [AGENT_RULES.md](./AGENT_RULES.md) before making changes. The product direction is in [docs/00-product-vision.md](./docs/00-product-vision.md); decisions are recorded in [ADR-001](./docs/decisions/ADR-001-foundation.md), [ADR-002](./docs/decisions/ADR-002-database-foundation.md), and [ADR-003](./docs/decisions/ADR-003-base-database-conventions.md). Database setup and conventions are in [docs/database.md](./docs/database.md). Milestones are tracked in [LMS-001](./tickets/LMS-001.md), [LMS-002](./tickets/LMS-002.md), and [LMS-003](./tickets/LMS-003.md).

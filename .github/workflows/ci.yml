@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   validate:
-    name: Lint, typecheck, and build
+    name: Lint, database checks, typecheck, and build
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -30,6 +30,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Validate Prisma schema
+        run: pnpm db:validate
+
+      - name: Database configuration tests
+        run: pnpm test:db-config
 
       - name: Lint
         run: pnpm lint

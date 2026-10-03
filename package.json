@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "typecheck": "prisma generate && tsc --noEmit",
     "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
     "db:migrate:dev": "prisma migrate dev",
     "db:health": "node --experimental-strip-types scripts/db-health.mjs",
     "test:db-config": "node --experimental-strip-types --test tests/database-url.test.ts"

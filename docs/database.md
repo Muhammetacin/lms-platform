@@ -1,39 +1,95 @@
-# Database setup and conventions
+# Database conventions
 
-LMS-002 establishes PostgreSQL and Prisma as infrastructure. It does not add authentication, authorization, tenant isolation enforcement, or LMS product behavior.
+The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The current product schema contains only `User`, `Organization`, and `OrganizationMembership`. These conventions describe how to extend that foundation; they do not add product behavior or provide tenant isolation.
 
-## Local setup
+## Local setup and configuration
 
-1. Start a local PostgreSQL server and create a development database and a least-privilege application role.
-2. Copy `.env.example` to `.env.local` and replace the connection URL placeholders with local values. `.env.local` is ignored by Git.
-3. Run `pnpm install`, `pnpm db:generate`, then `pnpm db:migrate:dev --name foundation` to create and apply the initial migration.
-4. Run `pnpm db:health` to execute a minimal `SELECT 1` connectivity check. It prints only a generic success or failure message and never prints configuration or driver errors.
+1. Start a local PostgreSQL server and create a development database plus a least-privilege local role.
+2. Copy `.env.example` to ignored `.env.local` and set a local `DATABASE_URL`. Keep real URLs in ignored local files or a managed secret store, never in source control or logs. Never use a `NEXT_PUBLIC_` database variable.
+3. Run `pnpm install`, `pnpm db:generate`, then `pnpm db:migrate:dev --name <descriptive_name>` to apply migrations locally. Run `pnpm db:health` to check connectivity; it emits only a generic result.
 
-For later local schema changes, update `prisma/schema.prisma` and run `pnpm db:migrate:dev --name <short_change_name>`. Review and commit the generated migration. Prisma 7 does not generate the client during `migrate dev`; use `pnpm db:generate` after schema changes. Do not use `db push` as a substitute for committed migrations.
+Use a dedicated database and least-privilege role in each environment. Runtime production credentials must not be administrative or superuser credentials; use separately managed migration credentials when production deployment is introduced. Rotate credentials through the secret store if exposed. `prisma.config.ts` loads ignored `.env*` files for Prisma CLI commands. Keep Prisma access server-side and secrets out of Client Component bundles and responses.
 
-## Configuration and secrets
+## Schema and naming
 
-`DATABASE_URL` is required for database commands and runtime access. Keep it in an ignored local environment file or a managed secret store; never put a real URL in source, logs, screenshots, or `.env.example`. `.env.example` contains only a local placeholder. Do not prefix database settings with `NEXT_PUBLIC_`: Next.js exposes those values to browser bundles.
+- Prisma models use singular `PascalCase` names. Fields use singular `camelCase`; relation fields use the related model name in `camelCase` (`user`) or a plural for a collection (`memberships`). Foreign-key scalar fields use `<relation>Id` (`organizationId`).
+- Enums use singular `PascalCase` names and stable `UPPER_SNAKE_CASE` values. Use an enum for a small, closed set enforced by the database; use validated data for values expected to be user-defined or frequently extended.
+- Keep Prisma model, field, and enum names as the PostgreSQL table, column, and enum names. Use `@map` or `@@map` only for a real external/legacy naming requirement and document that mapping.
+- Let Prisma derive constraint and index names from the model and fields. For exceptional explicit names, use descriptive `<Model>_<fields>_<purpose>` names and keep them within PostgreSQL's identifier limit.
+- Do not rename established schema objects for style alone. A rename is a migration and must preserve existing data.
 
-Use a dedicated database and a least-privilege role for each environment. Local development roles should have only the rights needed for local migrations and application development. Runtime production credentials should not have administrative or superuser privileges; provision a separate migration role when deploying in a later ticket. Rotate credentials through the secret store if they are exposed.
+## IDs and timestamps
 
-The database connection remains server-side. Import `db` from `src/lib/db.ts` only in server code; the module is protected with `server-only`. No route handler returns the connection string or database error details.
+- Every entity has a UUID primary key: `String @id @default(uuid()) @db.Uuid`. `uuid()` is the existing Prisma-generated UUID default; PostgreSQL stores it as `UUID`. Do not add another ID strategy or generate a new ID in application code when Prisma already supplies it.
+- Foreign keys use the same scalar type as the referenced primary key, have no independent default, and reference the primary key explicitly.
+- Persistent models have required `createdAt DateTime @default(now())` and `updatedAt DateTime @updatedAt` fields. `createdAt` is assigned on insert; Prisma refreshes `updatedAt` on Prisma writes. Raw SQL and external writers must maintain `updatedAt` themselves.
+- Treat timestamps as UTC instants at application boundaries; convert to/from a user's timezone only for display. The LMS-002 migration currently uses PostgreSQL `TIMESTAMP(3)` without timezone on these fields. The database column does not retain an offset, so direct SQL/import writers and database sessions using `now()` must use UTC. Do not imply that the current column type enforces timezone correctness. Changing the storage type requires a reviewed migration and a documented data-conversion plan.
 
-## Schema and tenancy conventions
+## Required, nullable, and enum fields
 
-The LMS-002 schema contains only `User`, `Organization`, and `OrganizationMembership` as product entities. Membership is the source of truth for which organizations a user belongs to. Roles (`OWNER`, `ADMIN`, `MEMBER`) are stored as membership data; this foundation does not authenticate a user or authorize a role.
+- Persist a field as required unless absence is a meaningful, valid domain state. Use a Prisma default for a genuine system default; do not use `null`, empty strings, or sentinel values in place of a required value.
+- Use `?` only when a record can validly exist without that value. Validate required request input before writing. A nullable database field is not a substitute for an optional API input type or an unvalidated workflow.
+- Prefer enums for small sets whose values are controlled by the application and whose invalid values must be rejected by PostgreSQL. Use a model or validated string when values need metadata, are user-managed, or change independently of deployments. Enum changes require migrations.
 
-Future tenant-aware code must derive tenant context from a verified authenticated identity and its `OrganizationMembership` records, validate membership on every operation, and scope database reads and writes to that trusted context. A tenant ID submitted by a browser or other client is untrusted input and must never itself establish authorization context. LMS-010 owns the design and enforcement of tenant isolation. This ticket does not claim full tenant isolation.
+## Relations, foreign keys, and deletes
 
-IDs are UUIDs; timestamps are stored in PostgreSQL timestamps and `updatedAt` is maintained by Prisma on writes. A user can have one membership per organization. Foreign-key deletes cascade from the referenced user or organization to memberships.
+- Give each relation a clear singular or plural field name. Declare both Prisma relation fields and the scalar FK on the owning side. Required relations use a non-null FK; make both the FK and relation optional only when the child can validly outlive or exist without the parent.
+- Define `onDelete` deliberately. Use `Cascade` only when child rows have no independent meaning without their parent; use `Restrict`/`NoAction` when deletion must be blocked; use `SetNull` only for an optional FK. IDs are stable, so do not change referenced IDs; retain the established `onUpdate: Cascade` behavior unless a migration decision says otherwise.
+- The foundation has required `OrganizationMembership.user` and `.organization` relations, each with `onDelete: Cascade` and `onUpdate: Cascade`. A membership is unique per `(userId, organizationId)`. Preserve these relationships and invariants.
+- A foreign key proves referential integrity only. It does not authorize access or isolate tenants.
 
-## Commands
+## Uniqueness and indexes
+
+- Put durable invariants in PostgreSQL with `@unique`, `@@unique`, primary keys, or foreign keys; application pre-checks alone cannot protect against concurrent writes. Translate a database conflict into a useful validation/conflict response.
+- Decide whether a string invariant is case-sensitive. Existing PostgreSQL unique indexes compare the stored value using the column's normal equality semantics. If an identifier is meant to be case-insensitive, canonicalize it consistently before writes and choose a database constraint/index that protects that invariant; do not assume `@unique` folds case.
+- Add an index for a real lookup, filter, sort, join, or delete workload. Consider FK access paths: an existing unique composite index covers queries by its leading field, while a different FK may need its own index. Add compound indexes in the order queries filter/sort, and avoid speculative indexes or indexes duplicating a primary/unique constraint.
+- Existing examples: `User.email` and `Organization.slug` are unique; `(userId, organizationId)` is unique; `(organizationId, role)` supports membership lookup by organization and role. The `createdAt` indexes reflect ordered time access in the foundation. Revisit an index only with a query/workload reason and migration.
+
+## Prisma client and database access
+
+- Database access is server-side. Import the shared `db` from `src/lib/db.ts` only in server code. That module imports `server-only` and owns the single Prisma client, including the development global reuse pattern.
+- Do not instantiate `PrismaClient` elsewhere, import the client from a Client Component, expose credentials, or return database error details. Use `DATABASE_URL` only on the server; never define `NEXT_PUBLIC_DATABASE_URL` or another public-prefixed database setting. Do not add a public connectivity endpoint.
+- Keep queries near the server-side operation that needs them. Do not add a generic repository layer without a concrete reuse or consistency need. Validate and authorize inputs at the application boundary before mutation; database constraints remain the final invariant check.
+
+## Queries and pagination
+
+- Select only the fields needed by the operation or response (`select`); avoid broad `include`/whole-record reads and unnecessary relation loading. Load relations only when the caller needs them.
+- Build filters from validated, allowlisted inputs. Parameterize any raw SQL; never interpolate user input into SQL text. Keep database access on the server and return only the data needed by the caller.
+- Sort explicitly whenever order matters. List endpoints use a default page size of 25 and a maximum of 100, validate page-size inputs, and apply a deterministic order with a unique tie-breaker such as `id`.
+- Prefer cursor pagination for large or changing result sets when a stable unique cursor is available. Offset pagination is acceptable for small, bounded lists or a product requirement for page-number navigation. Define supported filters and sort keys per endpoint; do not add pagination behavior to this foundation ticket.
+
+## Transactions and error handling
+
+- Use a Prisma transaction when multiple writes must commit or roll back together, when related writes maintain one invariant, or when partial completion would leave invalid state. Use a batch transaction for known independent operations; use an interactive transaction only when later writes depend on earlier results.
+- Keep transactions short and limited to database work. Do not include network calls, user interaction, or slow unrelated work inside one. Do not wrap a single independent query in a transaction by default. Prefer a database constraint plus conflict handling for uniqueness races rather than check-then-insert alone.
+- Validate input before querying. Handle expected outcomes at the operation boundary: not found, unique conflict (Prisma `P2002`), foreign-key violation (`P2003`), and stale/missing mutation target (for example `P2025`) should map to the existing application response pattern. Do not convert every database error into “not found” or success.
+- Unexpected database failures should follow the server's error path and be logged only with safe operational context. Never return or log `DATABASE_URL`, credentials, SQL parameters containing sensitive data, raw connection details, or an unfiltered database exception to a client. Preserve unexpected failures for monitoring rather than hiding them behind a generic success response.
+
+## Migrations
+
+- Change `prisma/schema.prisma` through Prisma Migrate. Generate a descriptive lowercase `snake_case` migration name, review the generated SQL, and commit the schema and migration together. Never use `prisma db push` as the normal schema-change workflow.
+- Treat every committed/applied migration as immutable. Correct a mistake with a new forward migration; do not edit migration SQL that has been applied in a shared environment.
+- Review every production migration before deployment. Review destructive operations explicitly for data loss, locking, rollout order, backup/restore needs, and compatibility with deployed code. Do not make manual production schema edits as a normal workflow.
+- Keep the Prisma schema and ordered migration history synchronized. Validate the schema and migration diff in CI/review; investigate drift instead of silently editing a live database. Prisma 7 CLI configuration and local commands are in `prisma.config.ts`.
+
+## Seeds and tests
+
+- Seed data is for local development and isolated tests only. Use synthetic data, deterministic fixtures, and idempotent upserts where repeat runs are useful. Never include customer data, real credentials, production secrets, or hardcoded production accounts. Production reference data, if ever needed, requires a separately reviewed deployment decision.
+- Database-related tests should use an isolated disposable database when integration is needed and apply committed migrations. Test relevant FK behavior, unique constraints, relationships, transaction rollback/atomicity, and database error mapping. Keep pure validation/configuration checks runnable without PostgreSQL. Never point tests at production data.
+- Add authorization and tenant-boundary database tests when those features are implemented; this ticket does not add tenant isolation tests.
+
+## Future tenant context
+
+Future tenant-owned entities must have an explicit organization/tenant relationship where the domain requires one, and their reads and writes must be scoped using trusted server-side tenant context derived from the authenticated identity and validated membership. A tenant ID from a browser, URL, or other client input is untrusted and cannot establish that context. Organization foreign keys alone do not provide tenant isolation. LMS-010 owns the tenant-isolation design and enforcement; neither LMS-002 nor LMS-003 claims it.
+
+## Local database commands
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm db:generate` | Generate the Prisma client from the schema |
-| `pnpm db:migrate:dev --name <name>` | Create and apply a local development migration |
-| `pnpm db:health` | Run a server-side database connectivity check |
-| `pnpm test:db-config` | Test required database URL validation |
+| `pnpm db:generate` | Generate Prisma Client from the schema |
+| `pnpm db:validate` | Validate the Prisma schema; also runs in CI |
+| `pnpm db:migrate:dev --name <descriptive_name>` | Create and apply a local development migration |
+| `pnpm db:health` | Run the server-side connectivity check |
+| `pnpm test:db-config` | Test database URL validation |
 
-Prisma 7 reads the migration connection URL from `prisma.config.ts`; that file loads ignored `.env*` values for CLI commands. Builds and client generation do not require a running database.
+Local setup and safe environment configuration are in the repository README. Prisma 7 reads migration configuration from `prisma.config.ts`; schema validation and client generation do not require a running database.
