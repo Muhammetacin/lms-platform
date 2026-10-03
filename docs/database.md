@@ -36,6 +36,13 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 - `User.email` is required and has a PostgreSQL unique index (`User_email_key`). The schema does not normalize the stored value, use `citext`, define an expression index, or set a case-insensitive collation. The unique index follows the configured PostgreSQL collation; case-insensitive identity is not an explicit guarantee of the current model.
 - Keep the current uniqueness constraint. Before authentication or another feature depends on email matching, make an explicit decision about normalization and case semantics, then align application handling and the database constraint. Do not infer that different casing is canonicalized.
 
+## Organization identity and responsibility
+
+- `Organization` is the foundational organization record. It has a required UUID primary key, required `name` and `slug`, required `createdAt` and `updatedAt` timestamps, and the `memberships` relation to `OrganizationMembership`. Keep the established UUID, timestamp, unique-slug, and `createdAt` index conventions.
+- `Organization.slug` is stored as required PostgreSQL `TEXT` and protected by the unique index `Organization_slug_key`. The schema does not generate or normalize slugs, lowercase them, use `citext`, define an expression index, or set an explicit collation. Uniqueness follows the configured PostgreSQL collation; this schema does not specify case-sensitive versus case-insensitive slug semantics or canonicalization. If application behavior needs canonical slug normalization, make that decision in a future ticket.
+- `OrganizationMembership` connects an organization to `User`; it remains the membership record and retains its existing relation constraints. This model foundation does not implement organization CRUD, membership management, invitations, authorization, or organization UI.
+- LMS-009 owns trusted tenant-context behavior. LMS-010 owns tenant-isolation design and enforcement. An organization record or foreign key alone does not provide tenant context, access control, or tenant isolation.
+
 ## Relations, foreign keys, and deletes
 
 - Give each relation a clear singular or plural field name. Declare both Prisma relation fields and the scalar FK on the owning side. Required relations use a non-null FK; make both the FK and relation optional only when the child can validly outlive or exist without the parent.
@@ -83,9 +90,9 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 - Database-related tests should use an isolated disposable database when integration is needed and apply committed migrations. Test relevant FK behavior, unique constraints, relationships, transaction rollback/atomicity, and database error mapping. Keep pure validation/configuration checks runnable without PostgreSQL. Never point tests at production data.
 - Add authorization and tenant-boundary database tests when those features are implemented; this ticket does not add tenant isolation tests.
 
-## Future tenant context
+## Future tenant context and isolation
 
-Future tenant-owned entities must have an explicit organization/tenant relationship where the domain requires one, and their reads and writes must be scoped using trusted server-side tenant context derived from the authenticated identity and validated membership. A tenant ID from a browser, URL, or other client input is untrusted and cannot establish that context. Organization foreign keys alone do not provide tenant isolation. LMS-010 owns the tenant-isolation design and enforcement; neither LMS-002 nor LMS-003 claims it.
+Future tenant-owned entities must have an explicit organization/tenant relationship where the domain requires one, and their reads and writes must be scoped using trusted server-side tenant context derived from the authenticated identity and validated membership. A tenant ID from a browser, URL, or other client input is untrusted and cannot establish that context. LMS-009 owns tenant-context behavior; LMS-010 owns tenant-isolation design and enforcement. Organization foreign keys alone do not provide tenant isolation, and neither LMS-002 nor LMS-003 claims it.
 
 ## Local database commands
 
