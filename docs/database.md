@@ -31,6 +31,11 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 - Use `?` only when a record can validly exist without that value. Validate required request input before writing. A nullable database field is not a substitute for an optional API input type or an unvalidated workflow.
 - Prefer enums for small sets whose values are controlled by the application and whose invalid values must be rejected by PostgreSQL. Use a model or validated string when values need metadata, are user-managed, or change independently of deployments. Enum changes require migrations.
 
+## User email identity
+
+- `User.email` is required and has a PostgreSQL unique index (`User_email_key`). The schema does not normalize the stored value, use `citext`, define an expression index, or set a case-insensitive collation. The unique index follows the configured PostgreSQL collation; case-insensitive identity is not an explicit guarantee of the current model.
+- Keep the current uniqueness constraint. Before authentication or another feature depends on email matching, make an explicit decision about normalization and case semantics, then align application handling and the database constraint. Do not infer that different casing is canonicalized.
+
 ## Relations, foreign keys, and deletes
 
 - Give each relation a clear singular or plural field name. Declare both Prisma relation fields and the scalar FK on the owning side. Required relations use a non-null FK; make both the FK and relation optional only when the child can validly outlive or exist without the parent.
