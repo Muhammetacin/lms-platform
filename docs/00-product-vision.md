@@ -18,7 +18,7 @@ The platform is intended to grow into a multi-tenant service. Its architecture s
 
 ## Initial technical direction
 
-The web application uses Next.js App Router and TypeScript, with pnpm for package management and ESLint for static analysis. GitHub Actions validates changes. PostgreSQL is planned for a later milestone and is not part of the repository foundation ticket.
+The web application uses Next.js App Router and TypeScript, with pnpm for package management and ESLint for static analysis. GitHub Actions validates changes. PostgreSQL and Prisma now provide the database foundation; product behavior and tenant isolation remain separately scoped for later tickets.
 
 ## Out of scope for LMS-001
 
