@@ -40,8 +40,18 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 
 - `Organization` is the foundational organization record. It has a required UUID primary key, required `name` and `slug`, required `createdAt` and `updatedAt` timestamps, and the `memberships` relation to `OrganizationMembership`. Keep the established UUID, timestamp, unique-slug, and `createdAt` index conventions.
 - `Organization.slug` is stored as required PostgreSQL `TEXT` and protected by the unique index `Organization_slug_key`. The schema does not generate or normalize slugs, lowercase them, use `citext`, define an expression index, or set an explicit collation. Uniqueness follows the configured PostgreSQL collation; this schema does not specify case-sensitive versus case-insensitive slug semantics or canonicalization. If application behavior needs canonical slug normalization, make that decision in a future ticket.
-- `OrganizationMembership` connects an organization to `User`; it remains the membership record and retains its existing relation constraints. This model foundation does not implement organization CRUD, membership management, invitations, authorization, or organization UI.
+- `OrganizationMembership` is the explicit association between one `User` and one `Organization`; there is no implicit many-to-many relation. This model foundation does not implement organization CRUD, membership management, invitations, authorization, or organization UI.
 - LMS-009 owns trusted tenant-context behavior. LMS-010 owns tenant-isolation design and enforcement. An organization record or foreign key alone does not provide tenant context, access control, or tenant isolation.
+
+## Organization Membership
+
+`OrganizationMembership` represents a user's association with an organization. It is an explicit relation with required `userId` and `organizationId` UUID foreign keys and required `user` and `organization` relations. The database unique constraint on `(userId, organizationId)` prevents duplicate memberships for the same user and organization. `User.memberships` and `Organization.memberships` expose the two sides of this relation; the schema does not use an implicit many-to-many relation.
+
+`role` is stored on the membership because it describes the user's structural relationship to that organization, not a global property of the `User`. The current `OrganizationRole` enum contains `OWNER`, `ADMIN`, and `MEMBER`, with `MEMBER` as the database default. These are stored values only: this model does not define a permission matrix or enforce authorization.
+
+Both foreign keys use `ON DELETE CASCADE` and `ON UPDATE CASCADE`, matching the LMS-002 foundation migration. Deleting a user or organization therefore deletes its dependent membership rows; membership rows cannot refer to missing parents. The unique `(userId, organizationId)` index also supports lookup by its leading `userId` column, while the `(organizationId, role)` index supports membership queries filtered by organization and role. No separate index is needed for `organizationId` alone because it is the leading column of that compound index.
+
+Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorization; LMS-009 owns Tenant Context; LMS-010 owns Tenant Isolation; LMS-012 owns Employee Management; LMS-014 owns Employee Invitations. `OrganizationMembership` provides only the persistence relationship and structural role value. None of those workflows or enforcement behaviors is implemented by this model documentation.
 
 ## Relations, foreign keys, and deletes
 
