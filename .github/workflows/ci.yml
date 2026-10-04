@@ -37,6 +37,9 @@ jobs:
       - name: Database configuration tests
         run: pnpm test:db-config
 
+      - name: Authentication tests
+        run: pnpm test:auth
+
       - name: Lint
         run: pnpm lint
 

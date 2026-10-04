@@ -1,6 +1,6 @@
 # Database conventions
 
-The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The current product schema contains only `User`, `Organization`, and `OrganizationMembership`. These conventions describe how to extend that foundation; they do not add product behavior or provide tenant isolation.
+The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. These conventions describe how to extend that foundation; they do not add authorization or provide tenant isolation.
 
 ## Local setup and configuration
 
@@ -34,7 +34,7 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 ## User email identity
 
 - `User.email` is required and has a PostgreSQL unique index (`User_email_key`). The schema does not normalize the stored value, use `citext`, define an expression index, or set a case-insensitive collation. The unique index follows the configured PostgreSQL collation; case-insensitive identity is not an explicit guarantee of the current model.
-- Keep the current uniqueness constraint. Before authentication or another feature depends on email matching, make an explicit decision about normalization and case semantics, then align application handling and the database constraint. Do not infer that different casing is canonicalized.
+- Keep the current uniqueness constraint. LMS-007 trims surrounding whitespace and matches the stored email with exact casing; it does not lowercase or otherwise canonicalize the address. This aligns lookup with the existing exact-value unique constraint. A future case-insensitive policy requires a reviewed migration and a matching database invariant; do not infer that different casing is canonicalized.
 
 ## Organization identity and responsibility
 
@@ -52,6 +52,10 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 Both foreign keys use `ON DELETE CASCADE` and `ON UPDATE CASCADE`, matching the LMS-002 foundation migration. Deleting a user or organization therefore deletes its dependent membership rows; membership rows cannot refer to missing parents. The unique `(userId, organizationId)` index also supports lookup by its leading `userId` column, while the `(organizationId, role)` index supports membership queries filtered by organization and role. No separate index is needed for `organizationId` alone because it is the leading column of that compound index.
 
 Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorization; LMS-009 owns Tenant Context; LMS-010 owns Tenant Isolation; LMS-012 owns Employee Management; LMS-014 owns Employee Invitations. `OrganizationMembership` provides only the persistence relationship and structural role value. None of those workflows or enforcement behaviors is implemented by this model documentation.
+
+## Authentication persistence
+
+`PasswordCredential` stores one versioned password hash per user, separate from profile and membership data. `Session` stores only a digest of the random cookie token and an explicit expiry; its indexed expiry supports future cleanup. Both records cascade when their user is deleted. Authentication semantics and credential/session handling are documented in [Authentication](authentication.md). These records establish identity only; the membership role is not consulted for authentication.
 
 ## Relations, foreign keys, and deletes
 
