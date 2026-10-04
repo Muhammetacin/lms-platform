@@ -5,7 +5,7 @@ LMS-007 establishes the identity of the current user. `getAuthenticatedUser()` r
 ## Responsibility boundaries
 
 - **LMS-007 — Authentication:** verify credentials and establish/invalidate a user session.
-- **LMS-008 — Authorization:** decide what an authenticated user may do.
+- **LMS-008 — Authorization:** decide what an authenticated user may do; see [Authorization](authorization.md).
 - **LMS-009 — Tenant Context:** determine the trusted active organization.
 - **LMS-010 — Tenant Isolation:** design and enforce organization data boundaries.
 
@@ -47,4 +47,4 @@ The Prisma migration adds `PasswordCredential` and `Session`, their user foreign
 
 ## Deliberate exclusions
 
-This ticket does not implement self-registration, credential provisioning UI, password reset, email verification, invitations, OAuth/social login, Microsoft/Google SSO, MFA, authorization/RBAC, organization access checks, active tenant context, tenant isolation, or PostgreSQL RLS. These responsibilities remain with their later approved tickets.
+LMS-007 does not implement self-registration, credential provisioning UI, password reset, email verification, invitations, OAuth/social login, Microsoft/Google SSO, MFA, authorization/RBAC, organization access checks, active tenant context, tenant isolation, or PostgreSQL RLS. LMS-008 now owns the separate authorization layer; LMS-009 owns tenant context, and LMS-010 owns tenant isolation.

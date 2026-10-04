@@ -6,7 +6,7 @@ Build a dependable learning management SaaS that helps organizations deliver and
 
 ## Product direction
 
-The platform is intended to grow into a multi-tenant service. Its architecture should keep organizational boundaries explicit, support reliable operations, and make future product capabilities easy to evolve. LMS-007 establishes authentication and user identity. Authorization, tenant context, tenant isolation, and learning-domain behavior remain separately scoped future work.
+The platform is intended to grow into a multi-tenant service. Its architecture should keep organizational boundaries explicit, support reliable operations, and make future product capabilities easy to evolve. LMS-007 establishes authentication and user identity. LMS-008 establishes organization-scoped authorization. Tenant context (LMS-009), tenant isolation (LMS-010), and learning-domain behavior remain separately scoped work.
 
 ## Principles
 
@@ -22,4 +22,4 @@ The web application uses Next.js App Router and TypeScript, with pnpm for packag
 
 ## Out of scope for LMS-001
 
-Authentication, database setup, users, organizations, courses, quizzes, dashboards, LMS APIs, and tenant logic were explicitly deferred from LMS-001. Authentication is now scoped to [LMS-007](../tickets/LMS-007.md); see [LMS-001](../tickets/LMS-001.md) for that ticket's full scope and acceptance criteria.
+Authentication, database setup, users, organizations, courses, quizzes, dashboards, LMS APIs, and tenant logic were explicitly deferred from LMS-001. Authentication is now scoped to [LMS-007](../tickets/LMS-007.md), with authorization in [LMS-008](../tickets/LMS-008.md). See [LMS-001](../tickets/LMS-001.md) for that ticket's full scope and acceptance criteria.

@@ -40,6 +40,9 @@ jobs:
       - name: Authentication tests
         run: pnpm test:auth
 
+      - name: Authorization tests
+        run: pnpm test:authorization
+
       - name: Lint
         run: pnpm lint
 
