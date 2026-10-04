@@ -43,6 +43,9 @@ jobs:
       - name: Authorization tests
         run: pnpm test:authorization
 
+      - name: Tenant context tests
+        run: pnpm test:tenant-context
+
       - name: Lint
         run: pnpm lint
 

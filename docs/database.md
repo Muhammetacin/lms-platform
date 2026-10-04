@@ -1,6 +1,6 @@
 # Database conventions
 
-The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. These conventions describe how to extend that foundation; they do not add authorization or provide tenant isolation.
+The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. LMS-008 adds authorization and LMS-009 adds trusted tenant context; neither provides tenant isolation.
 
 ## Local setup and configuration
 
@@ -41,7 +41,7 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 - `Organization` is the foundational organization record. It has a required UUID primary key, required `name` and `slug`, required `createdAt` and `updatedAt` timestamps, and the `memberships` relation to `OrganizationMembership`. Keep the established UUID, timestamp, unique-slug, and `createdAt` index conventions.
 - `Organization.slug` is stored as required PostgreSQL `TEXT` and protected by the unique index `Organization_slug_key`. The schema does not generate or normalize slugs, lowercase them, use `citext`, define an expression index, or set an explicit collation. Uniqueness follows the configured PostgreSQL collation; this schema does not specify case-sensitive versus case-insensitive slug semantics or canonicalization. If application behavior needs canonical slug normalization, make that decision in a future ticket.
 - `OrganizationMembership` is the explicit association between one `User` and one `Organization`; there is no implicit many-to-many relation. This model foundation does not implement organization CRUD, membership management, invitations, authorization, or organization UI.
-- LMS-009 owns trusted tenant-context behavior. LMS-010 owns tenant-isolation design and enforcement. An organization record or foreign key alone does not provide tenant context, access control, or tenant isolation.
+- LMS-009 owns trusted tenant-context behavior, documented in [Tenant Context](tenant-context.md). LMS-010 owns tenant-isolation design and enforcement. An organization record or foreign key alone does not provide tenant context, access control, or tenant isolation.
 
 ## Organization Membership
 
@@ -106,7 +106,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 
 ## Future tenant context and isolation
 
-Future tenant-owned entities must have an explicit organization/tenant relationship where the domain requires one, and their reads and writes must be scoped using trusted server-side tenant context derived from the authenticated identity and validated membership. A tenant ID from a browser, URL, or other client input is untrusted and cannot establish that context. LMS-009 owns tenant-context behavior; LMS-010 owns tenant-isolation design and enforcement. Organization foreign keys alone do not provide tenant isolation, and neither LMS-002 nor LMS-003 claims it.
+Future tenant-owned entities must have an explicit organization/tenant relationship where the domain requires one, and their reads and writes must be scoped using trusted server-side tenant context derived from the authenticated identity and validated membership. A tenant ID from a browser, URL, or other client input is untrusted and cannot establish that context. LMS-009 provides the context API; LMS-010 owns tenant-isolation design and enforcement. Organization foreign keys alone do not provide tenant isolation, and neither LMS-002 nor LMS-003 claims it.
 
 ## Local database commands
 

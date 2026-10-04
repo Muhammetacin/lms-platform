@@ -1,6 +1,6 @@
 import "server-only";
-import { db } from "@/lib/db";
 import { getAuthenticatedUser } from "@/lib/auth-server";
+import { organizationMembershipStore } from "@/lib/organization-membership-store";
 import type { AuthenticatedUser } from "@/lib/auth-core";
 import type { OrganizationRole } from "@/generated/prisma/enums";
 import {
@@ -14,17 +14,7 @@ import {
   type OrganizationPermission,
 } from "@/lib/authorization-core";
 
-const authorizationStore: AuthorizationStore = {
-  async findOrganizationRole(userId, organizationId) {
-    const membership = await db.organizationMembership.findUnique({
-      where: {
-        userId_organizationId: { userId, organizationId },
-      },
-      select: { role: true },
-    });
-    return membership?.role ?? null;
-  },
-};
+const authorizationStore: AuthorizationStore = organizationMembershipStore;
 
 export async function requireAuthenticatedUser(): Promise<AuthenticatedUser> {
   let user: AuthenticatedUser | null;

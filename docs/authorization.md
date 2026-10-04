@@ -60,7 +60,7 @@ There are no organization-scoped product routes or mutations in the current appl
 | --- | --- | --- |
 | LMS-007 Authentication | Who is the user? | Validate the existing session and return a safe identity. |
 | LMS-008 Authorization | What may the user do? | Verify organization membership and structural role for an explicit organization ID. |
-| LMS-009 Tenant Context | Which organization is active? | Establish trusted active-organization context. Not implemented here. |
+| LMS-009 Tenant Context | Which organization is active? | Establish trusted active-organization context from the authenticated user's verified membership. |
 | LMS-010 Tenant Isolation | Can data cross organization boundaries? | Design and enforce data isolation. Not implemented here. |
 
 LMS-008 does not establish tenant context, scope all application data, add PostgreSQL RLS, or guarantee tenant isolation. A successful membership check authorizes a role decision for the supplied organization only; LMS-010 must enforce the data boundary.
