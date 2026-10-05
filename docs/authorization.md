@@ -36,6 +36,8 @@ The core supports these initial decisions. It does not implement the future prod
 | --- | ---: | ---: | ---: |
 | View organization | ✅ | ✅ | ✅ |
 | View own membership | ✅ | ✅ | ✅ |
+| View employee profiles | ✅ | ✅ | ❌ |
+| Manage own employee profile | ✅ | ✅ | ✅ |
 | Manage organization settings | ✅ | ✅ | ❌ |
 | Manage members | ✅ | ✅ | ❌ |
 | Manage teams | ✅ | ✅ | ❌ |
@@ -44,7 +46,7 @@ The core supports these initial decisions. It does not implement the future prod
 | View organization reports | ✅ | ✅ | ❌ |
 | Manage organization ownership | ✅ | ❌ | ❌ |
 
-"View own membership" applies only to the authenticated user's membership. This capability does not authorize viewing other people's membership records.
+"View own membership" applies only to the authenticated user's membership. This capability does not authorize viewing other people's membership records. LMS-013 uses `VIEW_EMPLOYEE_PROFILES` for OWNER/ADMIN access to profiles throughout their organization and `MANAGE_OWN_PROFILE` for MEMBER self-service writes; the profile handler also verifies that a MEMBER's target membership belongs to the authenticated user. OWNER and ADMIN profile writes use `MANAGE_MEMBERS`.
 
 ## Failures and enforcement
 

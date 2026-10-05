@@ -35,6 +35,21 @@ Email follows LMS-007: trim surrounding whitespace, require the same basic email
 
 Cross-organization and missing employee IDs both return 404. Authentication, authorization, and tenant-context errors retain their established 401/403/503 codes. Duplicate membership returns a generic 409; the last-owner invariant returns a generic 409. Unexpected database errors return a generic 503 and are not serialized.
 
+## Employee profile (LMS-013)
+
+The employee profile remains on the tenant-owned `OrganizationMembership`; it does not add organization-specific data to global `User`. In addition to `employeeName`, the membership stores nullable `jobTitle`, `department`, `phone`, and `employeeNumber`. Email remains the global, read-only authentication identity. Role and active state remain LMS-012-managed and are never writable through the profile endpoint.
+
+| Method and route | Authorization | Behavior |
+| --- | --- | --- |
+| `GET /api/organizations/employees/:employeeId/profile` | OWNER/ADMIN: `VIEW_EMPLOYEE_PROFILES`; MEMBER: `VIEW_OWN_MEMBERSHIP` plus own-membership check | Return selected profile fields for an organization-scoped membership. MEMBER can read only their own profile. |
+| `PATCH /api/organizations/employees/:employeeId/profile` | OWNER/ADMIN: `MANAGE_MEMBERS`; MEMBER: `MANAGE_OWN_PROFILE` plus own-membership check | OWNER/ADMIN can edit profile fields, including `employeeNumber`. MEMBER can edit `employeeName`, `jobTitle`, `department`, and `phone` on their own profile. |
+
+Every profile query uses both membership ID and the trusted tenant organization ID. A MEMBER targeting another membership receives the same 404 as a missing profile. Cross-organization and missing IDs also share LMS-010's 404 behavior. Responses select only ID, email, profile fields, role, and active state; the internal user ID used for ownership checks is not returned. Responses use `Cache-Control: no-store`.
+
+`employeeNumber` is optional and unique within an organization through the database unique index on `(organizationId, employeeNumber)`. The value is trimmed and case-preserving, so uniqueness follows PostgreSQL's exact string comparison; the same value is valid in another organization. Null values do not conflict. Optional fields (`jobTitle`, `department`, `phone`, and `employeeNumber`) are trimmed, may be cleared with `null`, reject blank strings and control characters, and are bounded to 120 Unicode code points. `employeeName` reuses LMS-012's 2–120 code point validation and does not accept `null` on PATCH. Phone numbers are not format-parsed.
+
+Profile changes are not audited by a local custom logger. No LMS-058 audit-log implementation exists in this repository; audit recording remains a dependency on LMS-058's shared mechanism.
+
 ## Ownership and security boundary
 
 Employee queries use membership persistence directly. Detail, update, and deactivation predicates include both `id: employeeId` and `organizationId: tenant.organizationId`; list always filters by trusted organization ID. They do not retrieve a global user by ID and then trust a separate permission check. User and membership creation is atomic. Existing `(userId, organizationId)` uniqueness and foreign keys are retained; a new `(organizationId, createdAt, id)` index supports deterministic bounded listing.
@@ -45,4 +60,4 @@ The shared LMS-008/LMS-009 membership lookup now requires `active: true`. Deacti
 
 ## Out of scope
 
-Invitation emails/tokens and password setup (LMS-014), role changes or ownership transfer, reactivation, teams, courses, assignments, certificates, reporting, import, HR fields, employee dashboard, RLS, and automatic tenant scoping for future resources.
+Invitation emails/tokens and password setup (LMS-014), role changes or ownership transfer, reactivation, profile pictures, additional HR fields, employee dashboard, RLS, and automatic tenant scoping for future resources.

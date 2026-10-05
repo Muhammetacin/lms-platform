@@ -64,6 +64,10 @@ model OrganizationMembership {
   organizationId String           @db.Uuid
   role           OrganizationRole @default(MEMBER)
   employeeName   String?
+  jobTitle       String?
+  department     String?
+  phone          String?
+  employeeNumber String?
   active         Boolean          @default(true)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -71,6 +75,7 @@ model OrganizationMembership {
   updatedAt      DateTime         @updatedAt
 
   @@unique([userId, organizationId])
+  @@unique([organizationId, employeeNumber])
   @@index([organizationId, role])
   @@index([organizationId, createdAt, id])
 }

@@ -6,12 +6,20 @@ import {
   type Employee,
   type EmployeeStore,
 } from "./employee-management-core.ts";
+import {
+  EmployeeNumberConflictError,
+  type EmployeeProfileRecord,
+  type EmployeeProfileStore,
+  type EmployeeProfileUpdate,
+} from "./employee-profile-core.ts";
 
 /**
  * Build the production employee store over a Prisma client. Exported so the
  * same query implementation can be exercised against PostgreSQL in tests.
  */
-export function createPrismaEmployeeManagementStore(db: PrismaClient): EmployeeStore {
+export function createPrismaEmployeeManagementStore(
+  db: PrismaClient,
+): EmployeeStore & EmployeeProfileStore {
   return {
     async list(organizationId) {
       const rows = await db.organizationMembership.findMany({
@@ -47,6 +55,24 @@ export function createPrismaEmployeeManagementStore(db: PrismaClient): EmployeeS
         },
       });
       return row ? toEmployee(row) : null;
+    },
+
+    async getProfile(organizationId, employeeId) {
+      const row = await db.organizationMembership.findFirst({
+        where: { id: employeeId, organizationId },
+        select: {
+          id: true,
+          employeeName: true,
+          jobTitle: true,
+          department: true,
+          phone: true,
+          employeeNumber: true,
+          active: true,
+          role: true,
+          user: { select: { id: true, email: true } },
+        },
+      });
+      return row ? toEmployeeProfile(row) : null;
     },
 
     async create(organizationId, email, name) {
@@ -104,6 +130,49 @@ export function createPrismaEmployeeManagementStore(db: PrismaClient): EmployeeS
       });
     },
 
+    async updateProfile(organizationId, employeeId, update: EmployeeProfileUpdate) {
+      const data: {
+        employeeName?: string;
+        jobTitle?: string | null;
+        department?: string | null;
+        phone?: string | null;
+        employeeNumber?: string | null;
+      } = {};
+      if (update.employeeName !== undefined) data.employeeName = update.employeeName;
+      if (update.jobTitle !== undefined) data.jobTitle = update.jobTitle;
+      if (update.department !== undefined) data.department = update.department;
+      if (update.phone !== undefined) data.phone = update.phone;
+      if (update.employeeNumber !== undefined) data.employeeNumber = update.employeeNumber;
+
+      try {
+        return await db.$transaction(async (transaction) => {
+          const updated = await transaction.organizationMembership.updateMany({
+            where: { id: employeeId, organizationId },
+            data,
+          });
+          if (updated.count !== 1) return null;
+          const row = await transaction.organizationMembership.findFirst({
+            where: { id: employeeId, organizationId },
+            select: {
+              id: true,
+              employeeName: true,
+              jobTitle: true,
+              department: true,
+              phone: true,
+              employeeNumber: true,
+              active: true,
+              role: true,
+              user: { select: { id: true, email: true } },
+            },
+          });
+          return row ? toEmployeeProfile(row) : null;
+        });
+      } catch (error) {
+        if (isUniqueConstraintViolation(error)) throw new EmployeeNumberConflictError();
+        throw error;
+      }
+    },
+
     async deactivate(organizationId, employeeId) {
       return db.$transaction(async (transaction) => {
         const where = { id: employeeId, organizationId };
@@ -138,6 +207,15 @@ export function createPrismaEmployeeManagementStore(db: PrismaClient): EmployeeS
   };
 }
 
+function isUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  );
+}
+
 function toEmployee(row: {
   id: string;
   employeeName: string | null;
@@ -149,6 +227,31 @@ function toEmployee(row: {
     id: row.id,
     email: row.user.email,
     name: row.employeeName,
+    role: row.role,
+    active: row.active,
+  };
+}
+
+function toEmployeeProfile(row: {
+  id: string;
+  employeeName: string | null;
+  jobTitle: string | null;
+  department: string | null;
+  phone: string | null;
+  employeeNumber: string | null;
+  active: boolean;
+  role: Employee["role"];
+  user: { id: string; email: string };
+}): EmployeeProfileRecord {
+  return {
+    id: row.id,
+    userId: row.user.id,
+    email: row.user.email,
+    employeeName: row.employeeName,
+    jobTitle: row.jobTitle,
+    department: row.department,
+    phone: row.phone,
+    employeeNumber: row.employeeNumber,
     role: row.role,
     active: row.active,
   };

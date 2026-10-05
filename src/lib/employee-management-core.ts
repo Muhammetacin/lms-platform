@@ -68,23 +68,24 @@ export function isEmployeeId(value: unknown): value is string {
   return typeof value === "string" && uuidPattern.test(value);
 }
 
-function isSafeName(value: unknown): value is string {
-  if (typeof value !== "string") return false;
+export function normalizeEmployeeName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
   const name = value.trim();
   return (
     [...name].length >= 2 &&
     [...name].length <= 120 &&
     !/[\u0000-\u001f\u007f-\u009f\p{Cs}]/u.test(name)
-  );
+  ) ? name : null;
 }
 
 export function parseEmployeeCreate(value: unknown): { email: string; name: string } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const input = value as Record<string, unknown>;
+  const name = normalizeEmployeeName(input.name);
   if (
     Object.keys(input).some((key) => key !== "email" && key !== "name") ||
     typeof input.email !== "string" ||
-    !isSafeName(input.name)
+    name === null
   ) return null;
 
   const email = input.email.trim();
@@ -93,16 +94,17 @@ export function parseEmployeeCreate(value: unknown): { email: string; name: stri
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   ) return null;
 
-  return { email, name: (input.name as string).trim() };
+  return { email, name };
 }
 
 export function parseEmployeeUpdate(value: unknown): { name: string } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const input = value as Record<string, unknown>;
-  if (Object.keys(input).length !== 1 || !Object.hasOwn(input, "name") || !isSafeName(input.name)) {
+  const name = normalizeEmployeeName(input.name);
+  if (Object.keys(input).length !== 1 || !Object.hasOwn(input, "name") || name === null) {
     return null;
   }
-  return { name: (input.name as string).trim() };
+  return { name };
 }
 
 function errorResponse(

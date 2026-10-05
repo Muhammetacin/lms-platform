@@ -21,7 +21,8 @@
     "test:tenant-context": "node --experimental-strip-types --test tests/tenant-context.test.ts",
     "test:organization-settings": "node --experimental-strip-types --test tests/organization-settings.test.ts",
     "test:employee-management": "node --experimental-strip-types --test tests/employee-management.test.ts",
-    "test:tenant-isolation:db": "node --conditions=react-server --experimental-strip-types --test tests/tenant-isolation-postgres.test.ts"
+    "test:employee-profile": "node --experimental-strip-types --test tests/employee-profile.test.ts",
+    "test:tenant-isolation:db": "node --conditions=react-server --experimental-strip-types --test tests/tenant-isolation-postgres.test.ts tests/employee-profile-postgres.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.3.0",
