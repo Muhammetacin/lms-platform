@@ -6,7 +6,7 @@ Build a dependable learning management SaaS that helps organizations deliver and
 
 ## Product direction
 
-The platform is intended to grow into a multi-tenant service. Its architecture should keep organizational boundaries explicit, support reliable operations, and make future product capabilities easy to evolve. LMS-007 establishes authentication and user identity. LMS-008 establishes organization-scoped authorization. LMS-009 establishes trusted tenant context; tenant isolation (LMS-010) and learning-domain behavior remain separately scoped work.
+The platform is intended to grow into a multi-tenant service. Its architecture should keep organizational boundaries explicit, support reliable operations, and make future product capabilities easy to evolve. LMS-007 establishes authentication and user identity. LMS-008 establishes organization-scoped authorization. LMS-009 establishes trusted tenant context. LMS-010 implements application-layer tenant isolation for LMS-012 employee management, with PostgreSQL test execution pending; future tenant-owned resources still require their own scoped implementation and database-backed tests.
 
 ## Principles
 
@@ -18,7 +18,7 @@ The platform is intended to grow into a multi-tenant service. Its architecture s
 
 ## Initial technical direction
 
-The web application uses Next.js App Router and TypeScript, with pnpm for package management and ESLint for static analysis. GitHub Actions validates changes. PostgreSQL and Prisma now provide the database foundation; product behavior and tenant isolation remain separately scoped for later tickets.
+The web application uses Next.js App Router and TypeScript, with pnpm for package management and ESLint for static analysis. GitHub Actions validates changes. PostgreSQL and Prisma provide persistence; LMS-010 establishes application-layer isolation for employee management, while future tenant-owned resources remain separately scoped.
 
 ## Out of scope for LMS-001
 

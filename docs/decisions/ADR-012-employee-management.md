@@ -6,7 +6,7 @@
 
 ## Context
 
-LMS-007 through LMS-009 provide the authenticated `User`, organization membership roles, and trusted tenant context. The smallest organization-owned employee representation is the existing `OrganizationMembership`: a user can be an employee in several organizations with different roles and active states. The global `User.email` is an exact-value unique authentication identity, and `User.name` is shared across organizations. LMS-010 remains blocked pending real persistence-boundary verification and a safe general isolation design.
+LMS-007 through LMS-009 provide the authenticated `User`, organization membership roles, and trusted tenant context. The smallest organization-owned employee representation is the existing `OrganizationMembership`: a user can be an employee in several organizations with different roles and active states. The global `User.email` is an exact-value unique authentication identity, and `User.name` is shared across organizations. At LMS-012 implementation time, LMS-010 was blocked on a real resource; LMS-010 has since added a PostgreSQL integration suite for the membership boundary, pending execution.
 
 ## Decisions
 
@@ -24,7 +24,7 @@ Employee active state, display name, and role are organization-specific. The sam
 
 The invitation workflow is incomplete by design: a newly provisioned identity has no password credential and no email delivery. LMS-014 must define secure claim/account-activation behavior. Employee role assignment and reactivation are also deferred rather than implicitly changing ownership rules.
 
-Behavioral tests use an injected in-memory store. A real PostgreSQL cross-tenant persistence test remains required when an integration environment is available; application-level tenant-scoped selectors do not constitute general tenant isolation.
+The LMS-012 behavioral tests use an injected in-memory store. LMS-010 subsequently added a real PostgreSQL suite for the production employee store and handlers. Those application-level selectors do not constitute general automatic tenant scoping or RLS.
 
 ## Alternatives considered
 

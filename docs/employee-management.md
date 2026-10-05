@@ -39,10 +39,10 @@ Cross-organization and missing employee IDs both return 404. Authentication, aut
 
 Employee queries use membership persistence directly. Detail, update, and deactivation predicates include both `id: employeeId` and `organizationId: tenant.organizationId`; list always filters by trusted organization ID. They do not retrieve a global user by ID and then trust a separate permission check. User and membership creation is atomic. Existing `(userId, organizationId)` uniqueness and foreign keys are retained; a new `(organizationId, createdAt, id)` index supports deterministic bounded listing.
 
-The shared LMS-008/LMS-009 membership lookup now requires `active: true`. Deactivation therefore prevents the membership from granting authorization or resolving a tenant, while a user's other active memberships and authentication identity remain available. This is application-query scoping for this feature only, not general tenant isolation. There is no RLS and no claim that LMS-010 is complete.
+The shared LMS-008/LMS-009 membership lookup now requires `active: true`. Deactivation therefore prevents the membership from granting authorization or resolving a tenant, while a user's other active memberships and authentication identity remain available. LMS-010 verifies this employee boundary against PostgreSQL. Enforcement is application-query scoping for this feature, not general automatic Prisma scoping; there is no RLS.
 
-The employee tests exercise the route/core behavior, cross-tenant access attempts, tampering, organization-specific state, and role rules with an in-memory store. They do not claim to be a PostgreSQL integration test. Until a PostgreSQL integration environment is available, LMS-010 still needs real-database verification that a membership ID combined with the wrong organization ID cannot read or mutate the row.
+`tests/employee-management.test.ts` exercises handler behavior with an injected store. `tests/tenant-isolation-postgres.test.ts` separately runs the production Prisma employee store and handlers against PostgreSQL in CI, checks tenant A/B reads and mutations, and inspects persisted state after the attempts. Run it locally with the dedicated `TEST_DATABASE_URL` described in [Tenant Isolation](tenant-isolation.md).
 
 ## Out of scope
 
-Invitation emails/tokens and password setup (LMS-014), role changes or ownership transfer, reactivation, teams, courses, assignments, certificates, reporting, import, HR fields, employee dashboard, general tenant isolation, and RLS.
+Invitation emails/tokens and password setup (LMS-014), role changes or ownership transfer, reactivation, teams, courses, assignments, certificates, reporting, import, HR fields, employee dashboard, RLS, and automatic tenant scoping for future resources.

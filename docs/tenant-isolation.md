@@ -1,82 +1,69 @@
 # Tenant Isolation
 
-**Status: BLOCKED — no organization-owned product resource or protected data route exists yet.**
+**Status: BLOCKED pending a successful PostgreSQL integration run.** The implementation and CI service configuration are present, but this workspace has no PostgreSQL service or `TEST_DATABASE_URL`; the local integration test was skipped. Do not treat the database boundary as verified until the configured CI suite passes.
 
-This document records the LMS-010 inspection and the implementation boundary found in the current repository. It does not claim that application or database tenant isolation is implemented.
+This guide records the intended protected tenant boundary: organization employee management backed by `OrganizationMembership`. It is application-layer query scoping with PostgreSQL verification configured but not yet executed for the current changes. PostgreSQL RLS is not enabled, and this design does not claim that application checks are equivalent to RLS.
 
-## Security model
+## Data classification
 
-For every organization-owned resource, a protected operation must require all of the following, in order:
-
-1. LMS-007 authentication supplies the server-validated user identity.
-2. LMS-008 authorization checks the capability and role stored for that user in the organization.
-3. LMS-009 supplies a trusted `TenantContext` after verifying the user's membership in the selected organization.
-4. The data operation scopes its target to `tenant.organizationId` and, for child data, proves the entire ownership chain.
-5. Database constraints and, where a safe connection and bootstrap design exists, database policies protect the same invariants.
-
-An organization ID from a URL, request body, query, header, cookie, form field, or client state is only an untrusted candidate. It cannot set the effective tenant, grant a role, or substitute for a resource ownership check. Resource access failures should use the application's generic authorization/not-found convention and must not disclose foreign-resource existence or database details.
-
-## Current data classification
-
-| Current model | Classification | Tenant-isolation implication |
+| Model | Classification | Boundary |
 | --- | --- | --- |
-| `User` | Global identity | Not owned by one organization. |
-| `PasswordCredential`, `Session` | Global authentication records associated with a user | Access is by authenticated identity or session token; these are not organization-owned resources. |
-| `Organization` | Tenant root | An organization is the boundary itself. Any future organization-profile operation must verify membership/permission for that exact organization. |
-| `OrganizationMembership` | Organization-scoped association between a global user and one organization | The row contains `organizationId`, is unique on `(userId, organizationId)`, and has foreign keys to its user and organization. Future reads or writes about a membership must additionally scope by the trusted organization and enforce the relevant permission. |
+| `User` | Global identity | A single identity and exact-value unique email may be associated with several organizations. |
+| `PasswordCredential` | Global authentication data | Belongs to a `User`; never scoped to an organization. |
+| `Session` | Global authentication data | Belongs to a `User`; never scoped to an organization. |
+| `Organization` | Tenant root | Organization settings are read or changed only for the trusted context's organization. |
+| `OrganizationMembership` | Tenant-owned association | Each row belongs to exactly one `organizationId`. Its `organizationId`, `role`, `employeeName`, and `active` are organization-specific. |
 
-There are no organization-owned business models or child models in the Prisma schema today. There are no teams, courses, assignments, enrollments, reports, certificates, organization settings, or audit records. There are also no organization-scoped product API routes or server actions. Current database call sites access global authentication records and the membership store used to resolve authorization and tenant context.
+Employee management uses the existing membership relation. It does not create a duplicate employee or user identity model. Email remains on the global `User`; employee display name, role, and active state remain on the membership for that organization.
 
-The membership lookup is part of the bootstrap chain: the application must read membership data to establish the trusted tenant context. It is deliberately constrained by the authenticated `userId` and, for an explicit organization candidate, the exact candidate `organizationId`. Applying a tenant policy to this lookup without a separate, reviewed bootstrap path could prevent context resolution or create an exception that bypasses the policy.
+## Trusted tenant derivation
 
-## Trusted tenant context and authorization
+The employee routes call `requireTenantContext()` without a client candidate. LMS-007 supplies the authenticated identity. LMS-009 resolves that identity's active membership from the server-side store; if the identity has multiple active memberships, the current product behavior selects its deterministic default. A client-supplied organization ID, role, or membership state does not become the effective tenant.
 
-`src/lib/tenant-context.ts` composes `getAuthenticatedUser()` with the shared `organizationMembershipStore`. Explicit organization candidates are validated against the authenticated user's membership; an invalid candidate fails without falling back. The context contains `{ userId, organizationId, role }`, with the role read from the stored membership.
+Employee handlers then check LMS-008 permissions against that tenant ID and pass the same trusted ID to the employee store. No organization switch feature is introduced. Body fields are allowlisted: create accepts only email and name, and update accepts only name. Detail/deactivate IDs identify a membership, never its organization.
 
-Tenant context identifies the verified organization, but does not scope database queries or authorize an operation. Future protected operations must reuse the centralized LMS-008 `require*` authorization functions and LMS-009 context. A member role cannot be upgraded by client input or by merely matching the organization ID.
+## Enforced employee operations
 
-## Application-level enforcement
+The production Prisma store applies the tenant predicate in each resource operation:
 
-No central tenant-aware database access API exists yet, and no product resource operation exists where such an API could be applied and behaviorally verified. The current repository therefore has no application-level guarantee that arbitrary future Prisma reads or writes are tenant-scoped. The shared Prisma client remains a general database client used by authentication and membership-context code.
+- List: `OrganizationMembership.findMany({ where: { organizationId } })`.
+- Detail: `findFirst({ where: { id: employeeId, organizationId } })`.
+- Name update: `updateMany({ where: { id: employeeId, organizationId } })`, followed by a read with the same predicate.
+- Deactivation: target read, active-owner count, update, and result read all run in a serializable transaction and are constrained to that organization. The owner count includes the same `organizationId`.
+- Create: the global exact-email upsert only obtains or creates the global identity. Membership creation is an atomic insert with the trusted `organizationId`, default MEMBER role, and only the caller's employee name. It does not update an existing user's global identity or any other organization's membership.
 
-When an approved tenant-owned model and operation are introduced, the implementation must make the trusted tenant mandatory in the operation boundary. Parent reads and mutations must include the tenant predicate. Child reads and mutations must constrain the child through its parent chain, rather than trusting a child ID alone. Updates and deletes must use a tenant-scoped predicate in the mutation itself; a separate authorization lookup followed by an ID-only mutation is not sufficient.
+Foreign membership IDs return the same `employee_not_found` 404 as unknown IDs. List results contain only current-tenant rows. Employee response fields are explicitly selected; database exceptions are reduced to a generic unavailable response. This limits IDOR/BOLA, horizontal mutation, and existence/data disclosure at this boundary.
 
-No current product endpoint permits the listed cross-tenant course, team, employee, lesson, or certificate attacks because those endpoints and records do not exist. This absence is not evidence that tenant isolation has been implemented; it means LMS-010 cannot yet demonstrate or enforce the requested product-level boundary against actual resources.
+## Database enforcement and RLS assessment
 
-## Database-level enforcement and RLS assessment
+Database-backed integration tests instantiate the production Prisma store using the PostgreSQL driver adapter and call the employee handlers against a dedicated `lms_platform_test` database. The CI PostgreSQL 16 service applies committed migrations before tests. The tests inspect persisted membership rows after rejected foreign reads, updates, deactivations, forged input, employee creation for an email already present in another organization, and concurrent owner deactivation.
 
-PostgreSQL RLS is **not implemented**. The repository uses one shared Prisma client backed by the PostgreSQL driver adapter. There is no tenant-scoped transaction API, no application database role/RLS policy setup, and no separate membership-context bootstrap policy or function. The repository configuration does not establish whether the runtime role is a table owner, superuser, or has `BYPASSRLS`; a policy alone would not prove that the application connection is subject to enforcement.
+RLS is **not used**. `src/lib/db.ts` owns one Prisma client using `PrismaPg`; the adapter obtains pooled PostgreSQL connections. Interactive Prisma transactions pin a connection for a transaction, but protected calls currently do not establish transaction-local tenant settings, and list/detail operations can run outside a transaction. No runtime database-role grants/ownership attributes are defined or verified here, nor is there a separate policy-safe membership bootstrap path. A session setting on a pooled connection could leak between requests if it were not strictly transaction-local. RLS policies added without all of those guarantees could be bypassed or prevent tenant-context lookup. No RLS policy or equivalent database enforcement claim is made.
 
-A safe RLS design would need to set a verified tenant value transaction-locally on the same connection as every protected query, ensure every path (including raw SQL and nested operations) uses that transaction, ensure the runtime database role cannot bypass RLS, and define how the application reads the membership needed to establish tenant context without opening an unsafe bypass. None of those controls exists or is verified in the current architecture. Adding policies only to membership or hypothetical future tables would be incomplete and could create a false security claim, so RLS is deferred pending a concrete resource and reviewed bootstrap/role design.
+The current application role has the schema privileges needed by CI migrations and is not evidence of production least-privilege/RLS behavior. Future RLS work requires a dedicated migration role and non-owner runtime role without superuser or `BYPASSRLS`, a reviewed bootstrap policy/function, transaction-local tenant context set and consumed on the same connection, complete transaction coverage for every tenant query, and tests that prove rollback/pool reuse cannot retain context.
 
-## Ownership integrity and performance
+## Multi-organization identities and inactive memberships
 
-The current membership model has foreign keys to `User` and `Organization`, a unique `(userId, organizationId)` constraint, and an `(organizationId, role)` index. These enforce membership referential integrity and support existing organization/role lookup patterns; they do not enforce isolation for future data records.
+Membership is the tenant-specific employee record. A global user may have distinct names, roles, and active state in organizations A and B. Updating or deactivating membership A does not update membership B. A global email match during creation does not grant membership or permission in the organization where the identity already exists.
 
-For future tenant-owned parents, evaluate a unique `(organizationId, id)` key where needed for composite references. For each child-parent link, prefer a composite foreign key containing the same `organizationId` on both sides so a child cannot reference a parent in a different tenant. Add tenant-leading indexes only for actual lookup, join, sort, or mutation workloads. Each model addition must include a deterministic migration and tests for these database invariants.
+Authorization and tenant-context stores require `active: true`. An inactive-only identity cannot establish a tenant context or access the employee APIs. Active membership in one organization does not activate or authorize a different membership.
 
-## Cross-tenant attack scenarios
+## Owner safety and transactions
 
-The required future guarantees include:
+Owner deactivation reads the target, counts active owners, changes membership state, and selects the result inside one serializable Prisma transaction. Every query includes the target `organizationId`. Concurrent last-owner changes may cause PostgreSQL serialization failure; that fails closed and cannot remove the final active owner. A foreign organization's owners are not included in the calculation.
 
-- A user in Organization A cannot retrieve, update, or delete an Organization B resource by substituting its ID.
-- A user cannot enumerate another tenant's resources by changing IDs or supplying a foreign tenant ID in the URL, body, query, header, or form.
-- A user cannot access a foreign child by its ID or by traversing a parent/child route with mismatched ownership.
-- A client-provided role or organization ID cannot override the membership-backed authorization and tenant context.
-- Missing identity, membership, context, permission, or database availability fails closed.
+## PostgreSQL integration tests
 
-The present repository has no product resource endpoints on which to run these attack cases. Existing authorization and tenant-context tests exercise in-memory stores and do not prove database-level isolation.
+CI is configured to provision a PostgreSQL 16 service and set `TEST_DATABASE_URL` to the dedicated `lms_platform_test` database. The test refuses a database with any other name, writes uniquely identified fixture rows, exercises actual production Prisma store queries through the employee handler boundary, queries persisted state, then removes its organizations and users. It is not a mocked store test. This workflow has not run for the current uncommitted changes.
 
-## Test strategy and limitations
+Locally, provision an isolated PostgreSQL database named `lms_platform_test`, set `TEST_DATABASE_URL` to that database, apply migrations with `pnpm db:migrate:deploy`, then run `pnpm test:tenant-isolation:db`. Without `TEST_DATABASE_URL`, the suite reports skipped; this is not a passing database verification. CI always configures the service and runs the suite.
 
-LMS-007 through LMS-009 tests cover authentication, role checks, membership validation, forged tenant candidates, and fail-closed behavior. These are relevant prerequisites but are not cross-tenant data-isolation tests. Current CI has no tenant-isolation suite and no database integration test setup. No RLS claim or real-database isolation claim is made.
+## Scope and limitations
 
-LMS-010 needs an approved organization-owned model and an actual protected read/write/delete boundary before meaningful integration tests can verify cross-tenant reads, updates, deletes, enumeration, client tampering, and nested ownership. A test of a standalone helper against only an in-memory store would not satisfy that requirement.
+- `OrganizationMembership` is both the employee record and part of the auth/context bootstrap. RLS has been deferred as described above.
+- Application-layer correctness depends on all tenant-owned access continuing to go through reviewed handlers/stores. The shared Prisma client itself is not tenant-aware and does not automatically scope arbitrary future queries.
+- Organization settings already use `tenant.organizationId` for their Organization lookup/update, but the new PostgreSQL attack suite specifically exercises employee operations.
+- There are no other tenant-owned business models in scope. Each new model/route/action must add tenant-scoped selectors and real PostgreSQL isolation tests; child ownership should be enforced with same-tenant composite foreign keys when its schema supports them.
+- The successful PostgreSQL suite is still required before this ticket can become CODE COMPLETE. After that, independent external QA/security review remains required; automated tests do not mark the ticket DONE.
 
-## Blocker and next step
-
-The ticket requires end-to-end isolation for organization-owned resources but also prohibits implementing the product resources that would make that requirement concrete. The current schema and routes provide no such resources. Inventing an organization setting, generic key/value table, sample business model, or synthetic production API would silently select product semantics outside this ticket.
-
-**Recommended resolution:** keep LMS-010 blocked until an approved product ticket defines the first organization-owned model and its protected operations, then implement and test the tenant boundary at that concrete access layer. Alternatively, the product owner can explicitly narrow LMS-010 to a named existing resource or approve the smallest concrete resource/API to include. After that decision, revisit a central tenant-aware database access pattern and RLS using the actual query and membership-bootstrap requirements.
-
-See [ADR-010](decisions/ADR-010-tenant-isolation.md) and [LMS-010](../tickets/LMS-010.md) for the options and required decision.
+See [ADR-010](decisions/ADR-010-tenant-isolation.md), [LMS-009 Tenant Context](tenant-context.md), [LMS-012 Employee Management](employee-management.md), and [LMS-010](../tickets/LMS-010.md).

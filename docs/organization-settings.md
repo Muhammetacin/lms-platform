@@ -47,9 +47,10 @@ LMS-008's existing `VIEW_ORGANIZATION` permission allows OWNER, ADMIN, and
 MEMBER to read. `MANAGE_ORGANIZATION_SETTINGS` allows OWNER and ADMIN to update;
 MEMBER receives 403. Authentication errors remain 401, invalid/missing tenant
 membership uses LMS-009's existing 403 semantics, and authorization/tenant
-storage failures remain fail-closed 503 responses. The resource layer does not
-implement or claim general tenant isolation; LMS-010 remains BLOCKED and must be
-reopened to cover real cross-tenant behavior.
+storage failures remain fail-closed 503 responses. The resource layer scopes
+Organization settings to the trusted tenant. LMS-010 separately implements and
+tests the employee-membership boundary; neither route establishes automatic
+Prisma scoping or RLS.
 
 ## Data access and errors
 
@@ -68,14 +69,16 @@ parameters are never used to resolve tenant context. Tests cover the trusted
 default tenant, role permissions, unauthenticated requests, tampering, strict
 input validation, same-origin protection, and generic storage failures.
 
-When LMS-010 is reopened, add database-backed tests that create at least two
-organizations and prove reads and writes stay inside the trusted tenant using
-the real persistence boundary. Test any later slug update semantics and
-case-insensitive uniqueness at the database constraint level if the product
-chooses to define them.
+The LMS-010 PostgreSQL suite currently targets employee membership operations;
+it does not execute this settings route against PostgreSQL. Future changes to
+this route should add real-database cross-tenant tests and continue to use the
+trusted tenant organization ID for every settings query. Test any later slug
+update semantics and case-insensitive uniqueness at the database constraint
+level if the product chooses to define them.
 
 ## Out of scope
 
 Slug changes, organization switching, a settings dashboard, membership or
 employee/team/course workflows, branding, billing, integrations, notification
-settings, RLS, query middleware, and general tenant isolation are out of scope.
+settings, RLS, query middleware, and automatic scoping of other tenant-owned
+resources are out of scope.

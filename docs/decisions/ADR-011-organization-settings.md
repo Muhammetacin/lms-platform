@@ -10,8 +10,9 @@ The repository has a foundational `Organization` model with `name`, unique
 `slug`, timestamps, and memberships, but no organization settings route or
 organization-owned product operations. LMS-007, LMS-008, and LMS-009 provide
 the authentication, authorization, and trusted tenant context foundations.
-LMS-010 remains blocked until a real resource can be tested against tenant
-isolation requirements.
+At the time of this ADR, LMS-010 was awaiting a concrete resource; LMS-012
+subsequently introduced organization-scoped employee operations, and LMS-010
+now documents and tests that employee boundary.
 
 The earlier organization-model decision explicitly deferred slug normalization,
 case semantics, and slug update APIs. The database has an exact unique index on
@@ -35,9 +36,9 @@ code uses slugs for routing or lookup.
 4. Return only `{ name, slug }`, validate a strict bounded name payload, reject
    unexpected keys, use explicit update fields, disable response caching, and
    preserve generic fail-closed error behavior.
-5. Keep tenant isolation, RLS, client organization switching, and all unrelated
-   product features out of scope. LMS-011 creates a concrete access boundary
-   that LMS-010 can later test; it does not complete LMS-010.
+5. Keep RLS, client organization switching, and all unrelated product features
+   out of scope. This endpoint uses the trusted tenant ID. Its tenant boundary
+   remains subject to the application-layer model documented in ADR-010.
 
 ## Consequences
 
@@ -58,6 +59,7 @@ part of the API; tests verify that unexpected slug fields are rejected.
   canonicalization/case decision or matching case-insensitive database
   invariant. A preflight query alone would not protect concurrent conflicting
   writes.
-- **Implement general tenant isolation or RLS here:** rejected because it
-  remains LMS-010's separately scoped work and requires real database-backed
-  boundary tests.
+- **Implement general automatic scoping or RLS here:** rejected because this
+  settings route does not provide the database role and transaction design
+  required for safe RLS. LMS-010 separately verifies the employee operations
+  against PostgreSQL; future tenant-owned query paths still require review.

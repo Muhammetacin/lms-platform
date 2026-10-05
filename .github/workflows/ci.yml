@@ -13,6 +13,23 @@ jobs:
   validate:
     name: Lint, database checks, typecheck, and build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: lms_platform_test
+          POSTGRES_USER: lms_app
+          POSTGRES_PASSWORD: lms_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lms_app -d lms_platform_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://lms_app:lms_test_password@localhost:5432/lms_platform_test?schema=public
+      TEST_DATABASE_URL: postgresql://lms_app:lms_test_password@localhost:5432/lms_platform_test?schema=public
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -34,6 +51,9 @@ jobs:
       - name: Validate Prisma schema
         run: pnpm db:validate
 
+      - name: Apply migrations to PostgreSQL test database
+        run: pnpm db:migrate:deploy
+
       - name: Database configuration tests
         run: pnpm test:db-config
 
@@ -51,6 +71,9 @@ jobs:
 
       - name: Employee management tests
         run: pnpm test:employee-management
+
+      - name: PostgreSQL tenant isolation tests
+        run: pnpm test:tenant-isolation:db
 
       - name: Lint
         run: pnpm lint
