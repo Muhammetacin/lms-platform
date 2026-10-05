@@ -6,7 +6,7 @@
 
 ## Context
 
-LMS-007 through LMS-009 provide the authenticated `User`, organization membership roles, and trusted tenant context. The smallest organization-owned employee representation is the existing `OrganizationMembership`: a user can be an employee in several organizations with different roles and active states. The global `User.email` is an exact-value unique authentication identity, and `User.name` is shared across organizations. At LMS-012 implementation time, LMS-010 was blocked on a real resource; LMS-010 has since added a PostgreSQL integration suite for the membership boundary, pending execution.
+LMS-007 through LMS-009 provide the authenticated `User`, organization membership roles, and trusted tenant context. The smallest organization-owned employee representation is the existing `OrganizationMembership`: a user can be an employee in several organizations with different roles and active states. The global `User.email` is an exact-value unique authentication identity, and `User.name` is shared across organizations. At LMS-012 implementation time, LMS-010 was blocked on a real resource; LMS-010 subsequently added and passed PostgreSQL integration tests for the membership boundary.
 
 ## Decisions
 

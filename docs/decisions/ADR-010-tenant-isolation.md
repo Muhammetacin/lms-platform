@@ -1,6 +1,6 @@
 # ADR-010: Tenant Isolation
 
-- **Status:** Accepted design; implementation verification blocked pending PostgreSQL run
+- **Status:** Accepted — application-layer enforcement for LMS-012 employee management; external QA/security review required
 - **Date:** 2026-10-05
 - **Ticket:** LMS-010
 
@@ -44,4 +44,4 @@ Future RLS requires a reviewed role split (privileged migration role and non-own
 
 ## Verification
 
-`tests/tenant-isolation-postgres.test.ts` is configured to run against PostgreSQL 16 in CI after migrations are deployed. It is intended to prove tenant-filtered lists and ID lookups, cross-tenant update/deactivate rejection, persisted state after attacks, client field tampering, multi-organization membership field separation, global-email creation behavior, inactive-context rejection, last-owner protection, and concurrent owner deactivation safety. The current workspace has no PostgreSQL service or `TEST_DATABASE_URL`, so this suite was skipped locally and remains unverified. CI has not run for the current uncommitted changes.
+`tests/tenant-isolation-postgres.test.ts` ran against PostgreSQL 16 in CI after migrations were deployed. It proved tenant-filtered lists and ID lookups, cross-tenant update/deactivate rejection, persisted state after attacks, client field tampering, multi-organization membership field separation, global-email creation behavior, inactive-context rejection, last-owner protection, and concurrent owner deactivation safety. CI run [37315646821](https://github.com/Muhammetacin/lms-platform/actions/runs/37315646821) passed for commit `bc4eeb0144ea0e2ebe73e25dd78b0f9be652dc06`.

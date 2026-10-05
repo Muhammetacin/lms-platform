@@ -6,7 +6,7 @@ Build a dependable learning management SaaS that helps organizations deliver and
 
 ## Product direction
 
-The platform is intended to grow into a multi-tenant service. Its architecture should keep organizational boundaries explicit, support reliable operations, and make future product capabilities easy to evolve. LMS-007 establishes authentication and user identity. LMS-008 establishes organization-scoped authorization. LMS-009 establishes trusted tenant context. LMS-010 implements application-layer tenant isolation for LMS-012 employee management, with PostgreSQL test execution pending; future tenant-owned resources still require their own scoped implementation and database-backed tests.
+The platform is intended to grow into a multi-tenant service. Its architecture should keep organizational boundaries explicit, support reliable operations, and make future product capabilities easy to evolve. LMS-007 establishes authentication and user identity. LMS-008 establishes organization-scoped authorization. LMS-009 establishes trusted tenant context. LMS-010 establishes application-layer tenant isolation for LMS-012 employee management, verified against PostgreSQL in CI; future tenant-owned resources still require their own scoped implementation and database-backed tests.
 
 ## Principles
 

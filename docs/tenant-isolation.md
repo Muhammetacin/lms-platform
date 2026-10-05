@@ -1,8 +1,8 @@
 # Tenant Isolation
 
-**Status: BLOCKED pending a successful PostgreSQL integration run.** The implementation and CI service configuration are present, but this workspace has no PostgreSQL service or `TEST_DATABASE_URL`; the local integration test was skipped. Do not treat the database boundary as verified until the configured CI suite passes.
+**Status: CODE COMPLETE — external QA/security review required.** Local PostgreSQL execution was unavailable, but the configured PostgreSQL 16 CI suite passed in run [37315646821](https://github.com/Muhammetacin/lms-platform/actions/runs/37315646821) for commit `bc4eeb0144ea0e2ebe73e25dd78b0f9be652dc06`.
 
-This guide records the intended protected tenant boundary: organization employee management backed by `OrganizationMembership`. It is application-layer query scoping with PostgreSQL verification configured but not yet executed for the current changes. PostgreSQL RLS is not enabled, and this design does not claim that application checks are equivalent to RLS.
+This guide records the protected tenant boundary: organization employee management backed by `OrganizationMembership`. It uses application-layer query scoping verified against PostgreSQL in CI. PostgreSQL RLS is not enabled, and this design does not claim that application checks are equivalent to RLS.
 
 ## Data classification
 
@@ -54,7 +54,7 @@ Owner deactivation reads the target, counts active owners, changes membership st
 
 ## PostgreSQL integration tests
 
-CI is configured to provision a PostgreSQL 16 service and set `TEST_DATABASE_URL` to the dedicated `lms_platform_test` database. The test refuses a database with any other name, writes uniquely identified fixture rows, exercises actual production Prisma store queries through the employee handler boundary, queries persisted state, then removes its organizations and users. It is not a mocked store test. This workflow has not run for the current uncommitted changes.
+CI provisions a PostgreSQL 16 service and sets `TEST_DATABASE_URL` to the dedicated `lms_platform_test` database. The test refuses a database with any other name, writes uniquely identified fixture rows, exercises actual production Prisma store queries through the employee handler boundary, queries persisted state, then removes its organizations and users. The suite passed in CI run [37315646821](https://github.com/Muhammetacin/lms-platform/actions/runs/37315646821); it is not a mocked-store result.
 
 Locally, provision an isolated PostgreSQL database named `lms_platform_test`, set `TEST_DATABASE_URL` to that database, apply migrations with `pnpm db:migrate:deploy`, then run `pnpm test:tenant-isolation:db`. Without `TEST_DATABASE_URL`, the suite reports skipped; this is not a passing database verification. CI always configures the service and runs the suite.
 
@@ -64,6 +64,6 @@ Locally, provision an isolated PostgreSQL database named `lms_platform_test`, se
 - Application-layer correctness depends on all tenant-owned access continuing to go through reviewed handlers/stores. The shared Prisma client itself is not tenant-aware and does not automatically scope arbitrary future queries.
 - Organization settings already use `tenant.organizationId` for their Organization lookup/update, but the new PostgreSQL attack suite specifically exercises employee operations.
 - There are no other tenant-owned business models in scope. Each new model/route/action must add tenant-scoped selectors and real PostgreSQL isolation tests; child ownership should be enforced with same-tenant composite foreign keys when its schema supports them.
-- The successful PostgreSQL suite is still required before this ticket can become CODE COMPLETE. After that, independent external QA/security review remains required; automated tests do not mark the ticket DONE.
+- The PostgreSQL suite has passed for the current implementation. Independent external QA/security review remains required; automated tests do not mark the ticket DONE.
 
 See [ADR-010](decisions/ADR-010-tenant-isolation.md), [LMS-009 Tenant Context](tenant-context.md), [LMS-012 Employee Management](employee-management.md), and [LMS-010](../tickets/LMS-010.md).
