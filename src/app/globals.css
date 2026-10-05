@@ -113,6 +113,77 @@ h1 {
   font-size: 12px;
 }
 
+.activation-card h1 {
+  font-size: clamp(32px, 6vw, 46px);
+}
+
+.activation-form {
+  display: grid;
+  gap: 10px;
+  margin: 30px auto 0;
+  text-align: left;
+}
+
+.activation-form label {
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.activation-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid #cad6cd;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.activation-form input:focus-visible,
+.activation-form button:focus-visible {
+  outline: 3px solid rgb(49 118 83 / 25%);
+  outline-offset: 2px;
+}
+
+.activation-hint,
+.activation-error {
+  margin: 4px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.activation-hint {
+  color: var(--muted);
+}
+
+.activation-error {
+  color: #a33232;
+}
+
+.activation-form button {
+  min-height: 48px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.activation-form button:hover:not(:disabled) {
+  background: var(--green-dark);
+}
+
+.activation-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 @media (max-width: 520px) {
   .page-shell {
     padding: 24px 16px;

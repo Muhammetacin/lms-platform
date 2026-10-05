@@ -94,10 +94,7 @@ function deriveScryptKey(password: string, salt: Buffer): Promise<Buffer> {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  if (
-    [...password].length < 12 ||
-    Buffer.byteLength(password, "utf8") > 1024
-  ) {
+  if (!isPasswordValid(password)) {
     throw new Error("Password does not meet the credential policy.");
   }
 
@@ -111,6 +108,11 @@ export async function hashPassword(password: string): Promise<string> {
     salt.toString("base64url"),
     derivedKey.toString("base64url"),
   ].join("$");
+}
+
+/** LMS-007 password policy shared by trusted provisioning and activation. */
+export function isPasswordValid(password: string): boolean {
+  return [...password].length >= 12 && Buffer.byteLength(password, "utf8") <= 1024;
 }
 
 function parsePasswordHash(value: string): { salt: Buffer; key: Buffer } | null {

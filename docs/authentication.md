@@ -15,7 +15,7 @@ Authentication does not select a tenant, trust a client-provided organization ID
 
 The current application has no identity-provider account or provider configuration. LMS-007 uses a small server-only email/password implementation on the existing Next.js App Router, Node.js crypto, and Prisma/PostgreSQL foundation. This avoids a new external service and gives logout immediate server-side revocation. The implementation owns its credential and session handling; the security model and boundaries are recorded in [ADR-004](decisions/ADR-004-authentication.md).
 
-Authentication is exposed through same-origin JSON `POST /api/auth/login` and `POST /api/auth/logout` handlers. A server-only `provisionUserPassword()` helper hashes and inserts an initial credential for a known user ID; it is not exposed as an endpoint and does not create a user. No public registration, password reset, email verification, social login, SSO, or MFA workflow is included. A `User` without a `PasswordCredential` cannot log in; account and initial credential provisioning must be supplied by a separately scoped trusted workflow. No default account or password is created.
+Authentication is exposed through same-origin JSON `POST /api/auth/login` and `POST /api/auth/logout` handlers. A server-only `provisionUserPassword()` helper hashes and inserts an initial credential for a known user ID; it is not exposed as an endpoint and does not create a user. No public registration, password reset, email verification, social login, SSO, or MFA workflow is included. LMS-014 adds a separate employee invitation path for initial activation; it does not alter login or reset an existing credential. A `User` without a `PasswordCredential` cannot log in. No default account or password is created.
 
 ## Credentials
 
@@ -45,6 +45,16 @@ Brute-force login attempts are a known threat. No shared rate-limit service or t
 
 The Prisma migration adds `PasswordCredential` and `Session`, their user foreign keys, a unique credential per user, a unique session digest, and an `expiresAt` index. Existing LMS-002 migrations are unchanged. Apply the new migration through the normal Prisma Migrate workflow; do not use `db push` as a deployment workflow.
 
+## Employee invitation and activation (LMS-014)
+
+LMS-012 creates a `User` and an organization-specific MEMBER `OrganizationMembership`; a new identity has no password credential. LMS-014 invites only an active MEMBER membership in the trusted current organization. The flow does not choose a tenant from the browser, change the global identity, or create a session. After activation, the employee signs in through the existing LMS-007 login route.
+
+An invitation token is 32 cryptographically random bytes encoded as Base64URL. Only its SHA-256 digest is stored in `EmployeeInvitation`. The link carries the raw token in a URL fragment, which browsers do not send in the HTTP request; the activation page removes it from the address bar before calling the API. The row links one user, organization, and membership, expires after 72 hours, and is consumed once. Re-invitation atomically consumes prior unconsumed rows for that membership before storing the replacement. Validation and activation derive the membership only from the token's server-side row and verify that its user and organization match the linked membership.
+
+Activation reuses `hashPassword()` and the exact LMS-007 password policy and scrypt parameters. A serializable PostgreSQL transaction rechecks token expiry/consumption, the active MEMBER membership, and the absence of a credential, then consumes the invitation and inserts the unique `PasswordCredential` together. A failed insert rolls back token consumption. Existing credentials are never overwritten; invitations are refused for users who already have credentials, and activation rechecks that condition.
+
+The repository does not yet contain the LMS-052 email service. A narrow delivery boundary is present, but the production adapter is explicitly unavailable: the admin endpoint returns `503 invitation_delivery_unavailable` and creates no invitation until a real email adapter is connected. No fake sender or token-returning admin response is used. Invitation delivery must be wired through LMS-052. No LMS-058 audit service exists; invitation audit events remain dependent on that shared mechanism.
+
 ## Deliberate exclusions
 
-LMS-007 does not implement self-registration, credential provisioning UI, password reset, email verification, invitations, OAuth/social login, Microsoft/Google SSO, MFA, authorization/RBAC, organization access checks, active tenant context, tenant isolation, or PostgreSQL RLS. LMS-008 now owns the separate authorization layer; LMS-009 owns tenant context, and LMS-010 owns tenant isolation.
+LMS-007 does not implement self-registration, password reset, email verification, OAuth/social login, Microsoft/Google SSO, MFA, authorization/RBAC, organization access checks, active tenant context, tenant isolation, or PostgreSQL RLS. LMS-008 now owns the separate authorization layer; LMS-009 owns tenant context, and LMS-010 owns tenant isolation. LMS-014 owns employee invitation and one-time initial activation; it is not a password reset workflow.

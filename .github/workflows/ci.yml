@@ -79,6 +79,12 @@ jobs:
       - name: Employee profile tests
         run: pnpm test:employee-profile
 
+      - name: Employee invitation tests
+        run: pnpm test:employee-invitation
+
+      - name: PostgreSQL employee invitation tests
+        run: pnpm test:employee-invitation:db
+
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
 

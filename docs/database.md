@@ -1,6 +1,6 @@
 # Database conventions
 
-The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. LMS-008 adds authorization and LMS-009 adds trusted tenant context. LMS-010 establishes application-layer tenant scoping for LMS-012 employee operations, verified by the passing PostgreSQL integration suite in CI. It does not use RLS or automatically scope arbitrary Prisma queries.
+The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. LMS-014 adds the tenant-scoped `EmployeeInvitation` bootstrap-credential model. LMS-008 adds authorization and LMS-009 adds trusted tenant context. LMS-010 establishes application-layer tenant scoping for LMS-012 employee operations, verified by PostgreSQL integration tests. It does not use RLS or automatically scope arbitrary Prisma queries.
 
 ## Local setup and configuration
 
@@ -105,6 +105,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - Seed data is for local development and isolated tests only. Use synthetic data, deterministic fixtures, and idempotent upserts where repeat runs are useful. Never include customer data, real credentials, production secrets, or hardcoded production accounts. Production reference data, if ever needed, requires a separately reviewed deployment decision.
 - Database-related tests should use an isolated disposable database when integration is needed and apply committed migrations. Test relevant FK behavior, unique constraints, relationships, transaction rollback/atomicity, and database error mapping. Keep pure validation/configuration checks runnable without PostgreSQL. Never point tests at production data.
 - CI runs PostgreSQL tenant-boundary tests for LMS-010 employee operations. Add equivalent real-database tests whenever future tenant-owned resources are introduced.
+- LMS-014 adds PostgreSQL checks for invitation scope, digest-only tokens, unique hashes, expiry/consumption, concurrent activation, inactive memberships, existing credentials, and rollback. Run them with `pnpm test:employee-invitation:db` against the dedicated test database.
 
 ## Future tenant context and isolation
 
@@ -120,4 +121,4 @@ Tenant-owned entities must have an explicit organization/tenant relationship whe
 | `pnpm db:health` | Run the server-side connectivity check |
 | `pnpm test:db-config` | Test database URL validation |
 
-Local setup and safe environment configuration are in the repository README. Prisma 7 reads migration configuration from `prisma.config.ts`; schema validation and client generation do not require a running database.
+LMS-014 migration `20261005140000_employee_invitations` adds cascading references from invitation rows to the user, organization, and membership, a unique token digest, and indexes for tenant/membership, user, and expiry lookups. It never stores a usable token or password data. Local setup and safe environment configuration are in the repository README. Prisma 7 reads migration configuration from `prisma.config.ts`; schema validation and client generation do not require a running database.
