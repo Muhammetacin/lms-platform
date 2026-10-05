@@ -13,6 +13,7 @@ This guide records the protected tenant boundary: organization employee manageme
 | `Session` | Global authentication data | Belongs to a `User`; never scoped to an organization. |
 | `Organization` | Tenant root | Organization settings are read or changed only for the trusted context's organization. |
 | `OrganizationMembership` | Tenant-owned association | Each row belongs to exactly one `organizationId`. Its `organizationId`, `role`, `employeeName`, `jobTitle`, `department`, `phone`, `employeeNumber`, and `active` are organization-specific. |
+| `EmployeeInvitation` | Tenant-scoped bootstrap credential | Stores a one-way token digest and explicit user, organization, and membership references. Public activation looks up a row by the bearer token digest, then checks all linked identity and tenant keys against the membership. |
 
 Employee management and profiles use the existing membership relation. They do not create a duplicate employee or user identity model. Email remains on the global `User`; employee display name, job title, department, phone, employee number, role, and active state remain on the membership for that organization. Employee-number uniqueness is enforced by `(organizationId, employeeNumber)`, so equal values in different organizations are valid.
 
@@ -21,6 +22,8 @@ Employee management and profiles use the existing membership relation. They do n
 The employee routes call `requireTenantContext()` without a client candidate. LMS-007 supplies the authenticated identity. LMS-009 resolves that identity's active membership from the server-side store; if the identity has multiple active memberships, the current product behavior selects its deterministic default. A client-supplied organization ID, role, or membership state does not become the effective tenant.
 
 Employee handlers then check LMS-008 permissions against that tenant ID and pass the same trusted ID to the employee store. No organization switch feature is introduced. Body fields are allowlisted: create accepts only email and name, and update accepts only name. Detail/deactivate IDs identify a membership, never its organization.
+
+The LMS-014 invitation endpoint likewise uses the authenticated tenant context and selects a target with both membership ID and organization ID. Its request body is empty; forged `organizationId` and `tenantId` fields are rejected. Public activation accepts only the random invitation token (plus password fields at activation); it derives organization and membership from the invitation row and verifies that the referenced user, organization, and membership agree. Activation never takes an employee ID or tenant choice from the browser. Invalid and cross-tenant employee IDs return indistinguishable 404 responses.
 
 ## Enforced employee operations
 

@@ -29,6 +29,16 @@ Member creation always defaults to MEMBER. Role mutation, email mutation, reacti
 
 OWNER and ADMIN can manage ordinary memberships; MEMBER can read. Only OWNER has the LMS-008 ownership capability. The final active OWNER cannot be deactivated; the database mutation and owner count run in a serializable transaction. Deactivating one's own membership is permitted only when the caller has management permission and another active OWNER remains; the current session identity remains intact, but that organization will no longer resolve as an active tenant for that user.
 
+## Employee invitation and account activation (LMS-014)
+
+`POST /api/organizations/employees/:employeeId/invitation` uses `MANAGE_MEMBERS` (OWNER and ADMIN) after deriving the trusted tenant context. The store locates the target with both membership ID and organization ID, and accepts only an active MEMBER with no existing `PasswordCredential`. Cross-tenant IDs share the same 404 response as missing IDs; ineligible employees receive a generic 409. Tenant and role fields are not accepted in the request body.
+
+The `EmployeeInvitation` row points to exactly one global user, organization, and membership. It stores only the SHA-256 digest of a random 256-bit Base64URL token, expires after 72 hours, and is consumed once. The raw token travels in the activation URL fragment so it is not sent to the web server in the page request. The page removes it from the address bar before making an API request. Creating a replacement invitation and consuming prior unconsumed rows run in one serializable transaction. The employee's active state is checked on validation and again during the activation transaction, so deactivation makes outstanding invitations unusable.
+
+`POST /api/auth/invitations/validate` and `POST /api/auth/invitations/activate` are separate same-origin JSON endpoints and do not require a logged-in session. The client cannot choose a tenant. Activation inserts a `PasswordCredential` using LMS-007's existing scrypt helper and policy while consuming the invitation in one serializable transaction. Existing credentials are never replaced; LMS-014 does not implement password reset or session creation. Successful activation is followed by ordinary LMS-007 login.
+
+LMS-052 email delivery is not yet implemented in this repository. A narrow delivery interface exists, and the production adapter reports unavailable; invitation creation returns a generic 503 without storing a token until an actual provider is connected. The raw token is handed only to that delivery interface and never returned by the admin API. There is no parallel mail framework or fake sender. LMS-058 audit logging is also not yet available; invitation events depend on its shared service.
+
 ## Validation and failure behavior
 
 Email follows LMS-007: trim surrounding whitespace, require the same basic email shape and 254-byte bound, preserve casing, and rely on exact database uniqueness. Names are trimmed, 2–120 Unicode code points, and reject control characters and unpaired surrogates. Request objects reject unknown keys, including organization ID and role. IDs are checked as UUIDs before database access.
