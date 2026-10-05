@@ -18,7 +18,8 @@
     "test:auth": "node --experimental-strip-types --test tests/authentication.test.ts",
     "test:authorization": "node --experimental-strip-types --test tests/authorization.test.ts",
     "test:tenant-context": "node --experimental-strip-types --test tests/tenant-context.test.ts",
-    "test:organization-settings": "node --experimental-strip-types --test tests/organization-settings.test.ts"
+    "test:organization-settings": "node --experimental-strip-types --test tests/organization-settings.test.ts",
+    "test:employee-management": "node --experimental-strip-types --test tests/employee-management.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.3.0",

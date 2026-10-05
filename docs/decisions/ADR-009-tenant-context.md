@@ -22,6 +22,10 @@ LMS-007 supplies a server-validated authenticated identity. LMS-008 verifies org
 
 The Prisma schema and migration history remain unchanged. Multi-organization users have a deterministic default and can resolve any organization for which the server confirms membership. A caller can request a different membership, but a forged ID cannot be elevated into trusted context. Data reads and writes remain unscoped by this ticket; no RLS or tenant-isolation claim is made.
 
+## LMS-012 membership lifecycle extension (2026-10-05)
+
+Employee Management adds organization-scoped `OrganizationMembership.active`. The shared membership store used here and by LMS-008 filters inactive rows in both explicit and default context resolution. Deactivation consequently removes that organization membership's authorization and tenant context without deleting the global user or affecting other organization memberships. This lifecycle extension does not add automatic scoping to other domain data, RLS, or an LMS-010 completion claim.
+
 ## Alternatives considered
 
 - **Trust an organization ID from a browser cookie, URL, header, or role claim:** rejected because the input does not establish membership and can be forged.

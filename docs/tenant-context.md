@@ -10,7 +10,7 @@ LMS-009 establishes a trusted server-side answer to the question: which organiza
 - `requireTenantContext(organizationCandidate?)` returns a trusted context or raises `TenantContextError`, including `unauthenticated` when there is no signed-in user. Use this in server-side operations that require an active organization.
 - `resolveTenantContext(user, organizationCandidate, store)` is the database-independent resolver used by the server API and focused behavioral tests. Application code should use the server-only API, not construct a store or identity itself.
 
-The returned role comes from the server-side `OrganizationMembership` row. A role attached to a request or identity object is ignored. The membership store is shared with LMS-008 authorization; this layer does not create another membership model or policy.
+The returned role comes from the server-side active `OrganizationMembership` row. A role attached to a request or identity object is ignored. The membership store is shared with LMS-008 authorization; this layer does not create another membership model or policy. Since LMS-012, inactive memberships are excluded from both explicit lookup and default selection, so organization-specific employee deactivation also revokes that membership's tenant context. It does not invalidate the global authentication session or affect the user's other active organizations.
 
 ## Selecting the active organization
 

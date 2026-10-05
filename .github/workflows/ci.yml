@@ -49,6 +49,9 @@ jobs:
       - name: Organization settings tests
         run: pnpm test:organization-settings
 
+      - name: Employee management tests
+        run: pnpm test:employee-management
+
       - name: Lint
         run: pnpm lint
 

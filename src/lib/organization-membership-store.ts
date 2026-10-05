@@ -4,7 +4,7 @@ export const organizationMembershipStore = {
   async findOrganizationRole(userId: string, organizationId: string) {
     const { db } = await import("@/lib/db");
     const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId } },
+      where: { userId_organizationId: { userId, organizationId }, active: true },
       select: { role: true },
     });
     return membership?.role ?? null;
@@ -13,7 +13,7 @@ export const organizationMembershipStore = {
   async findDefaultOrganizationMembership(userId: string) {
     const { db } = await import("@/lib/db");
     return db.organizationMembership.findFirst({
-      where: { userId },
+      where: { userId, active: true },
       orderBy: [{ createdAt: "asc" }, { organizationId: "asc" }],
       select: { organizationId: true, role: true },
     });
