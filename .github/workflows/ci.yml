@@ -50,6 +50,9 @@ jobs:
       - name: Validate Prisma schema
         run: pnpm db:validate
 
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
       - name: Apply migrations to PostgreSQL test database
         run: pnpm db:migrate:deploy
         env:
