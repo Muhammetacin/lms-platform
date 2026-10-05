@@ -76,6 +76,9 @@ jobs:
       - name: Employee management tests
         run: pnpm test:employee-management
 
+      - name: Employee profile tests
+        run: pnpm test:employee-profile
+
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
 

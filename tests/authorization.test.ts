@@ -178,6 +178,8 @@ test("permission checks apply the central role mapping and can() fails closed", 
   store.setRole(user.id, organizationA, "MEMBER");
 
   assert.equal(await can(user, organizationA, "VIEW_ORGANIZATION", store), true);
+  assert.equal(await can(user, organizationA, "VIEW_EMPLOYEE_PROFILES", store), false);
+  assert.equal(await can(user, organizationA, "MANAGE_OWN_PROFILE", store), true);
   assert.equal(await can(user, organizationA, "MANAGE_MEMBERS", store), false);
   await assert.rejects(
     requireOrganizationPermission(user, organizationA, "MANAGE_MEMBERS", store),
@@ -185,6 +187,7 @@ test("permission checks apply the central role mapping and can() fails closed", 
   );
 
   store.setRole(user.id, organizationA, "ADMIN");
+  assert.equal(await can(user, organizationA, "VIEW_EMPLOYEE_PROFILES", store), true);
   assert.equal(await can(user, organizationA, "MANAGE_MEMBERS", store), true);
   assert.equal(await can(user, organizationA, "MANAGE_ORGANIZATION_OWNERSHIP", store), false);
   store.setRole(user.id, organizationA, "OWNER");

@@ -12,9 +12,9 @@ This guide records the protected tenant boundary: organization employee manageme
 | `PasswordCredential` | Global authentication data | Belongs to a `User`; never scoped to an organization. |
 | `Session` | Global authentication data | Belongs to a `User`; never scoped to an organization. |
 | `Organization` | Tenant root | Organization settings are read or changed only for the trusted context's organization. |
-| `OrganizationMembership` | Tenant-owned association | Each row belongs to exactly one `organizationId`. Its `organizationId`, `role`, `employeeName`, and `active` are organization-specific. |
+| `OrganizationMembership` | Tenant-owned association | Each row belongs to exactly one `organizationId`. Its `organizationId`, `role`, `employeeName`, `jobTitle`, `department`, `phone`, `employeeNumber`, and `active` are organization-specific. |
 
-Employee management uses the existing membership relation. It does not create a duplicate employee or user identity model. Email remains on the global `User`; employee display name, role, and active state remain on the membership for that organization.
+Employee management and profiles use the existing membership relation. They do not create a duplicate employee or user identity model. Email remains on the global `User`; employee display name, job title, department, phone, employee number, role, and active state remain on the membership for that organization. Employee-number uniqueness is enforced by `(organizationId, employeeNumber)`, so equal values in different organizations are valid.
 
 ## Trusted tenant derivation
 
@@ -29,6 +29,8 @@ The production Prisma store applies the tenant predicate in each resource operat
 - List: `OrganizationMembership.findMany({ where: { organizationId } })`.
 - Detail: `findFirst({ where: { id: employeeId, organizationId } })`.
 - Name update: `updateMany({ where: { id: employeeId, organizationId } })`, followed by a read with the same predicate.
+- Profile read: select the profile by both employee ID and trusted organization ID. MEMBER requests also compare the membership user ID with the authenticated tenant user ID and return the same 404 for another or missing profile.
+- Profile update: `updateMany({ where: { id: employeeId, organizationId } })`, followed by a read with the same predicate. Update data is validated and explicitly mapped; MEMBER can change only their own name, job title, department, or phone. OWNER/ADMIN can also manage employee number.
 - Deactivation: target read, active-owner count, update, and result read all run in a serializable transaction and are constrained to that organization. The owner count includes the same `organizationId`.
 - Create: the global exact-email upsert only obtains or creates the global identity. Membership creation is an atomic insert with the trusted `organizationId`, default MEMBER role, and only the caller's employee name. It does not update an existing user's global identity or any other organization's membership.
 
@@ -36,7 +38,7 @@ Foreign membership IDs return the same `employee_not_found` 404 as unknown IDs. 
 
 ## Database enforcement and RLS assessment
 
-Database-backed integration tests instantiate the production Prisma store using the PostgreSQL driver adapter and call the employee handlers against a dedicated `lms_platform_test` database. The CI PostgreSQL 16 service applies committed migrations before tests. The tests inspect persisted membership rows after rejected foreign reads, updates, deactivations, forged input, employee creation for an email already present in another organization, and concurrent owner deactivation.
+Database-backed integration tests instantiate the production Prisma store using the PostgreSQL driver adapter and call the employee and profile handlers against a dedicated `lms_platform_test` database. The CI PostgreSQL 16 service applies committed migrations before tests. The tests inspect persisted membership rows after rejected foreign reads, updates, deactivations, forged input, employee creation for an email already present in another organization, concurrent owner deactivation, profile self-service restrictions, and organization-local employee-number uniqueness.
 
 RLS is **not used**. `src/lib/db.ts` owns one Prisma client using `PrismaPg`; the adapter obtains pooled PostgreSQL connections. Interactive Prisma transactions pin a connection for a transaction, but protected calls currently do not establish transaction-local tenant settings, and list/detail operations can run outside a transaction. No runtime database-role grants/ownership attributes are defined or verified here, nor is there a separate policy-safe membership bootstrap path. A session setting on a pooled connection could leak between requests if it were not strictly transaction-local. RLS policies added without all of those guarantees could be bypassed or prevent tenant-context lookup. No RLS policy or equivalent database enforcement claim is made.
 
