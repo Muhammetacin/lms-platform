@@ -104,12 +104,13 @@ test("PostgreSQL enforces the employee tenant boundary through production handle
     const ownerBMembership = memberIn(users.ownerB.id, orgB);
     const multiA = memberIn(users.multi.id, orgA);
     const multiB = memberIn(users.multi.id, orgB);
+    const inactiveA = memberIn(users.inactive.id, orgA);
     const handlersA = makeHandlers(asUser(users.ownerA));
     const handlersB = makeHandlers(asUser(users.ownerB));
     const memberHandlersB = makeHandlers(asUser(users.memberB));
 
     assert.deepEqual((await (await handlersA.GET()).json() as { employees: { id: string }[] }).employees.map(({ id }) => id).sort(),
-      [memberIn(users.ownerA.id, orgA).id, memberIn(users.ownerASecond.id, orgA).id, multiA.id].sort());
+      [memberIn(users.ownerA.id, orgA).id, memberIn(users.ownerASecond.id, orgA).id, multiA.id, inactiveA.id].sort());
     assert.deepEqual((await (await handlersB.GET()).json() as { employees: { id: string }[] }).employees.map(({ id }) => id).sort(),
       [ownerBMembership.id, memberIn(users.memberB.id, orgB).id, multiB.id].sort());
     const foreignRead = await handlersA.GET_ONE(ownerBMembership.id);
