@@ -46,6 +46,9 @@ jobs:
       - name: Tenant context tests
         run: pnpm test:tenant-context
 
+      - name: Organization settings tests
+        run: pnpm test:organization-settings
+
       - name: Lint
         run: pnpm lint
 
