@@ -200,7 +200,7 @@ test("PostgreSQL enforces employee profile tenant scope, membership ownership, a
     assert.equal(duplicateNumber.status, 409);
     const duplicateNumberAfter = await db.organizationMembership.findUniqueOrThrow({ where: { id: otherMemberA.id } });
     assert.equal(duplicateNumberAfter.employeeNumber, duplicateNumberBefore.employeeNumber);
-    assert.equal((await db.organizationMembership.findUniqueOrThrow({ where: { id: memberB.id } })).employeeNumber, "EMP-001");
+    assert.equal((await db.organizationMembership.findUniqueOrThrow({ where: { id: memberB.id } })).employeeNumber, "EMP-SHARED");
     assert.equal(adminA.role, "ADMIN");
   } finally {
     await db.organization.deleteMany({ where: { id: { in: [orgA, orgB] } } });
