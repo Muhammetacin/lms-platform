@@ -22,6 +22,8 @@
     "test:organization-settings": "node --experimental-strip-types --test tests/organization-settings.test.ts",
     "test:employee-management": "node --experimental-strip-types --test tests/employee-management.test.ts",
     "test:employee-profile": "node --experimental-strip-types --test tests/employee-profile.test.ts",
+    "test:employee-import": "node --experimental-strip-types --test tests/employee-import.test.ts",
+    "test:employee-import:db": "node --conditions=react-server --experimental-strip-types --test tests/employee-import-postgres.test.ts",
     "test:employee-invitation": "node --experimental-strip-types --test tests/employee-invitation.test.ts",
     "test:team": "node --experimental-strip-types --test tests/team.test.ts",
     "test:team:db": "node --conditions=react-server --experimental-strip-types --test tests/team-postgres.test.ts",
@@ -33,6 +35,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "7.3.0",
     "@prisma/client": "7.3.0",
+    "csv-parse": "7.0.3",
     "next": "16.3.6",
     "pg": "^8.23.1",
     "react": "19.3.0",

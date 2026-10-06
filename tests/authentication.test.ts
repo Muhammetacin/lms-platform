@@ -141,7 +141,7 @@ test("rejects malformed and oversized request bodies safely", async () => {
   assert.equal(await readJsonBody(oversized), null);
 });
 
-test("requires same-origin JSON requests for cookie-authenticated mutations", () => {
+test("requires same-origin and the endpoint's expected media type for cookie-authenticated mutations", () => {
   const previousUrl = process.env.NEXT_PUBLIC_APP_URL;
   process.env.NEXT_PUBLIC_APP_URL = "https://lms.example/";
   try {
@@ -169,10 +169,21 @@ test("requires same-origin JSON requests for cookie-authenticated mutations", ()
       },
       body: "x=1",
     });
+    const multipartPost = new Request("https://lms.example/api/organizations/employees/import", {
+      method: "POST",
+      headers: {
+        origin: "https://lms.example",
+        "content-type": "multipart/form-data; boundary=employee-import",
+      },
+      body: "--employee-import--\r\n",
+    });
 
     assert.equal(isTrustedAuthRequest(accepted), true);
     assert.equal(isTrustedAuthRequest(crossOrigin), false);
     assert.equal(isTrustedAuthRequest(formPost), false);
+    assert.equal(isTrustedAuthRequest(multipartPost), false);
+    assert.equal(isTrustedAuthRequest(multipartPost, "multipart/form-data"), true);
+    assert.equal(isTrustedAuthRequest(accepted, "multipart/form-data"), false);
   } finally {
     if (previousUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
     else process.env.NEXT_PUBLIC_APP_URL = previousUrl;

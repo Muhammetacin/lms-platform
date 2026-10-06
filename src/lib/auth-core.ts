@@ -209,11 +209,14 @@ export async function invalidateSessionToken(
   await store.deleteSession(hashSessionToken(token));
 }
 
-export function isTrustedAuthRequest(request: Request): boolean {
+export function isTrustedAuthRequest(
+  request: Request,
+  expectedContentType = "application/json",
+): boolean {
   const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
   const origin = request.headers.get("origin");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (contentType !== "application/json" || !origin || !appUrl) return false;
+  if (contentType !== expectedContentType.toLowerCase() || !origin || !appUrl) return false;
 
   try {
     return origin === new URL(appUrl).origin;

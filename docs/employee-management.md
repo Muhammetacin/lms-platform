@@ -68,6 +68,10 @@ The shared LMS-008/LMS-009 membership lookup now requires `active: true`. Deacti
 
 `tests/employee-management.test.ts` exercises handler behavior with an injected store. `tests/tenant-isolation-postgres.test.ts` separately runs the production Prisma employee store and handlers against PostgreSQL in CI, checks tenant A/B reads and mutations, and inspects persisted state after the attempts. Run it locally with the dedicated `TEST_DATABASE_URL` described in [Tenant Isolation](tenant-isolation.md).
 
+## Employee CSV import (LMS-017)
+
+OWNER and ADMIN can create up to 500 employees from one CSV through `POST /api/organizations/employees/import`. The import reuses existing employee identity and profile rules, creates only `User` plus organization-scoped `OrganizationMembership`, and sets every new membership to MEMBER and active. It is create-only, validates the whole batch, and writes atomically in a serializable PostgreSQL transaction. The CSV is request-scoped and is not retained. See [Employee CSV Import](employee-import.md) for the exact headers, limits, error codes, and tenant/security behavior.
+
 ## Out of scope
 
 Invitation emails/tokens and password setup (LMS-014), role changes or ownership transfer, reactivation, profile pictures, additional HR fields, employee dashboard, RLS, and automatic tenant scoping for future resources.
