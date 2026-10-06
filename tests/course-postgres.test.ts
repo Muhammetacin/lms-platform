@@ -195,8 +195,9 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     const missingRead = await ownerA.GET_ONE(crypto.randomUUID());
     const malformedRead = await ownerA.GET_ONE("not-a-uuid");
     assert.equal(foreignRead.status, 404);
-    assert.deepEqual(await foreignRead.json(), await missingRead.json());
-    assert.deepEqual(await foreignRead.json(), await malformedRead.json());
+    const foreignReadBody = await foreignRead.json();
+    assert.deepEqual(foreignReadBody, await missingRead.json());
+    assert.deepEqual(foreignReadBody, await malformedRead.json());
 
     const updatedResponse = await adminA.PATCH(request("PATCH", {
       title: "  Updated Safety Training  ",
