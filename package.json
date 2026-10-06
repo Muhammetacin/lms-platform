@@ -23,6 +23,8 @@
     "test:employee-management": "node --experimental-strip-types --test tests/employee-management.test.ts",
     "test:employee-profile": "node --experimental-strip-types --test tests/employee-profile.test.ts",
     "test:employee-invitation": "node --experimental-strip-types --test tests/employee-invitation.test.ts",
+    "test:team": "node --experimental-strip-types --test tests/team.test.ts",
+    "test:team:db": "node --conditions=react-server --experimental-strip-types --test tests/team-postgres.test.ts",
     "test:employee-invitation:db": "node --conditions=react-server --experimental-strip-types --test tests/employee-invitation-postgres.test.ts",
     "test:tenant-isolation:db": "node --conditions=react-server --experimental-strip-types --test tests/tenant-isolation-postgres.test.ts tests/employee-profile-postgres.test.ts"
   },

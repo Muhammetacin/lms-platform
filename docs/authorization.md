@@ -54,7 +54,7 @@ Authorization fails closed. Missing identity produces `AuthorizationError` code 
 
 Route Handlers should map the error's stable `status` and `code` to a generic response. Server Actions and business operations should let the `require*` check stop the operation. Place mandatory authorization close to the protected data read or mutation. UI state, hidden or disabled controls, a role supplied by the browser, and a previous `can()` result are not security enforcement.
 
-There are no organization-scoped product routes or mutations in the current application to protect. The existing login and logout routes remain authentication endpoints; they do not access organization data. Future protected operations must call the centralized server-side checks themselves.
+Employee operations and the LMS-015 Team API call the centralized server-side checks for their protected operations. Team reads use `VIEW_ORGANIZATION`; Team create, update, and delete use the existing `MANAGE_TEAMS` capability, which requires ADMIN or OWNER. Authentication-only routes such as login and logout do not access organization data. Future protected operations must call the centralized server-side checks themselves.
 
 ## Responsibility boundaries
 
