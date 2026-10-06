@@ -85,11 +85,17 @@ jobs:
       - name: Team tests
         run: pnpm test:team
 
+      - name: Team membership tests
+        run: pnpm test:team-membership
+
       - name: PostgreSQL employee invitation tests
         run: pnpm test:employee-invitation:db
 
       - name: PostgreSQL team tests
         run: pnpm test:team:db
+
+      - name: PostgreSQL team membership tests
+        run: pnpm test:team-membership:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
