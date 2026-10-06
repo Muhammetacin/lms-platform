@@ -29,6 +29,7 @@
     "test:team:db": "node --conditions=react-server --experimental-strip-types --test tests/team-postgres.test.ts",
     "test:team-membership": "node --experimental-strip-types --test tests/team-membership.test.ts",
     "test:team-membership:db": "node --conditions=react-server --experimental-strip-types --test tests/team-membership-postgres.test.ts",
+    "test:course-model:db": "node --conditions=react-server --experimental-strip-types --test tests/course-model-postgres.test.ts",
     "test:employee-invitation:db": "node --conditions=react-server --experimental-strip-types --test tests/employee-invitation-postgres.test.ts",
     "test:tenant-isolation:db": "node --conditions=react-server --experimental-strip-types --test tests/tenant-isolation-postgres.test.ts tests/employee-profile-postgres.test.ts"
   },

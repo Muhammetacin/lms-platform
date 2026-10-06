@@ -2,7 +2,7 @@
 
 **Status: CODE COMPLETE — independent QA/security review required.** The earlier employee isolation implementation passed in CI run [37315646821](https://github.com/Muhammetacin/lms-platform/actions/runs/37315646821) for commit `bc4eeb0144ea0e2ebe73e25dd78b0f9be652dc06`. LMS-015 Team PostgreSQL tests, related regressions, lint, typecheck, and build passed in CI run [31](https://github.com/Muhammetacin/lms-platform/actions/runs/37497930810) for PR #3 head `8df874ebcefb8fe5334fb7f308141accfb48adac`.
 
-This guide records protected tenant boundaries for organization employee management, LMS-015 Teams, and LMS-016 Team membership. Stores use application-layer query scoping; Team membership also has PostgreSQL composite foreign keys that enforce same-tenant parent relationships. PostgreSQL RLS is not enabled, and application checks are not equivalent to RLS.
+This guide records protected tenant boundaries for organization employee management, LMS-015 Teams, LMS-016 Team membership, and the LMS-018 Course model. Stores use application-layer query scoping; Team membership has PostgreSQL composite foreign keys for same-tenant parent relationships, and Course prepares a composite candidate key for future tenant-owned children. PostgreSQL RLS is not enabled, and application checks are not equivalent to RLS.
 
 ## Data classification
 
@@ -16,6 +16,9 @@ This guide records protected tenant boundaries for organization employee managem
 | `EmployeeInvitation` | Tenant-scoped bootstrap credential | Stores a one-way token digest and explicit user, organization, and membership references. Public activation looks up a row by the bearer token digest, then checks all linked identity and tenant keys against the membership. |
 | `Team` | Tenant-owned group | Belongs to exactly one organization. The database enforces unique `(organizationId, name)`; every API/store operation scopes by the trusted organization ID. |
 | `TeamMembership` | Tenant-owned relationship | Links one Team to one `OrganizationMembership`; the composite foreign keys require the Team, employee membership, and junction row to share `organizationId`. |
+| `Course` | Tenant-owned training content container | Belongs to exactly one organization through a cascading FK. The candidate key `(id, organizationId)` prepares database-level same-tenant child references; LMS-019 must add application query scoping. |
+
+LMS-018 creates no Course API or store. Future Course reads and writes must use the trusted tenant's `organizationId`. In LMS-019, list queries must filter on that organization, and detail or mutation queries must require both the Course ID and trusted organization ID. The composite Course candidate key allows future child relations to enforce that `Module.organizationId` equals its Course's organization in PostgreSQL.
 
 Employee management and profiles use the existing membership relation. They do not create a duplicate employee or user identity model. Email remains on the global `User`; employee display name, job title, department, phone, employee number, role, and active state remain on the membership for that organization. Employee-number uniqueness is enforced by `(organizationId, employeeNumber)`, so equal values in different organizations are valid.
 
@@ -62,6 +65,8 @@ Database-backed integration tests instantiate the production Prisma stores using
 
 RLS is **not used**. `src/lib/db.ts` owns one Prisma client using `PrismaPg`; the adapter obtains pooled PostgreSQL connections. Interactive Prisma transactions pin a connection for a transaction, but protected calls currently do not establish transaction-local tenant settings, and list/detail operations can run outside a transaction. No runtime database-role grants/ownership attributes are defined or verified here, nor is there a separate policy-safe membership bootstrap path. A session setting on a pooled connection could leak between requests if it were not strictly transaction-local. RLS policies added without all of those guarantees could be bypassed or prevent tenant-context lookup. No RLS policy or equivalent database enforcement claim is made.
 
+The Course PostgreSQL integration test verifies the required Organization FK, duplicate-title allowance, default and explicit status values, the composite `(id, organizationId)` candidate key, separated organization-scoped results, and Organization delete cascade. The candidate-key test creates a temporary test relation with a composite FK and confirms PostgreSQL rejects a Course A / Organization B pairing.
+
 The current application role has the schema privileges needed by CI migrations and is not evidence of production least-privilege/RLS behavior. Future RLS work requires a dedicated migration role and non-owner runtime role without superuser or `BYPASSRLS`, a reviewed bootstrap policy/function, transaction-local tenant context set and consumed on the same connection, complete transaction coverage for every tenant query, and tests that prove rollback/pool reuse cannot retain context.
 
 ## Multi-organization identities and inactive memberships
@@ -86,7 +91,8 @@ Locally, provision an isolated PostgreSQL database named `lms_platform_test`, se
 - Application-layer correctness depends on all tenant-owned access continuing to go through reviewed handlers/stores. The shared Prisma client itself is not tenant-aware and does not automatically scope arbitrary future queries.
 - Organization settings already use `tenant.organizationId` for their Organization lookup/update, but the new PostgreSQL attack suite specifically exercises employee operations.
 - LMS-016 enforces Team/employee tenant consistency with composite FKs as well as tenant-scoped queries. Deactivation remains owned by LMS-012: it preserves TeamMembership history, while operational Team member reads hide inactive employees. Hard deletion of a Team or OrganizationMembership cascades to TeamMembership rows.
+- LMS-018 enforces Course ownership with a required Organization FK and cascade, and provides `(id, organizationId)` for future composite child FKs. The Course FK alone is referential integrity, not query isolation; LMS-019 owns trusted-tenant scoping for Course CRUD.
 - TeamMembership has no Team role or permissions. Its add/remove authorization reuses `MANAGE_TEAMS`, reads use `VIEW_ORGANIZATION`, and mutation audit events depend on LMS-058; no parallel audit system is added.
 - Independent external QA/security review remains required; automated tests do not mark the ticket DONE.
 
-See [ADR-010](decisions/ADR-010-tenant-isolation.md), [LMS-009 Tenant Context](tenant-context.md), [LMS-012 Employee Management](employee-management.md), [LMS-017 Employee CSV Import](employee-import.md), and [LMS-010](../tickets/LMS-010.md).
+See [ADR-010](decisions/ADR-010-tenant-isolation.md), [LMS-009 Tenant Context](tenant-context.md), [LMS-012 Employee Management](employee-management.md), [LMS-017 Employee CSV Import](employee-import.md), [Courses](courses.md), and [LMS-010](../tickets/LMS-010.md).

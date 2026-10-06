@@ -103,6 +103,9 @@ jobs:
       - name: PostgreSQL team membership tests
         run: pnpm test:team-membership:db
 
+      - name: PostgreSQL course model tests
+        run: pnpm test:course-model:db
+
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
 
