@@ -78,21 +78,26 @@ export function normalizeEmployeeName(value: unknown): string | null {
   ) ? name : null;
 }
 
+export function normalizeEmployeeEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const email = value.trim();
+  return Buffer.byteLength(email, "utf8") <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ? email
+    : null;
+}
+
 export function parseEmployeeCreate(value: unknown): { email: string; name: string } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const input = value as Record<string, unknown>;
   const name = normalizeEmployeeName(input.name);
   if (
     Object.keys(input).some((key) => key !== "email" && key !== "name") ||
-    typeof input.email !== "string" ||
     name === null
   ) return null;
 
-  const email = input.email.trim();
-  if (
-    Buffer.byteLength(email, "utf8") > 254 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  ) return null;
+  const email = normalizeEmployeeEmail(input.email);
+  if (email === null) return null;
 
   return { email, name };
 }

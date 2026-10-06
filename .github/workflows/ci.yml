@@ -79,6 +79,9 @@ jobs:
       - name: Employee profile tests
         run: pnpm test:employee-profile
 
+      - name: Employee import tests
+        run: pnpm test:employee-import
+
       - name: Employee invitation tests
         run: pnpm test:employee-invitation
 
@@ -90,6 +93,9 @@ jobs:
 
       - name: PostgreSQL employee invitation tests
         run: pnpm test:employee-invitation:db
+
+      - name: PostgreSQL employee import tests
+        run: pnpm test:employee-import:db
 
       - name: PostgreSQL team tests
         run: pnpm test:team:db

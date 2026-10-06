@@ -1,6 +1,6 @@
 # Database conventions
 
-The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. LMS-014 adds the tenant-scoped `EmployeeInvitation` bootstrap-credential model, LMS-015 adds `Team`, and LMS-016 adds the `TeamMembership` junction model. LMS-008 adds authorization and LMS-009 adds trusted tenant context. Tenant-owned operations are application-scoped; LMS-016 additionally uses same-tenant composite foreign keys for Team membership. This does not use RLS or automatically scope arbitrary Prisma queries.
+The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. LMS-014 adds the tenant-scoped `EmployeeInvitation` bootstrap-credential model, LMS-015 adds `Team`, and LMS-016 adds the `TeamMembership` junction model. LMS-017 adds CSV employee creation on the existing `User` and `OrganizationMembership` records and requires no schema change or stored import artifact. LMS-008 adds authorization and LMS-009 adds trusted tenant context. Tenant-owned operations are application-scoped; LMS-016 additionally uses same-tenant composite foreign keys for Team membership. This does not use RLS or automatically scope arbitrary Prisma queries.
 
 ## Local setup and configuration
 
@@ -53,13 +53,15 @@ LMS-012 adds nullable `employeeName` and `active` (default `true`) to this exist
 
 LMS-015 adds `Team`, an organization-owned grouping with a required name, optional description, and standard timestamps. The unique index `(organizationId, name)` permits equal names in different organizations and rejects duplicates within one organization at the database boundary. PostgreSQL's existing default deterministic text collation is retained: equality is case-sensitive, so `Sales` and `sales` are distinct names. Team list/detail/update/delete queries are scoped in SQL by the trusted organization ID.
 
+LMS-017 does not add a model, field, index, or migration. The import operation reuses the established global unique `User.email`, membership unique `(userId, organizationId)`, and organization-local unique `(organizationId, employeeNumber)` constraints. Missing global users and new MEMBER memberships are written together in a serializable transaction; the transaction creates no `EmployeeInvitation`, `PasswordCredential`, or `TeamMembership` records. The request CSV is not persisted. See [Employee CSV Import](employee-import.md).
+
 LMS-016 adds `TeamMembership`, an explicit junction from Team to `OrganizationMembership`, with its own UUID and `createdAt`. `@@unique([teamId, membershipId])` prevents duplicate links. `Team` and `OrganizationMembership` each gain the candidate key `(id, organizationId)`; TeamMembership's composite foreign keys `(teamId, organizationId)` and `(membershipId, organizationId)` make PostgreSQL reject cross-tenant pairings. A direct organization FK keeps the tenant root relation explicit. All three FKs cascade on delete. The composite relations and database-level duplicate rule are tested against PostgreSQL. Prisma Client also requires the redundant candidate keys to model these composite references, even though each `id` is already a primary key.
 
 Only active memberships may be added, enforced by the transactional application store because activity is mutable state, not a relational key. Deactivation does not remove historical TeamMembership rows; operation lists filter `active = true`. Hard deletion of a Team, membership, or Organization cascades its junction rows. Team and TeamMembership API semantics are documented in [Teams](teams.md).
 
 Both foreign keys use `ON DELETE CASCADE` and `ON UPDATE CASCADE`, matching the LMS-002 foundation migration. Deleting a user or organization therefore deletes its dependent membership rows; membership rows cannot refer to missing parents. The unique `(userId, organizationId)` index also supports lookup by its leading `userId` column, while the `(organizationId, role)` index supports membership queries filtered by organization and role. No separate index is needed for `organizationId` alone because it is the leading column of that compound index.
 
-Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorization; LMS-009 owns Tenant Context; LMS-010 owns tenant isolation for existing organization-scoped operations; LMS-012 owns Employee Management; LMS-014 owns Employee Invitations; LMS-015 owns Teams; LMS-016 owns Team membership and the composite tenant-integrity constraints. `OrganizationMembership` remains the tenant-specific employee identity; authorization and active-state checks are enforced by server-side stores and handlers.
+Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorization; LMS-009 owns Tenant Context; LMS-010 owns tenant isolation for existing organization-scoped operations; LMS-012 owns Employee Management; LMS-014 owns Employee Invitations; LMS-015 owns Teams; LMS-016 owns Team membership and the composite tenant-integrity constraints; LMS-017 owns bounded create-only CSV employee import. `OrganizationMembership` remains the tenant-specific employee identity; authorization and active-state checks are enforced by server-side stores and handlers.
 
 ## Authentication persistence
 
@@ -113,6 +115,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - Database-related tests should use an isolated disposable database when integration is needed and apply committed migrations. Test relevant FK behavior, unique constraints, relationships, transaction rollback/atomicity, and database error mapping. Keep pure validation/configuration checks runnable without PostgreSQL. Never point tests at production data.
 - CI runs PostgreSQL tenant-boundary tests for employee operations, Teams, and LMS-016 TeamMembership using the production Prisma stores. The TeamMembership suite tests composite FK rejection, duplicate and concurrent inserts, active filtering, and cascade behavior.
 - LMS-014 adds PostgreSQL checks for invitation scope, digest-only tokens, unique hashes, expiry/consumption, concurrent activation, inactive memberships, existing credentials, and rollback. Run them with `pnpm test:employee-invitation:db` against the dedicated test database.
+- LMS-017 adds PostgreSQL tests for production employee-import handlers/stores, same-user memberships across organizations, organization-scoped employee-number conflicts, atomic rollback, and concurrent duplicate imports. Run them with `pnpm test:employee-import:db`; like the other database suites, they require the dedicated `TEST_DATABASE_URL`.
 
 ## Future tenant context and isolation
 
@@ -127,5 +130,7 @@ Tenant-owned entities must have an explicit organization/tenant relationship whe
 | `pnpm db:migrate:dev --name <descriptive_name>` | Create and apply a local development migration |
 | `pnpm db:health` | Run the server-side connectivity check |
 | `pnpm test:db-config` | Test database URL validation |
+| `pnpm test:employee-import` | Run employee CSV parser and handler tests |
+| `pnpm test:employee-import:db` | Run production employee import tests against PostgreSQL |
 
 LMS-014 migration `20261005140000_employee_invitations` adds cascading references from invitation rows to the user, organization, and membership, a unique token digest, and indexes for tenant/membership, user, and expiry lookups. It never stores a usable token or password data. Local setup and safe environment configuration are in the repository README. Prisma 7 reads migration configuration from `prisma.config.ts`; schema validation and client generation do not require a running database.
