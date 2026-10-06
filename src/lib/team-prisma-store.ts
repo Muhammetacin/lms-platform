@@ -27,7 +27,7 @@ export function createPrismaTeamStore(db: PrismaClient): TeamStore {
           select: { id: true, name: true, description: true, createdAt: true, updatedAt: true },
         });
       } catch (error) {
-        if (isTeamNameConflict(error)) throw new TeamNameConflictError();
+        if (isTeamUniqueConstraintViolation(error)) throw new TeamNameConflictError();
         throw error;
       }
     },
@@ -50,7 +50,7 @@ export function createPrismaTeamStore(db: PrismaClient): TeamStore {
           });
         });
       } catch (error) {
-        if (isTeamNameConflict(error)) throw new TeamNameConflictError();
+        if (isTeamUniqueConstraintViolation(error)) throw new TeamNameConflictError();
         throw error;
       }
     },
@@ -62,17 +62,12 @@ export function createPrismaTeamStore(db: PrismaClient): TeamStore {
   };
 }
 
-function isTeamNameConflict(error: unknown): boolean {
-  if (typeof error !== "object" || error === null || !("code" in error) || error.code !== "P2002") {
-    return false;
-  }
-  if (!("meta" in error) || typeof error.meta !== "object" || error.meta === null || !("target" in error.meta)) {
-    return false;
-  }
-  const target = error.meta.target;
-  const targetDescription = typeof target === "string"
-    ? target
-    : JSON.stringify(target);
-  return typeof targetDescription === "string" &&
-    targetDescription.includes("organizationId") && targetDescription.includes("name");
+/** Team writes use generated IDs and only expose the organization/name unique key. */
+function isTeamUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  );
 }
