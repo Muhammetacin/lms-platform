@@ -1,6 +1,6 @@
 # Courses
 
-**Status: CODE COMPLETE — independent QA/security review required.** LMS-018 establishes the database model only. Course CRUD is LMS-019; publishing is LMS-023.
+**Status: CODE COMPLETE — independent QA/security review required.** LMS-018 establishes the Course model and LMS-019 provides organization-scoped management CRUD. Publishing remains LMS-023.
 
 ## Ownership and fields
 
@@ -16,22 +16,42 @@ Every Course belongs to exactly one Organization through the required `Course.or
 | `createdAt` | Required timestamp, set on insert |
 | `updatedAt` | Required timestamp, maintained by Prisma on Prisma writes |
 
-Organization hard deletion cascades to its Courses. LMS-018 does not add Course deletion endpoints.
+Organization hard deletion cascades to its Courses. LMS-019 permits Course managers to hard-delete only `DRAFT` Courses. Published Courses are retained until a separately reviewed lifecycle operation exists.
 
 ## Tenant integrity
 
 Course has a candidate key on `(id, organizationId)` in addition to its UUID primary key. The composite unique constraint is intentionally redundant for Course itself: future tenant-owned children such as LMS-020 Modules can reference both `courseId` and `organizationId`, allowing PostgreSQL to reject a child associated with a Course in another organization. This follows the composite-key defense-in-depth pattern used by LMS-016 Team membership.
 
-The model also has an `(organizationId, createdAt, id)` index to support future organization-scoped lists with deterministic ordering. There is no title unique constraint.
+The model also has an `(organizationId, createdAt, id)` index used by organization-scoped lists with deterministic ordering. There is no title unique constraint; duplicate titles are allowed within and across organizations.
 
-The FK and candidate key enforce database integrity, but they do not provide authorization or automatically isolate arbitrary Prisma queries. Future application reads and writes must obtain `organizationId` from trusted tenant context. LMS-019 must scope Course detail and mutation lookups by both `course.id` and trusted `organizationId`, and scope lists by that trusted organization ID. Do not accept the tenant from request data. PostgreSQL RLS is not enabled.
+The FK and candidate key enforce database integrity, but they do not provide authorization or automatically isolate arbitrary Prisma queries. Application reads and writes must obtain `organizationId` from trusted tenant context. LMS-019 scopes Course detail and mutation lookups by both `course.id` and trusted `organizationId`, and scopes lists by that trusted organization ID. Do not accept the tenant from request data. PostgreSQL RLS is not enabled.
+
+## Management API (LMS-019)
+
+All endpoints require the trusted tenant from `requireTenantContext()` and the existing `MANAGE_COURSES` capability. `OWNER` and `ADMIN` can manage Courses. `MEMBER` cannot use these generic management reads or writes; learner visibility belongs to a later assignment/enrollment flow. Every response sets `Cache-Control: no-store` and exposes only `id`, `title`, `description`, `status`, `createdAt`, and `updatedAt`.
+
+| Method and path | Result |
+| --- | --- |
+| `GET /api/organizations/courses` | Up to 100 Courses, ordered by `createdAt DESC, id DESC` |
+| `POST /api/organizations/courses` | Creates a Course and returns `201` |
+| `GET /api/organizations/courses/:courseId` | Returns `{ "course": ... }` |
+| `PATCH /api/organizations/courses/:courseId` | Updates Course metadata and returns `{ "course": ... }` |
+| `DELETE /api/organizations/courses/:courseId` | Hard-deletes a draft and returns `{ "deleted": true }` |
+
+Create accepts only `title` and optional `description`; a new Course is always `DRAFT`. PATCH accepts only `title` and/or `description`, with at least one field. Status is read-only. Create and update reject unknown fields, including tenant, status, and server metadata fields. Mutations use the existing same-origin `application/json` request guard.
+
+Titles are trimmed strings of 2–160 Unicode code points. Descriptions may be omitted or null; surrounding whitespace is trimmed, blank text becomes null, and the maximum is 4,000 Unicode code points. Both reject control characters and unpaired surrogates. Values are plain text; LMS-019 does not parse HTML or rich text. Duplicate titles are allowed.
+
+Every list predicate uses the trusted organization ID. Detail and mutation predicates use both Course ID and trusted organization ID. A missing, foreign, or malformed Course ID returns the same `404 { "error": "course_not_found" }`. Client query parameters and organization headers do not select the tenant. A published Course cannot be deleted through this CRUD API and returns `409 { "error": "published_course_delete_forbidden" }`; the store conditionally deletes only a row whose current status is `DRAFT`.
+
+The common safe errors are `invalid_request`, `course_not_found`, `published_course_delete_forbidden`, and `course_management_unavailable`. Authorization uses the shared `unauthenticated`, `forbidden`, and `authorization_unavailable` codes. Database details are not returned to clients.
 
 ## Lifecycle foundation
 
-`CourseStatus` contains `DRAFT` and `PUBLISHED`. A new Course defaults to `DRAFT`; `PUBLISHED` is present as a valid schema value so the later publishing feature can use it. LMS-018 defines no transition rules, publish/unpublish operation, authorization, `publishedAt` timestamp, or publication workflow. LMS-023 owns those behaviors.
+`CourseStatus` contains `DRAFT` and `PUBLISHED`. A new Course defaults to `DRAFT`; `PUBLISHED` is present as a valid schema value for the later publishing feature. LMS-019 displays the status, creates drafts, rejects client status writes, permits metadata edits to either status, and protects published Courses from generic deletion. It defines no transition rules, publish/unpublish operation, authorization, `publishedAt` timestamp, completeness validation, or publication workflow. LMS-023 owns those behaviors.
 
 ## Scope
 
-LMS-018 adds only the schema, migration, database integration test, and documentation. It adds no CRUD store, API route, UI, modules, lessons, or publishing logic. Course CRUD and request validation belong to LMS-019. See [LMS-018](../tickets/LMS-018.md) for the implementation record.
+LMS-019 does not add a schema change or migration. Modules and module ordering remain LMS-020; Lessons remain LMS-021. Audit integration depends on LMS-058 and no parallel audit log is added. See [LMS-018](../tickets/LMS-018.md) and [LMS-019](../tickets/LMS-019.md) for the implementation records.
 
 The Course model PostgreSQL test runs against the dedicated `lms_platform_test` database and is included in CI's PostgreSQL 16 job.
