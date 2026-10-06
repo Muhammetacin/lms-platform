@@ -88,6 +88,9 @@ jobs:
       - name: Team tests
         run: pnpm test:team
 
+      - name: Course CRUD unit tests
+        run: pnpm test:course
+
       - name: Team membership tests
         run: pnpm test:team-membership
 
@@ -105,6 +108,9 @@ jobs:
 
       - name: PostgreSQL course model tests
         run: pnpm test:course-model:db
+
+      - name: PostgreSQL Course CRUD tests
+        run: pnpm test:course:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
