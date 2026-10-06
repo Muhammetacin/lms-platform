@@ -1,6 +1,6 @@
 # Database conventions
 
-The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. LMS-014 adds the tenant-scoped `EmployeeInvitation` bootstrap-credential model, LMS-015 adds `Team`, and LMS-016 adds the `TeamMembership` junction model. LMS-017 adds CSV employee creation on the existing `User` and `OrganizationMembership` records and requires no schema change or stored import artifact. LMS-008 adds authorization and LMS-009 adds trusted tenant context. Tenant-owned operations are application-scoped; LMS-016 additionally uses same-tenant composite foreign keys for Team membership. This does not use RLS or automatically scope arbitrary Prisma queries.
+The database is PostgreSQL, accessed with Prisma ORM 7 and the PostgreSQL driver adapter. The foundation contains `User`, `Organization`, and `OrganizationMembership`; LMS-007 adds the authentication-only `PasswordCredential` and `Session` models. LMS-014 adds the tenant-scoped `EmployeeInvitation` bootstrap-credential model, LMS-015 adds `Team`, LMS-016 adds the `TeamMembership` junction model, and LMS-018 adds the organization-owned `Course` model. LMS-017 adds CSV employee creation on the existing `User` and `OrganizationMembership` records and requires no schema change or stored import artifact. LMS-008 adds authorization and LMS-009 adds trusted tenant context. Tenant-owned operations are application-scoped; LMS-016 and LMS-018 prepare same-tenant composite keys for relationship integrity. This does not use RLS or automatically scope arbitrary Prisma queries.
 
 ## Local setup and configuration
 
@@ -39,6 +39,7 @@ Use a dedicated database and least-privilege role in each environment. Runtime p
 ## Organization identity and responsibility
 
 - `Organization` is the foundational organization record. It has a required UUID primary key, required `name` and `slug`, required `createdAt` and `updatedAt` timestamps, and the `memberships` relation to `OrganizationMembership`. Keep the established UUID, timestamp, unique-slug, and `createdAt` index conventions.
+- LMS-018 adds `Organization.courses`, the inverse relation for courses owned by that organization. Every Course has one required organization FK and is deleted when its Organization is hard deleted; no User is the Course owner.
 - `Organization.slug` is stored as required PostgreSQL `TEXT` and protected by the unique index `Organization_slug_key`. The schema does not generate or normalize slugs, lowercase them, use `citext`, define an expression index, or set an explicit collation. Uniqueness follows the configured PostgreSQL collation; this schema does not specify case-sensitive versus case-insensitive slug semantics or canonicalization. If application behavior needs canonical slug normalization, make that decision in a future ticket.
 - `OrganizationMembership` is the explicit association between one `User` and one `Organization`; there is no implicit many-to-many relation. This model foundation does not implement organization CRUD, membership management, invitations, authorization, or organization UI.
 - LMS-009 owns trusted tenant-context behavior, documented in [Tenant Context](tenant-context.md). LMS-010 owns tenant-isolation design and enforcement for the employee boundary documented in [Tenant Isolation](tenant-isolation.md). An organization record or foreign key alone does not provide tenant context, access control, or tenant isolation.
@@ -57,6 +58,8 @@ LMS-017 does not add a model, field, index, or migration. The import operation r
 
 LMS-016 adds `TeamMembership`, an explicit junction from Team to `OrganizationMembership`, with its own UUID and `createdAt`. `@@unique([teamId, membershipId])` prevents duplicate links. `Team` and `OrganizationMembership` each gain the candidate key `(id, organizationId)`; TeamMembership's composite foreign keys `(teamId, organizationId)` and `(membershipId, organizationId)` make PostgreSQL reject cross-tenant pairings. A direct organization FK keeps the tenant root relation explicit. All three FKs cascade on delete. The composite relations and database-level duplicate rule are tested against PostgreSQL. Prisma Client also requires the redundant candidate keys to model these composite references, even though each `id` is already a primary key.
 
+LMS-018 adds `CourseStatus` (`DRAFT`, `PUBLISHED`) and an organization-owned `Course`. New rows default to `DRAFT`; there is no publishing behavior or `publishedAt` field in this ticket. Course titles are not unique. The candidate key `(id, organizationId)` is deliberately available for future tenant-owned child foreign keys, and `(organizationId, createdAt, id)` supports deterministic organization-scoped course lists. Course ownership, lifecycle, and deferred scope are described in [Courses](courses.md).
+
 Only active memberships may be added, enforced by the transactional application store because activity is mutable state, not a relational key. Deactivation does not remove historical TeamMembership rows; operation lists filter `active = true`. Hard deletion of a Team, membership, or Organization cascades its junction rows. Team and TeamMembership API semantics are documented in [Teams](teams.md).
 
 Both foreign keys use `ON DELETE CASCADE` and `ON UPDATE CASCADE`, matching the LMS-002 foundation migration. Deleting a user or organization therefore deletes its dependent membership rows; membership rows cannot refer to missing parents. The unique `(userId, organizationId)` index also supports lookup by its leading `userId` column, while the `(organizationId, role)` index supports membership queries filtered by organization and role. No separate index is needed for `organizationId` alone because it is the leading column of that compound index.
@@ -73,6 +76,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - Define `onDelete` deliberately. Use `Cascade` only when child rows have no independent meaning without their parent; use `Restrict`/`NoAction` when deletion must be blocked; use `SetNull` only for an optional FK. IDs are stable, so do not change referenced IDs; retain the established `onUpdate: Cascade` behavior unless a migration decision says otherwise.
 - The foundation has required `OrganizationMembership.user` and `.organization` relations, each with `onDelete: Cascade` and `onUpdate: Cascade`. A membership is unique per `(userId, organizationId)`. Preserve these relationships and invariants.
 - LMS-016's `TeamMembership` relates to both `Team` and `OrganizationMembership`, carrying one `organizationId` scalar across the organization and both composite relations. The composite foreign keys ensure the three organization IDs agree, and all parent deletions cascade to the junction row.
+- LMS-018's `Course.organization` is required and cascades on Organization delete. `Course` also has the candidate key `(id, organizationId)`; a future child can reference that tuple so PostgreSQL rejects a child whose tenant differs from its Course.
 - A foreign key proves referential integrity only. It does not authorize access or isolate tenants.
 
 ## Uniqueness and indexes
@@ -80,7 +84,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - Put durable invariants in PostgreSQL with `@unique`, `@@unique`, primary keys, or foreign keys; application pre-checks alone cannot protect against concurrent writes. Translate a database conflict into a useful validation/conflict response.
 - Decide whether a string invariant is case-sensitive. Existing PostgreSQL unique indexes compare the stored value using the column's normal equality semantics. If an identifier is meant to be case-insensitive, canonicalize it consistently before writes and choose a database constraint/index that protects that invariant; do not assume `@unique` folds case.
 - Add an index for a real lookup, filter, sort, join, or delete workload. Consider FK access paths: an existing unique composite index covers queries by its leading field, while a different FK may need its own index. Add compound indexes in the order queries filter/sort, and avoid speculative indexes or indexes duplicating a primary/unique constraint.
-- Existing examples: `User.email` and `Organization.slug` are unique; `(userId, organizationId)` is unique; `(organizationId, role)` supports membership lookup by organization and role. The `createdAt` indexes reflect ordered time access in the foundation. Revisit an index only with a query/workload reason and migration.
+- Existing examples: `User.email` and `Organization.slug` are unique; `(userId, organizationId)` is unique; `(organizationId, role)` supports membership lookup by organization and role. Course titles intentionally have no uniqueness constraint. Its `(organizationId, createdAt, id)` index supports future tenant-scoped list filtering and deterministic ordering. Revisit an index only with a query/workload reason and migration.
 
 ## Prisma client and database access
 
@@ -116,6 +120,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - CI runs PostgreSQL tenant-boundary tests for employee operations, Teams, and LMS-016 TeamMembership using the production Prisma stores. The TeamMembership suite tests composite FK rejection, duplicate and concurrent inserts, active filtering, and cascade behavior.
 - LMS-014 adds PostgreSQL checks for invitation scope, digest-only tokens, unique hashes, expiry/consumption, concurrent activation, inactive memberships, existing credentials, and rollback. Run them with `pnpm test:employee-invitation:db` against the dedicated test database.
 - LMS-017 adds PostgreSQL tests for production employee-import handlers/stores, same-user memberships across organizations, organization-scoped employee-number conflicts, atomic rollback, and concurrent duplicate imports. Run them with `pnpm test:employee-import:db`; like the other database suites, they require the dedicated `TEST_DATABASE_URL`.
+- LMS-018 adds `pnpm test:course-model:db`, which tests Course defaults, allowed duplicate titles, FK rejection, the composite candidate key, tenant-separated rows, and Organization cascade on the dedicated PostgreSQL 16 CI database.
 
 ## Future tenant context and isolation
 
@@ -132,5 +137,8 @@ Tenant-owned entities must have an explicit organization/tenant relationship whe
 | `pnpm test:db-config` | Test database URL validation |
 | `pnpm test:employee-import` | Run employee CSV parser and handler tests |
 | `pnpm test:employee-import:db` | Run production employee import tests against PostgreSQL |
+| `pnpm test:course-model:db` | Run Course model tests against PostgreSQL |
 
 LMS-014 migration `20261005140000_employee_invitations` adds cascading references from invitation rows to the user, organization, and membership, a unique token digest, and indexes for tenant/membership, user, and expiry lookups. It never stores a usable token or password data. Local setup and safe environment configuration are in the repository README. Prisma 7 reads migration configuration from `prisma.config.ts`; schema validation and client generation do not require a running database.
+
+LMS-018 migration `20261006140000_course_model` adds the Course status enum and table, organization cascade FK, composite tenant candidate key, and organization list index. It adds no Course API or application mutation workflow.
