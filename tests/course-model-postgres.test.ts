@@ -18,6 +18,7 @@ test("PostgreSQL enforces Course ownership, lifecycle defaults, tenant keys, and
   const orgA = crypto.randomUUID();
   const orgB = crypto.randomUUID();
   const cascadeOrg = crypto.randomUUID();
+  let probeTable: string | null = null;
   const hasPrismaCode = (error: unknown, code: string) =>
     typeof error === "object" && error !== null && "code" in error && error.code === code;
 
@@ -79,23 +80,24 @@ test("PostgreSQL enforces Course ownership, lifecycle defaults, tenant keys, and
     assert.ok(hasPrismaCode(invalidOrganization, "P2003"),
       "PostgreSQL must reject Course.organizationId values without an Organization");
 
-    const probeTable = `CourseTenantProbe_${crypto.randomUUID().replaceAll("-", "")}`;
-    const probeForeignKey = `${probeTable}_fk`;
+    const probeTableName = `CourseTenantProbe_${crypto.randomUUID().replaceAll("-", "")}`;
+    probeTable = probeTableName;
+    const probeForeignKey = `${probeTableName}_fk`;
+    await db.$executeRawUnsafe(`CREATE TABLE "${probeTableName}" (
+      "courseId" UUID NOT NULL,
+      "organizationId" UUID NOT NULL,
+      CONSTRAINT "${probeForeignKey}" FOREIGN KEY ("courseId", "organizationId")
+        REFERENCES "Course" ("id", "organizationId") ON DELETE CASCADE
+    )`);
     await db.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`CREATE TEMP TABLE "${probeTable}" (
-        "courseId" UUID NOT NULL,
-        "organizationId" UUID NOT NULL,
-        CONSTRAINT "${probeForeignKey}" FOREIGN KEY ("courseId", "organizationId")
-          REFERENCES "Course" ("id", "organizationId") ON DELETE CASCADE
-      ) ON COMMIT DROP`);
       await tx.$executeRawUnsafe(
-        `INSERT INTO "${probeTable}" ("courseId", "organizationId") VALUES ($1::uuid, $2::uuid)`,
+        `INSERT INTO "${probeTableName}" ("courseId", "organizationId") VALUES ($1::uuid, $2::uuid)`,
         draft.id,
         orgA,
       );
       await tx.$executeRawUnsafe('SAVEPOINT "course_wrong_tenant_probe"');
       const mismatch = await tx.$executeRawUnsafe(
-        `INSERT INTO "${probeTable}" ("courseId", "organizationId") VALUES ($1::uuid, $2::uuid)`,
+        `INSERT INTO "${probeTableName}" ("courseId", "organizationId") VALUES ($1::uuid, $2::uuid)`,
         draft.id,
         orgB,
       ).then(() => null, (error: unknown) => error);
@@ -109,6 +111,8 @@ test("PostgreSQL enforces Course ownership, lifecycle defaults, tenant keys, and
       );
       await tx.$executeRawUnsafe('ROLLBACK TO SAVEPOINT "course_wrong_tenant_probe"');
     });
+    await db.$executeRawUnsafe(`DROP TABLE "${probeTableName}"`);
+    probeTable = null;
 
     const cascadeCourse = await db.course.create({ data: {
       organizationId: cascadeOrg,
@@ -118,6 +122,9 @@ test("PostgreSQL enforces Course ownership, lifecycle defaults, tenant keys, and
     assert.equal(await db.course.findUnique({ where: { id: cascadeCourse.id } }), null,
       "hard-deleting an Organization must cascade to its Courses");
   } finally {
+    if (probeTable) {
+      await db.$executeRawUnsafe(`DROP TABLE IF EXISTS "${probeTable}"`).catch(() => {});
+    }
     await db.organization.deleteMany({ where: { id: { in: [orgA, orgB, cascadeOrg] } } });
     await db.$disconnect();
   }
