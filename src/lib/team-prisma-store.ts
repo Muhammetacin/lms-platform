@@ -70,7 +70,9 @@ function isTeamNameConflict(error: unknown): boolean {
     return false;
   }
   const target = error.meta.target;
-  return Array.isArray(target)
-    ? target.includes("organizationId") && target.includes("name")
-    : typeof target === "string" && /Team_organizationId_name|organizationId_name/.test(target);
+  const targetDescription = typeof target === "string"
+    ? target
+    : JSON.stringify(target);
+  return typeof targetDescription === "string" &&
+    targetDescription.includes("organizationId") && targetDescription.includes("name");
 }
