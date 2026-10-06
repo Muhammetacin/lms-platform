@@ -130,8 +130,9 @@ test("PostgreSQL enforces TeamMembership tenant integrity, lifecycle, uniqueness
     const attackTwo = await ownerA.POST(request("POST", { employeeId: employeeA.id }), teamB.id);
     const attackThree = await ownerA.POST(request("POST", { employeeId: employeeB.id }), teamB.id);
     assert.equal(attackTwo.status, 404);
-    assert.deepEqual(await attackTwo.json(), { error: "team_not_found" });
-    assert.deepEqual(await attackThree.json(), await attackTwo.json());
+    const attackTwoBody = await attackTwo.json();
+    assert.deepEqual(attackTwoBody, { error: "team_not_found" });
+    assert.deepEqual(await attackThree.json(), attackTwoBody);
     assert.equal(await db.teamMembership.count(), 0);
 
     // PostgreSQL itself rejects inconsistent Team, Membership, or organization tuples.
@@ -227,9 +228,10 @@ test("PostgreSQL enforces TeamMembership tenant integrity, lifecycle, uniqueness
     assert.equal(await db.teamMembership.count({ where: { organizationId: orgA, teamId: teamA.id, membershipId: employeeToDelete.id } }), 0);
     const repeatedRemoval = await adminA.DELETE(request("DELETE"), teamA.id, employeeToDelete.id);
     assert.equal(repeatedRemoval.status, 404);
-    assert.deepEqual(await repeatedRemoval.json(), { error: "team_membership_not_found" });
+    const repeatedRemovalBody = await repeatedRemoval.json();
+    assert.deepEqual(repeatedRemovalBody, { error: "team_membership_not_found" });
     const crossTenantRemove = await ownerA.DELETE(request("DELETE"), teamA.id, employeeB.id);
-    assert.deepEqual(await crossTenantRemove.json(), await repeatedRemoval.json());
+    assert.deepEqual(await crossTenantRemove.json(), repeatedRemovalBody);
 
     // Hard-deleting an OrganizationMembership and deleting a Team cascade to junction rows.
     assert.equal(await db.teamMembership.count({ where: { membershipId: employeeToDelete.id } }), 0);
