@@ -55,7 +55,7 @@ LMS-015 adds `Team`, an organization-owned grouping with a required name, option
 
 Both foreign keys use `ON DELETE CASCADE` and `ON UPDATE CASCADE`, matching the LMS-002 foundation migration. Deleting a user or organization therefore deletes its dependent membership rows; membership rows cannot refer to missing parents. The unique `(userId, organizationId)` index also supports lookup by its leading `userId` column, while the `(organizationId, role)` index supports membership queries filtered by organization and role. No separate index is needed for `organizationId` alone because it is the leading column of that compound index.
 
-Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorization; LMS-009 owns Tenant Context; LMS-010 owns tenant isolation for existing organization-scoped operations; LMS-012 owns Employee Management; LMS-014 owns Employee Invitations. `OrganizationMembership` provides the persistence relationship and tenant-specific employee fields; actual access enforcement is in the server-side employee store and handlers, not in the model definition.
+Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorization; LMS-009 owns Tenant Context; LMS-010 owns tenant isolation for existing organization-scoped operations; LMS-012 owns Employee Management; LMS-014 owns Employee Invitations; LMS-015 owns Teams and their tenant-scoped CRUD boundary. `OrganizationMembership` provides the persistence relationship and tenant-specific employee fields; actual access enforcement is in the server-side stores and handlers, not in model definitions.
 
 ## Authentication persistence
 

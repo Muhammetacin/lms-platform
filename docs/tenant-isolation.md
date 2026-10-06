@@ -1,8 +1,8 @@
 # Tenant Isolation
 
-**Status:** The earlier employee isolation implementation passed in CI run [37315646821](https://github.com/Muhammetacin/lms-platform/actions/runs/37315646821) for commit `bc4eeb0144ea0e2ebe73e25dd78b0f9be652dc06`. The LMS-015 Team PostgreSQL suite is added to CI; its result is recorded in the LMS-015 ticket after that workflow completes.
+**Status: CODE COMPLETE — independent QA/security review required.** The earlier employee isolation implementation passed in CI run [37315646821](https://github.com/Muhammetacin/lms-platform/actions/runs/37315646821) for commit `bc4eeb0144ea0e2ebe73e25dd78b0f9be652dc06`. LMS-015 Team PostgreSQL tests, related regressions, lint, typecheck, and build passed in CI run [31](https://github.com/Muhammetacin/lms-platform/actions/runs/37497930810) for PR #3 head `8df874ebcefb8fe5334fb7f308141accfb48adac`.
 
-This guide records protected tenant boundaries for organization employee management and LMS-015 Teams. Both use application-layer query scoping. The employee boundary has passed PostgreSQL CI; the new Team suite is registered in CI and its result will be recorded after the run. PostgreSQL RLS is not enabled, and this design does not claim that application checks are equivalent to RLS.
+This guide records protected tenant boundaries for organization employee management and LMS-015 Teams. Both use application-layer query scoping verified against PostgreSQL in CI. PostgreSQL RLS is not enabled, and this design does not claim that application checks are equivalent to RLS.
 
 ## Data classification
 
