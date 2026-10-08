@@ -3,9 +3,11 @@
 import { useState, type FormEvent } from "react";
 import type { CoursePreviewLesson } from "@/lib/course-preview-core";
 import {
+  cancelLessonTypeChange,
   deleteLessonRequest,
   lessonHasConfiguredContent,
   moveLessonRequest,
+  saveLessonWithTypeChangeConfirmation,
   updateLessonRequest,
   validateLessonTitle,
   validateLessonType,
@@ -39,11 +41,11 @@ export function LessonEditor({
   const [fieldError, setFieldError] = useState<string | null>(null);
   const lessonPath = `/api/organizations/courses/${encodeURIComponent(courseId)}/modules/${encodeURIComponent(moduleId)}/lessons/${encodeURIComponent(lesson.id)}`;
 
-  async function saveLesson(event?: FormEvent<HTMLFormElement>) {
+  async function saveLesson(event?: FormEvent<HTMLFormElement>, confirmedType?: LessonTypeValue) {
     event?.preventDefault();
     setFieldError(null);
     const validatedTitle = validateLessonTitle(title);
-    const validatedType = validateLessonType(type);
+    const validatedType = validateLessonType(confirmedType ?? type);
     if (!validatedTitle.valid) {
       setFieldError(validatedTitle.error);
       return;
@@ -52,11 +54,18 @@ export function LessonEditor({
       setFieldError(validatedType.error);
       return;
     }
-    if (lessonHasConfiguredContent(lesson.type, lesson.content) && validatedType.value !== lesson.type) {
-      setProposedType(validatedType.value);
+    const typeChange = await saveLessonWithTypeChangeConfirmation({
+      currentType: lesson.type,
+      nextType: validatedType.value,
+      hasConfiguredContent: lessonHasConfiguredContent(lesson.type, lesson.content),
+      confirmedType: confirmedType ?? null,
+      save: () => mutation.run(lessonPath, updateLessonRequest({ title: validatedTitle.value, type: validatedType.value })),
+    });
+    if (typeChange.kind === "confirmation-required") {
+      setProposedType(typeChange.proposedType);
       return;
     }
-    const result = await mutation.run(lessonPath, updateLessonRequest({ title: validatedTitle.value, type: validatedType.value }));
+    const result = typeChange.result;
     if (result?.ok) {
       setEditing(false);
       setProposedType(null);
@@ -111,10 +120,13 @@ export function LessonEditor({
       }}
       onCancelDelete={() => setConfirmingDelete(false)}
       onConfirmDelete={() => void deleteLesson()}
-      onConfirmTypeChange={() => void saveLesson()}
+      onConfirmTypeChange={() => {
+        if (proposedType) void saveLesson(undefined, proposedType);
+      }}
       onCancelTypeChange={() => {
-        setType(lesson.type);
-        setProposedType(null);
+        const cancelledType = cancelLessonTypeChange(lesson.type);
+        setType(cancelledType.type);
+        setProposedType(cancelledType.proposedType);
       }}
       onSubmit={saveLesson}
       onTitleChange={(value) => {
@@ -124,8 +136,7 @@ export function LessonEditor({
       onTypeChange={(value) => {
         setType(value);
         setFieldError(null);
-        if (value !== lesson.type && lessonHasConfiguredContent(lesson.type, lesson.content)) setProposedType(value);
-        else setProposedType(null);
+        setProposedType(null);
       }}
     >
       <LessonContentEditor

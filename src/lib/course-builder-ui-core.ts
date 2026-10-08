@@ -140,6 +140,33 @@ export function updateLessonRequest(value: { title?: string; type?: LessonTypeVa
   return jsonRequest("PATCH", body);
 }
 
+export type LessonTypeChangeSaveResult<T> =
+  | { kind: "confirmation-required"; proposedType: LessonTypeValue }
+  | { kind: "saved"; result: T };
+
+export async function saveLessonWithTypeChangeConfirmation<T>({
+  currentType,
+  nextType,
+  hasConfiguredContent,
+  confirmedType,
+  save,
+}: {
+  currentType: LessonTypeValue;
+  nextType: LessonTypeValue;
+  hasConfiguredContent: boolean;
+  confirmedType: LessonTypeValue | null;
+  save: () => Promise<T>;
+}): Promise<LessonTypeChangeSaveResult<T>> {
+  if (hasConfiguredContent && nextType !== currentType && confirmedType !== nextType) {
+    return { kind: "confirmation-required", proposedType: nextType };
+  }
+  return { kind: "saved", result: await save() };
+}
+
+export function cancelLessonTypeChange(currentType: LessonTypeValue) {
+  return { type: currentType, proposedType: null } as const;
+}
+
 export function moveLessonRequest(position: number): JsonRequestOptions {
   return jsonRequest("POST", { position });
 }

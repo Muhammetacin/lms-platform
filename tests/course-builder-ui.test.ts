@@ -10,6 +10,7 @@ import { LessonContentEditorView } from "../src/components/lesson-content-editor
 import { CoursePublishControlView } from "../src/components/course-publish-control-view.ts";
 import {
   builderApiErrorMessage,
+  cancelLessonTypeChange,
   createLessonRequest,
   createModuleRequest,
   deleteLessonRequest,
@@ -20,6 +21,7 @@ import {
   moveLessonRequest,
   moveModuleRequest,
   publishCourseRequest,
+  saveLessonWithTypeChangeConfirmation,
   updateLessonContentRequest,
   updateLessonRequest,
   updateModuleRequest,
@@ -199,6 +201,75 @@ test("content type change shows the data loss confirmation before the mutation",
   assert.equal(lessonHasConfiguredContent("VIDEO", { url: "https://video.example.test/" }), true);
   assert.equal(lessonHasConfiguredContent("TEXT", { text: null }), false);
   assert.equal(lessonHasConfiguredContent("QUIZ", null), false);
+});
+
+test("content type change confirmation allows exactly one update after explicit confirmation", async () => {
+  const requests: ReturnType<typeof updateLessonRequest>[] = [];
+  const save = async () => {
+    requests.push(updateLessonRequest({ title: "Welcome", type: "VIDEO" }));
+    return { ok: true };
+  };
+
+  const firstSave = await saveLessonWithTypeChangeConfirmation({
+    currentType: "TEXT",
+    nextType: "VIDEO",
+    hasConfiguredContent: true,
+    confirmedType: null,
+    save,
+  });
+  assert.deepEqual(firstSave, { kind: "confirmation-required", proposedType: "VIDEO" });
+  assert.equal(requests.length, 0);
+
+  const confirmedSave = await saveLessonWithTypeChangeConfirmation({
+    currentType: "TEXT",
+    nextType: "VIDEO",
+    hasConfiguredContent: true,
+    confirmedType: "VIDEO",
+    save,
+  });
+  assert.deepEqual(confirmedSave, { kind: "saved", result: { ok: true } });
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0]!.method, "PATCH");
+  assert.deepEqual(JSON.parse(requests[0]!.body), { title: "Welcome", type: "VIDEO" });
+
+  const lessonEditorSource = await readFile(new URL("../src/components/lesson-editor.tsx", import.meta.url), "utf8");
+  assert.match(lessonEditorSource, /saveLessonWithTypeChangeConfirmation\(\{/);
+  assert.match(lessonEditorSource, /onConfirmTypeChange=\{\(\) => \{\s*if \(proposedType\) void saveLesson\(undefined, proposedType\);\s*\}\}/);
+  assert.match(lessonEditorSource, /onTypeChange=\{\(value\) => \{\s*setType\(value\);\s*setFieldError\(null\);\s*setProposedType\(null\);\s*\}\}/);
+});
+
+test("canceling a confirmed content type change restores the original type without a PATCH", async () => {
+  let patchCount = 0;
+  const firstSave = await saveLessonWithTypeChangeConfirmation({
+    currentType: "TEXT",
+    nextType: "VIDEO",
+    hasConfiguredContent: true,
+    confirmedType: null,
+    save: async () => { patchCount += 1; },
+  });
+  assert.equal(firstSave.kind, "confirmation-required");
+  assert.equal(patchCount, 0);
+
+  const cancelled = cancelLessonTypeChange("TEXT");
+  assert.deepEqual(cancelled, { type: "TEXT", proposedType: null });
+  assert.equal(patchCount, 0);
+
+  const lessonEditorSource = await readFile(new URL("../src/components/lesson-editor.tsx", import.meta.url), "utf8");
+  assert.match(lessonEditorSource, /cancelLessonTypeChange\(lesson\.type\)/);
+  assert.match(lessonEditorSource, /setType\(cancelledType\.type\)/);
+});
+
+test("type changes without configured content save immediately without confirmation", async () => {
+  let patchCount = 0;
+  const result = await saveLessonWithTypeChangeConfirmation({
+    currentType: "TEXT",
+    nextType: "VIDEO",
+    hasConfiguredContent: false,
+    confirmedType: null,
+    save: async () => { patchCount += 1; return "patched"; },
+  });
+  assert.deepEqual(result, { kind: "saved", result: "patched" });
+  assert.equal(patchCount, 1);
 });
 
 test("TEXT editor preserves multiline source as escaped text and enforces backend limits", () => {
