@@ -182,6 +182,8 @@ model Lesson {
   title          String
   type           LessonType
   position       Int
+  textContent    String?
+  contentUrl     String?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   module       CourseModule @relation(fields: [moduleId, organizationId], references: [id, organizationId], onDelete: Cascade)

@@ -78,7 +78,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - LMS-016's `TeamMembership` relates to both `Team` and `OrganizationMembership`, carrying one `organizationId` scalar across the organization and both composite relations. The composite foreign keys ensure the three organization IDs agree, and all parent deletions cascade to the junction row.
 - LMS-018's `Course.organization` is required and cascades on Organization delete. `Course` also has the candidate key `(id, organizationId)`; a future child can reference that tuple so PostgreSQL rejects a child whose tenant differs from its Course.
 - LMS-020's `CourseModule` has a direct cascading Organization FK and a composite cascading Course FK `(courseId, organizationId) → Course(id, organizationId)`. It also has candidate key `(id, organizationId)` for LMS-021, unique `(courseId, position)`, a list index `(organizationId, courseId, position)`, and a migration-level `CHECK (position >= 1)` constraint.
-- LMS-021's `Lesson` has a direct cascading Organization FK and a composite cascading Module FK `(moduleId, organizationId) → CourseModule(id, organizationId)`. Its candidate key `(id, organizationId)` prepares tenant-safe progress/child references; `(moduleId, position)` is unique and `position >= 1` is checked by PostgreSQL.
+- LMS-021's `Lesson` has a direct cascading Organization FK and a composite cascading Module FK `(moduleId, organizationId) → CourseModule(id, organizationId)`. Its candidate key `(id, organizationId)` prepares tenant-safe progress/child references; `(moduleId, position)` is unique and `position >= 1` is checked by PostgreSQL. LMS-022 adds nullable `textContent` and `contentUrl` columns plus `Lesson_type_content_consistency_check`; the CHECK permits empty draft content but keeps content columns consistent with the Lesson type.
 - A foreign key proves referential integrity only. It does not authorize access or isolate tenants.
 
 ## Uniqueness and indexes
@@ -125,6 +125,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - LMS-018 adds `pnpm test:course-model:db`, which tests Course defaults, allowed duplicate titles, FK rejection, the composite candidate key, tenant-separated rows, and Organization cascade on the dedicated PostgreSQL 16 CI database.
 - LMS-020 adds `pnpm test:course-module` and `pnpm test:course-module:db`. The PostgreSQL suite exercises production handlers and store, composite tenant FK rejection, unique/positive positions, reordering rollback, create/move races, DRAFT locking, and Course/Organization cascades.
 - LMS-021 adds `pnpm test:lesson-model:db`. The PostgreSQL suite inserts every `LessonType`, directly tests required fields and position constraints, verifies composite tenant FKs and the Lesson candidate key, checks cross-module ordering, and proves Module/Course/Organization cascades.
+- LMS-022 adds `pnpm test:lesson-builder` and `pnpm test:lesson-builder:db`. The PostgreSQL suite calls the production Lesson Builder handlers and Prisma store, tests type/content CHECK violations by direct SQL, tenant and role isolation, HTTPS/TEXT semantics, rollback, ordering races, Course publish races, and Module deletion interaction.
 
 ## Future tenant context and isolation
 

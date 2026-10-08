@@ -1,6 +1,6 @@
 # Course Modules
 
-**Status: LMS-020 implementation in progress; QA/security review follows CI.**
+**Status: LMS-020 Course Module API complete; LMS-022 Lesson Builder now shares its Course mutation lock.**
 
 ## Model and ownership
 
@@ -31,10 +31,10 @@ Positions start at 1, are unique per Course, and are contiguous after all API st
 
 Every create, metadata update, move, and delete locks the scoped Course row with `SELECT ... FOR UPDATE`, checks its current status while holding the lock, and performs the change before releasing it. This serializes same-Course create/move/delete operations and closes the read-DRAFT/write-after-publish race. The future LMS-023 publishing transaction must acquire the same row lock before changing status and checking completeness. Organization and Course hard deletes use database cascades.
 
-LMS-022 must use this same Course row lock for Lesson structure/content mutations and reject writes while the Course is `PUBLISHED`. LMS-021 adds no mutation API and does not change the LMS-020 lock behavior.
+LMS-022 uses this same Course row lock for Lesson structure/content mutations and rejects writes while the Course is `PUBLISHED`. Both stores lock the tenant-scoped Course row before validating the Module and keep the lock for the complete transaction. This serializes Module deletion against Lesson changes and gives LMS-023 one lock boundary for publishing.
 
 ## Course lifecycle and scope
 
 Module lists and details remain readable for both DRAFT and PUBLISHED Courses. All Module mutations on a PUBLISHED Course return `409 published_course_structure_locked`. LMS-023 remains responsible for the publication transition and completeness rules.
 
-LMS-020 adds no Lesson model or content, learner flows, Course Builder UI, publishing endpoint/versioning, or audit subsystem. LMS-021 owns Lessons; LMS-058 owns audit integration.
+LMS-020 adds no Lesson model or content, learner flows, Course Builder UI, publishing endpoint/versioning, or audit subsystem. LMS-021 owns the Lesson model and LMS-022 owns its secure management API. LMS-023 owns publishing; LMS-024 owns preview and rendering; LMS-058 owns audit integration.

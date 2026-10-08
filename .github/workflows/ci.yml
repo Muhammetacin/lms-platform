@@ -94,6 +94,9 @@ jobs:
       - name: Course Module unit tests
         run: pnpm test:course-module
 
+      - name: Lesson Builder unit tests
+        run: pnpm test:lesson-builder
+
       - name: Team membership tests
         run: pnpm test:team-membership
 
@@ -120,6 +123,9 @@ jobs:
 
       - name: PostgreSQL Lesson model tests
         run: pnpm test:lesson-model:db
+
+      - name: PostgreSQL Lesson Builder tests
+        run: pnpm test:lesson-builder:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
