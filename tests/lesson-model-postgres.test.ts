@@ -191,12 +191,12 @@ test("PostgreSQL enforces Lesson tenant ownership, enum, ordering, candidate key
     await db.$transaction(async (tx) => {
       probeTable = `LessonTenantProbe_${crypto.randomUUID().replaceAll("-", "")}`;
       const probeFk = `${probeTable}_lesson_fk`;
-      await tx.$executeRawUnsafe(`CREATE TEMP TABLE "${probeTable}" (
+      await tx.$executeRawUnsafe(`CREATE TABLE "${probeTable}" (
         "lessonId" UUID NOT NULL,
         "organizationId" UUID NOT NULL,
         CONSTRAINT "${probeFk}" FOREIGN KEY ("lessonId", "organizationId")
           REFERENCES "Lesson" ("id", "organizationId") ON DELETE CASCADE
-      ) ON COMMIT DROP`);
+      )`);
       await tx.$executeRawUnsafe(
         `INSERT INTO "${probeTable}" ("lessonId", "organizationId") VALUES ($1::uuid, $2::uuid)`,
         first.id,
@@ -212,6 +212,7 @@ test("PostgreSQL enforces Lesson tenant ownership, enum, ordering, candidate key
       assert.ok(errorText(mismatch).includes("23503"),
         `expected candidate-key FK violation, got: ${errorText(mismatch)}`);
       await tx.$executeRawUnsafe('ROLLBACK TO SAVEPOINT "lesson_wrong_tenant_probe"');
+      await tx.$executeRawUnsafe(`DROP TABLE "${probeTable}"`);
     });
     probeTable = "";
 
