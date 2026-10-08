@@ -193,3 +193,251 @@ h1 {
     border-radius: 22px;
   }
 }
+
+.preview-shell {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 60px) 24px 56px;
+}
+
+.preview-header,
+.preview-content,
+.preview-unavailable {
+  border: 1px solid #dce5dc;
+  border-radius: 22px;
+  background: rgb(255 255 253 / 94%);
+  box-shadow: 0 18px 48px rgb(38 67 48 / 7%);
+}
+
+.preview-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 270px);
+  gap: 28px;
+  align-items: start;
+  padding: clamp(24px, 5vw, 44px);
+}
+
+.preview-eyebrow {
+  margin: 0 0 12px;
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.preview-course-copy h1,
+.preview-unavailable h1 {
+  font-size: clamp(30px, 5vw, 48px);
+  overflow-wrap: anywhere;
+}
+
+.preview-description,
+.preview-module-description {
+  margin: 16px 0 0;
+  color: #46554b;
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.preview-status {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  padding: 7px 13px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.preview-status.is-draft {
+  border-color: #e7cf8a;
+  background: #fff7de;
+  color: #654b0b;
+}
+
+.preview-status.is-published {
+  border-color: #bdd9c4;
+  background: #edf7ef;
+  color: #205b3d;
+}
+
+.preview-draft-notice,
+.preview-published-at {
+  margin: 12px 0 0;
+  color: #46554b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.preview-content {
+  margin-top: 22px;
+  padding: clamp(22px, 4vw, 36px);
+}
+
+.preview-content h2 {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.03em;
+}
+
+.preview-module-list,
+.preview-lesson-list {
+  display: grid;
+  gap: 16px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preview-module {
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid #dfe7df;
+  border-radius: 16px;
+  background: #f8faf7;
+}
+
+.preview-module h3 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: baseline;
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: clamp(19px, 2.5vw, 24px);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.preview-index {
+  color: var(--green-dark);
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.preview-lesson-list {
+  margin-top: 18px;
+  margin-left: clamp(0px, 2vw, 22px);
+}
+
+.preview-lesson {
+  padding: 18px;
+  border: 1px solid #e2e8e2;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.preview-lesson-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.preview-lesson-heading h4 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.preview-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid #d8e2d9;
+  border-radius: 6px;
+  background: #f2f6f1;
+  color: #354d3b;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+}
+
+.preview-lesson-index {
+  margin: 6px 0 0;
+  color: #68756e;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.preview-text,
+.preview-placeholder,
+.preview-resource-host {
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.preview-text {
+  white-space: pre-wrap;
+}
+
+.preview-placeholder {
+  color: #59675e;
+}
+
+.preview-empty-course {
+  margin-top: 18px;
+}
+
+.preview-resource-host {
+  color: #34483a;
+  font-weight: 650;
+}
+
+.preview-resource-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  margin-top: 8px;
+  color: #205b3d;
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.preview-resource-link:focus-visible {
+  outline: 3px solid rgb(49 118 83 / 30%);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.preview-unavailable {
+  max-width: 680px;
+  margin: 8vh auto 0;
+  padding: clamp(28px, 7vw, 64px);
+}
+
+.preview-unavailable > p:last-child {
+  margin: 18px 0 0;
+  color: #59675e;
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .preview-shell {
+    padding: 20px 14px 36px;
+  }
+
+  .preview-header {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    border-radius: 17px;
+  }
+
+  .preview-content {
+    border-radius: 17px;
+  }
+
+  .preview-lesson-list {
+    margin-left: 0;
+  }
+}

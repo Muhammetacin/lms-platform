@@ -65,3 +65,5 @@ Deleting a Lesson's Module deletes its Lessons. Deleting a Course cascades throu
 `tests/lesson-builder.test.ts` covers validation and safe response mappings. `tests/lesson-builder-postgres.test.ts` uses production Builder handlers and Prisma store against PostgreSQL to cover tenant/role behavior, CRUD/content, the type/content CHECK, ordering, rollback, concurrent mutations, published races, Module delete interaction, and cascades. CI runs both suites plus the LMS-021 model regression.
 
 LMS-022 adds no learner page, preview, rich editor, publish endpoint, Quiz model, storage bucket, upload flow, asset proxy, or audit subsystem. LMS-024 owns safe content rendering and preview; LMS-023 owns publishing and completeness validation.
+
+LMS-024 renders TEXT Lesson source as escaped React text with preserved line breaks. VIDEO/PDF/IMAGE/LINK are never fetched or embedded during preview; a resource card provides an explicit link only when `parseLessonUrl()` accepts the stored HTTPS value. QUIZ renders a placeholder until LMS-025 provides Quiz configuration. See [Course Preview](course-preview.md).

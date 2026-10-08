@@ -100,6 +100,9 @@ jobs:
       - name: Course Publishing unit tests
         run: pnpm test:course-publishing
 
+      - name: Course Preview unit and rendering tests
+        run: pnpm test:course-preview
+
       - name: Team membership tests
         run: pnpm test:team-membership
 
@@ -132,6 +135,9 @@ jobs:
 
       - name: PostgreSQL Course Publishing tests
         run: pnpm test:course-publishing:db
+
+      - name: PostgreSQL Course Preview tests
+        run: pnpm test:course-preview:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
