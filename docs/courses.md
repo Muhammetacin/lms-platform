@@ -1,6 +1,6 @@
 # Courses
 
-**Status: CODE COMPLETE — independent QA/security review required.** LMS-018 establishes the Course model and LMS-019 provides organization-scoped management CRUD. Publishing remains LMS-023.
+**Status: CODE COMPLETE — independent QA/security review required.** LMS-018 establishes the Course model, LMS-019 provides organization-scoped Course CRUD, and LMS-020 adds tenant-owned Course Modules. Publishing remains LMS-023.
 
 ## Ownership and fields
 
@@ -50,8 +50,20 @@ The common safe errors are `invalid_request`, `course_not_found`, `published_cou
 
 `CourseStatus` contains `DRAFT` and `PUBLISHED`. A new Course defaults to `DRAFT`; `PUBLISHED` is present as a valid schema value for the later publishing feature. LMS-019 displays the status, creates drafts, rejects client status writes, permits metadata edits to either status, and protects published Courses from generic deletion. It defines no transition rules, publish/unpublish operation, authorization, `publishedAt` timestamp, completeness validation, or publication workflow. LMS-023 owns those behaviors.
 
+## Course Modules (LMS-020)
+
+A `CourseModule` belongs to one Course and one Organization. It contains `id`, `title`, optional `description`, one-based `position`, and timestamps. Duplicate titles are allowed. A Course starts with no Modules; Lessons and all lesson content belong to LMS-021 and later tickets.
+
+The API is available under `/api/organizations/courses/:courseId/modules`: `GET` lists Modules by ascending position, `POST` creates at the end, and the nested resource supports `GET`, `PATCH`, `DELETE`, plus `POST /:moduleId/move` with `{ "position": n }`. Create accepts only title and optional description; PATCH accepts only title and/or description. Both use Course-style Unicode and plain-text validation. Responses expose only `id`, `title`, `description`, `position`, `createdAt`, and `updatedAt`, with `Cache-Control: no-store` on success and errors.
+
+`position` begins at 1 and is unique within a Course. PostgreSQL also checks `position >= 1`. Create appends at `MAX(position) + 1` inside the structural-write transaction. Move positions are restricted to `1..moduleCount`; a move shifts the intervening rows and preserves Module IDs and timestamps. Delete compacts every later position in the same transaction. Moving to the current position is a safe no-op. There is no minimum Module count.
+
+Only `OWNER` and `ADMIN` with `MANAGE_COURSES` can list or manage Modules; `MEMBER` is denied. Reads work for DRAFT and PUBLISHED Courses. All Module mutations return `409 published_course_structure_locked` for a PUBLISHED Course. Each mutation locks its scoped parent Course row before checking status or positions. LMS-023 publishing must acquire this same row lock before transitioning status and evaluating completeness; that serializes publication against Module structure writes.
+
+The database directly enforces the Module's Organization FK and the composite `(courseId, organizationId) → Course(id, organizationId)` FK. The latter rejects a Course/Organization mismatch even for writes outside the application. `CourseModule` also has `(id, organizationId)` as a candidate key for LMS-021 child integrity. See [Course Modules](course-modules.md) and [LMS-020](../tickets/LMS-020.md) for the implementation and verification record.
+
 ## Scope
 
-LMS-019 does not add a schema change or migration. Modules and module ordering remain LMS-020; Lessons remain LMS-021. Audit integration depends on LMS-058 and no parallel audit log is added. See [LMS-018](../tickets/LMS-018.md) and [LMS-019](../tickets/LMS-019.md) for the implementation records.
+LMS-020 does not add Lessons, module content, a Course Builder UI, publishing transitions/completeness rules, versioning, or a parallel audit log. Audit integration depends on LMS-058. See [LMS-018](../tickets/LMS-018.md), [LMS-019](../tickets/LMS-019.md), and [LMS-020](../tickets/LMS-020.md) for the implementation records.
 
 The Course model PostgreSQL test runs against the dedicated `lms_platform_test` database and is included in CI's PostgreSQL 16 job.

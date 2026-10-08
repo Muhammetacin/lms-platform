@@ -77,6 +77,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - The foundation has required `OrganizationMembership.user` and `.organization` relations, each with `onDelete: Cascade` and `onUpdate: Cascade`. A membership is unique per `(userId, organizationId)`. Preserve these relationships and invariants.
 - LMS-016's `TeamMembership` relates to both `Team` and `OrganizationMembership`, carrying one `organizationId` scalar across the organization and both composite relations. The composite foreign keys ensure the three organization IDs agree, and all parent deletions cascade to the junction row.
 - LMS-018's `Course.organization` is required and cascades on Organization delete. `Course` also has the candidate key `(id, organizationId)`; a future child can reference that tuple so PostgreSQL rejects a child whose tenant differs from its Course.
+- LMS-020's `CourseModule` has a direct cascading Organization FK and a composite cascading Course FK `(courseId, organizationId) → Course(id, organizationId)`. It also has candidate key `(id, organizationId)` for LMS-021, unique `(courseId, position)`, a list index `(organizationId, courseId, position)`, and a migration-level `CHECK (position >= 1)` constraint.
 - A foreign key proves referential integrity only. It does not authorize access or isolate tenants.
 
 ## Uniqueness and indexes
@@ -121,6 +122,7 @@ Responsibility boundaries: LMS-007 owns Authentication; LMS-008 owns Authorizati
 - LMS-014 adds PostgreSQL checks for invitation scope, digest-only tokens, unique hashes, expiry/consumption, concurrent activation, inactive memberships, existing credentials, and rollback. Run them with `pnpm test:employee-invitation:db` against the dedicated test database.
 - LMS-017 adds PostgreSQL tests for production employee-import handlers/stores, same-user memberships across organizations, organization-scoped employee-number conflicts, atomic rollback, and concurrent duplicate imports. Run them with `pnpm test:employee-import:db`; like the other database suites, they require the dedicated `TEST_DATABASE_URL`.
 - LMS-018 adds `pnpm test:course-model:db`, which tests Course defaults, allowed duplicate titles, FK rejection, the composite candidate key, tenant-separated rows, and Organization cascade on the dedicated PostgreSQL 16 CI database.
+- LMS-020 adds `pnpm test:course-module` and `pnpm test:course-module:db`. The PostgreSQL suite exercises production handlers and store, composite tenant FK rejection, unique/positive positions, reordering rollback, create/move races, DRAFT locking, and Course/Organization cascades.
 
 ## Future tenant context and isolation
 

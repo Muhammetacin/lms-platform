@@ -227,10 +227,20 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     assert.equal(publishedMetadataUpdate.status, 200);
     assert.equal((await json<{ course: Course }>(publishedMetadataUpdate)).course.status, "PUBLISHED");
 
+    const moduleDeletedWithCourse = await db.courseModule.create({
+      data: {
+        organizationId: orgA,
+        courseId: created.id,
+        title: "Course delete cascade regression",
+        position: 1,
+      },
+    });
     const draftDeleteResponse = await ownerA.DELETE(request("DELETE"), created.id);
     assert.equal(draftDeleteResponse.status, 200);
     assertNoStore(draftDeleteResponse);
     assert.equal(await db.course.findUnique({ where: { id: created.id } }), null);
+    assert.equal(await db.courseModule.findUnique({ where: { id: moduleDeletedWithCourse.id } }), null,
+      "LMS-019 DRAFT Course deletion must continue to cascade its LMS-020 Modules");
     const publishedDelete = await ownerA.DELETE(request("DELETE"), publishedCourse.id);
     assert.equal(publishedDelete.status, 409);
     assertNoStore(publishedDelete);

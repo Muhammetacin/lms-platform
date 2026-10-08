@@ -61,6 +61,7 @@ model Organization {
   invitations  EmployeeInvitation[]
   teams        Team[]
   courses      Course[]
+  courseModules CourseModule[]
   teamMemberships TeamMembership[]
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
@@ -135,12 +136,32 @@ model Course {
   status         CourseStatus @default(DRAFT)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  modules      CourseModule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([id, organizationId])
   @@index([organizationId, createdAt, id])
+}
+
+model CourseModule {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  courseId       String   @db.Uuid
+  title          String
+  description    String?
+  position       Int
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  course       Course       @relation(fields: [courseId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id, organizationId])
+  @@unique([courseId, position])
+  @@index([organizationId, courseId, position])
 }
 
 model TeamMembership {
