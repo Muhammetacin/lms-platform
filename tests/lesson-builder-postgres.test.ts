@@ -366,10 +366,10 @@ test("PostgreSQL Lesson Builder covers scoped CRUD, content constraints, seriali
     }
 
     const ordering = [
-      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "A", "TEXT"),
-      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "B", "TEXT"),
-      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "C", "TEXT"),
-      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "D", "TEXT"),
+      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "Order A", "TEXT"),
+      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "Order B", "TEXT"),
+      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "Order C", "TEXT"),
+      await createViaApi(ownerA, courseIds.main, moduleIds.ordering, "Order D", "TEXT"),
     ];
     const beforeMove = await assertContiguous(moduleIds.ordering);
     const moveDown = await ownerA.MOVE(request("POST", { position: 2 }), courseIds.main, moduleIds.ordering, ordering[3]!.id);
