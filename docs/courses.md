@@ -71,3 +71,5 @@ The database directly enforces the Module's Organization FK and the composite `(
 LMS-020 does not add Lessons, module content, a Course Builder UI, publishing transitions/completeness rules, versioning, or a parallel audit log. Audit integration depends on LMS-058. See [LMS-018](../tickets/LMS-018.md), [LMS-019](../tickets/LMS-019.md), and [LMS-020](../tickets/LMS-020.md) for the implementation records.
 
 The Course model PostgreSQL test runs against the dedicated `lms_platform_test` database and is included in CI's PostgreSQL 16 job.
+
+LMS-024 adds read-only admin preview for DRAFT and PUBLISHED Courses at `/courses/:courseId/preview` and `GET /api/organizations/courses/:courseId/preview`. OWNER/ADMIN authorization, private rendering, and the safe content policy are documented in [Course Preview](course-preview.md). Preview does not alter lifecycle, structure, or content.
