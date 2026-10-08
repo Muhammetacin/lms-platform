@@ -103,8 +103,12 @@ test("PostgreSQL Lesson Builder covers scoped CRUD, content constraints, seriali
   const assertNoStore = (response: Response) => assert.equal(response.headers.get("cache-control"), "no-store");
   const createCourse = (id: string, organizationId = orgA, status: "DRAFT" | "PUBLISHED" = "DRAFT") =>
     db.course.create({ data: { id, organizationId, title: `Course ${id}`, status } });
-  const createModule = (id: string, courseId: string, organizationId = orgA) =>
-    db.courseModule.create({ data: { id, organizationId, courseId, title: `Module ${id}`, position: 1 } });
+  const modulePositions = new Map<string, number>();
+  const createModule = (id: string, courseId: string, organizationId = orgA) => {
+    const position = (modulePositions.get(courseId) ?? 0) + 1;
+    modulePositions.set(courseId, position);
+    return db.courseModule.create({ data: { id, organizationId, courseId, title: `Module ${id}`, position } });
+  };
   const createViaApi = async (
     handlers: ReturnType<typeof makeHandlers>,
     courseId: string,
