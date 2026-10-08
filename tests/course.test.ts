@@ -57,7 +57,7 @@ class MemoryStore implements CourseStore {
     this.scopes.push({ operation: "create", organizationId });
     const now = new Date();
     const id = `00000000-0000-4000-8000-${String(++this.sequence).padStart(12, "0")}`;
-    const course: StoredCourse = { id, ...input, organizationId, status: "DRAFT", createdAt: now, updatedAt: now };
+    const course: StoredCourse = { id, ...input, organizationId, status: "DRAFT", publishedAt: null, createdAt: now, updatedAt: now };
     this.courses.set(id, course);
     return publicCourse(course);
   }
@@ -137,6 +137,7 @@ function seedCourse(
     title: "Safety Training",
     description: null,
     status,
+    publishedAt: status === "PUBLISHED" ? new Date("2026-01-01T00:00:00.000Z") : null,
     createdAt: now,
     updatedAt: now,
   });

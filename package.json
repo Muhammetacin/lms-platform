@@ -33,6 +33,8 @@
     "test:course-module:db": "node --conditions=react-server --experimental-strip-types --test tests/course-module-postgres.test.ts",
     "test:lesson-builder": "node --experimental-strip-types --test tests/lesson-builder.test.ts",
     "test:lesson-builder:db": "node --conditions=react-server --experimental-strip-types --test tests/lesson-builder-postgres.test.ts",
+    "test:course-publishing": "node --experimental-strip-types --test tests/course-publishing.test.ts",
+    "test:course-publishing:db": "node --conditions=react-server --experimental-strip-types --test tests/course-publishing-postgres.test.ts",
     "test:lesson-model:db": "node --conditions=react-server --experimental-strip-types --test tests/lesson-model-postgres.test.ts",
     "test:team-membership": "node --experimental-strip-types --test tests/team-membership.test.ts",
     "test:team-membership:db": "node --conditions=react-server --experimental-strip-types --test tests/team-membership-postgres.test.ts",

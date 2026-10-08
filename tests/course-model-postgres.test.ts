@@ -38,6 +38,7 @@ test("PostgreSQL enforces Course ownership, lifecycle defaults, tenant keys, and
       title: "Published Foundation",
       description: null,
       status: "PUBLISHED",
+      publishedAt: new Date("2026-10-08T00:00:00.000Z"),
     } });
     const duplicateTitle = await db.course.create({ data: {
       organizationId: orgA,
@@ -52,11 +53,13 @@ test("PostgreSQL enforces Course ownership, lifecycle defaults, tenant keys, and
     assert.match(draft.id, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     assert.equal(draft.organizationId, orgA);
     assert.equal(draft.status, "DRAFT");
+    assert.equal(draft.publishedAt, null);
     assert.equal(draft.description, null);
     assert.ok(draft.createdAt instanceof Date);
     assert.ok(draft.updatedAt instanceof Date);
     assert.ok(draft.updatedAt.getTime() >= draft.createdAt.getTime());
     assert.equal(published.status, "PUBLISHED");
+    assert.ok(published.publishedAt instanceof Date);
     assert.equal(published.description, null);
     assert.equal(duplicateTitle.title, draft.title);
     assert.equal(sameTitleInB.title, draft.title);

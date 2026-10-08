@@ -104,6 +104,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     assert.equal(created.title, "Safety Training");
     assert.equal(created.description, null);
     assert.equal(created.status, "DRAFT");
+    assert.equal(created.publishedAt, null);
     assert.equal("organizationId" in created, false);
     const persistedCreated = await db.course.findUniqueOrThrow({ where: { id: created.id } });
     assert.equal(persistedCreated.organizationId, orgA);
@@ -114,6 +115,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     assertNoStore(adminCreatedResponse);
     const adminCourse = (await json<{ course: Course }>(adminCreatedResponse)).course;
     assert.equal(adminCourse.description, null);
+    assert.equal(adminCourse.publishedAt, null);
     assert.equal((await db.course.findUniqueOrThrow({ where: { id: adminCourse.id } })).organizationId, orgA);
     assert.equal((await memberA.POST(request("POST", { title: "Member denied" }))).status, 403);
 
@@ -160,6 +162,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
       organizationId: orgA,
       title: "Published course",
       status: "PUBLISHED",
+      publishedAt: new Date(),
     } });
 
     const listResponse = await ownerA.GET();
@@ -170,6 +173,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     assert.equal(listA.length <= 100, true);
     assert.equal(listA.some(({ id }) => id === foreignCourse.id), false);
     assert.equal(listA.some(({ id }) => id === created.id), true);
+    assert.equal(listA.find(({ id }) => id === created.id)?.publishedAt, null);
     for (let index = 1; index < listA.length; index += 1) {
       const previous = listA[index - 1]!;
       const current = listA[index]!;
@@ -188,6 +192,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     assert.equal(detailResponse.status, 200);
     assertNoStore(detailResponse);
     const detail = (await json<{ course: Course }>(detailResponse)).course;
+    assert.equal(detail.publishedAt, null);
     assert.equal("organizationId" in detail, false);
     assert.equal((await adminA.GET_ONE(adminCourse.id)).status, 200);
     assert.equal((await memberA.GET_ONE(created.id)).status, 403);
@@ -209,6 +214,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     assert.equal(updated.title, "Updated Safety Training");
     assert.equal(updated.description, "Updated details");
     assert.equal(updated.status, "DRAFT");
+    assert.equal(updated.publishedAt, null);
     const cleared = await ownerA.PATCH(request("PATCH", { description: null }), created.id);
     assert.equal((await json<{ course: Course }>(cleared)).course.description, null);
     assert.equal((await ownerA.PATCH(request("PATCH", {}), created.id)).status, 400);
@@ -225,7 +231,9 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
 
     const publishedMetadataUpdate = await adminA.PATCH(request("PATCH", { title: "Published metadata updated" }), publishedCourse.id);
     assert.equal(publishedMetadataUpdate.status, 200);
-    assert.equal((await json<{ course: Course }>(publishedMetadataUpdate)).course.status, "PUBLISHED");
+    const publishedMetadataCourse = (await json<{ course: Course }>(publishedMetadataUpdate)).course;
+    assert.equal(publishedMetadataCourse.status, "PUBLISHED");
+    assert.equal(publishedMetadataCourse.publishedAt?.toISOString(), publishedCourse.publishedAt?.toISOString());
 
     const moduleDeletedWithCourse = await db.courseModule.create({
       data: {
@@ -271,7 +279,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
       ownerA.DELETE(request("DELETE"), racedCourse.id),
       db.course.updateMany({
         where: { id: racedCourse.id, organizationId: orgA, status: "DRAFT" },
-        data: { status: "PUBLISHED" },
+        data: { status: "PUBLISHED", publishedAt: new Date() },
       }),
     ]);
     if (racePublish.count === 1) {

@@ -1,6 +1,6 @@
 # Lessons
 
-**Status: LMS-021 model foundation and LMS-022 Lesson Builder API complete; learner rendering and publishing remain future work.**
+**Status: LMS-021 model foundation, LMS-022 Lesson Builder API, and LMS-023 publication completeness are complete; learner rendering remains future work.**
 
 ## Hierarchy and ownership
 
@@ -54,9 +54,9 @@ The list exposes only `id`, `title`, `type`, `position`, `createdAt`, and `updat
 
 Lesson positions are one-based, unique within a Module, and contiguous after Builder mutations. Create allocates `MAX(position) + 1` under the Course lock. Move validates `1..N`, parks the moving row at an unused positive sentinel, shifts intervening rows in a collision-safe direction, then assigns its final position. Delete and gap compaction are atomic. IDs remain stable; SQL position-only updates leave `updatedAt` unchanged.
 
-Every mutation first locks the tenant-scoped parent Course with `SELECT "status" FROM "Course" WHERE "id" = ? AND "organizationId" = ? FOR UPDATE`. The lock remains held throughout the transaction. This is the same serialization boundary as LMS-020 CourseModule mutations and the one LMS-023 publishing must use. Concurrent Lesson creates, moves, deletes, Module changes, and publishing serialize on that row. A malformed or foreign Module is checked only after the Course scope is established.
+Every mutation first locks the tenant-scoped parent Course with `SELECT "status" FROM "Course" WHERE "id" = ? AND "organizationId" = ? FOR UPDATE`. The lock remains held throughout the transaction. This is the same serialization boundary as LMS-020 CourseModule mutations and LMS-023 publishing. Concurrent Lesson creates, moves, deletes, Module changes, and publishing serialize on that row. A malformed or foreign Module is checked only after the Course scope is established.
 
-Published Courses remain readable through Lesson list and detail. Create, metadata update, content update, move, and delete return `409 published_course_structure_locked`. LMS-023 owns the status transition and publication completeness. Draft Lessons may have empty content.
+Published Courses remain readable through Lesson list and detail. Create, metadata update, content update, move, and delete return `409 published_course_structure_locked`. Publishing requires at least one Module and Lesson per Module, contiguous ordering, valid non-blank TEXT or HTTPS URL content, and blocks all QUIZ Lessons until a Quiz model exists. Draft Lessons may have empty content; publishing does not fetch URLs.
 
 ## Cascades and regression coverage
 

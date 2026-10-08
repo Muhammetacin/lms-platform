@@ -97,7 +97,10 @@ test("PostgreSQL Course Modules enforce authorization, tenant integrity, orderin
   const json = async <T>(response: Response) => await response.json() as T;
   const assertNoStore = (response: Response) => assert.equal(response.headers.get("cache-control"), "no-store");
   const createCourse = async (id: string, organizationId = orgA, status: "DRAFT" | "PUBLISHED" = "DRAFT") =>
-    db.course.create({ data: { id, organizationId, title: `Course ${id}`, status } });
+    db.course.create({ data: {
+      id, organizationId, title: `Course ${id}`, status,
+      publishedAt: status === "PUBLISHED" ? new Date() : null,
+    } });
   const createViaApi = async (
     handlers: ReturnType<typeof makeHandlers>,
     courseId: string,
@@ -382,7 +385,10 @@ test("PostgreSQL Course Modules enforce authorization, tenant integrity, orderin
     const raceModule = await createViaApi(ownerA, courseIds.publishRace, "Race module");
     let waitingMutation: Promise<Response> | undefined;
     await db.$transaction(async (transaction) => {
-      await transaction.course.update({ where: { id: courseIds.publishRace }, data: { status: "PUBLISHED" } });
+      await transaction.course.update({
+        where: { id: courseIds.publishRace },
+        data: { status: "PUBLISHED", publishedAt: new Date() },
+      });
       waitingMutation = ownerA.POST(
         request("POST", { title: "Must wait for publication" }, moduleUrl(courseIds.publishRace)),
         courseIds.publishRace,

@@ -29,12 +29,12 @@ Create accepts exactly `title` and optional `description`; PATCH accepts exactly
 
 Positions start at 1, are unique per Course, and are contiguous after all API structural writes. Create computes `MAX(position) + 1` within a transaction. Move accepts only `1..moduleCount`. It parks the selected row at an unused positive position, shifts intervening rows one at a time in a collision-free direction, then places the selected row at its destination. The database uniqueness constraint is never deferred. Position-only SQL updates preserve the row IDs and timestamps. Delete and one-by-one compaction share one transaction; deleting the last or only Module is valid.
 
-Every create, metadata update, move, and delete locks the scoped Course row with `SELECT ... FOR UPDATE`, checks its current status while holding the lock, and performs the change before releasing it. This serializes same-Course create/move/delete operations and closes the read-DRAFT/write-after-publish race. The future LMS-023 publishing transaction must acquire the same row lock before changing status and checking completeness. Organization and Course hard deletes use database cascades.
+Every create, metadata update, move, and delete locks the scoped Course row with `SELECT ... FOR UPDATE`, checks its current status while holding the lock, and performs the change before releasing it. This serializes same-Course create/move/delete operations and closes the read-DRAFT/write-after-publish race. LMS-023 publishing acquires the same row lock before reading completeness and changing status. Organization and Course hard deletes use database cascades.
 
 LMS-022 uses this same Course row lock for Lesson structure/content mutations and rejects writes while the Course is `PUBLISHED`. Both stores lock the tenant-scoped Course row before validating the Module and keep the lock for the complete transaction. This serializes Module deletion against Lesson changes and gives LMS-023 one lock boundary for publishing.
 
 ## Course lifecycle and scope
 
-Module lists and details remain readable for both DRAFT and PUBLISHED Courses. All Module mutations on a PUBLISHED Course return `409 published_course_structure_locked`. LMS-023 remains responsible for the publication transition and completeness rules.
+Module lists and details remain readable for both DRAFT and PUBLISHED Courses. All Module mutations on a PUBLISHED Course return `409 published_course_structure_locked`. LMS-023 validates contiguous ordering and requires every Module to contain a Lesson before publication.
 
 LMS-020 adds no Lesson model or content, learner flows, Course Builder UI, publishing endpoint/versioning, or audit subsystem. LMS-021 owns the Lesson model and LMS-022 owns its secure management API. LMS-023 owns publishing; LMS-024 owns preview and rendering; LMS-058 owns audit integration.
