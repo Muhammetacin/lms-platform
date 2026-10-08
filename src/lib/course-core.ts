@@ -8,6 +8,7 @@ export type Course = {
   title: string;
   description: string | null;
   status: CourseStatus;
+  publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

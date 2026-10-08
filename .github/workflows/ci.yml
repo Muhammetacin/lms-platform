@@ -97,6 +97,9 @@ jobs:
       - name: Lesson Builder unit tests
         run: pnpm test:lesson-builder
 
+      - name: Course Publishing unit tests
+        run: pnpm test:course-publishing
+
       - name: Team membership tests
         run: pnpm test:team-membership
 
@@ -126,6 +129,9 @@ jobs:
 
       - name: PostgreSQL Lesson Builder tests
         run: pnpm test:lesson-builder:db
+
+      - name: PostgreSQL Course Publishing tests
+        run: pnpm test:course-publishing:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db

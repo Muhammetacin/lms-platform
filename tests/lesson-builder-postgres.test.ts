@@ -102,7 +102,10 @@ test("PostgreSQL Lesson Builder covers scoped CRUD, content constraints, seriali
   const json = async <T>(response: Response) => await response.json() as T;
   const assertNoStore = (response: Response) => assert.equal(response.headers.get("cache-control"), "no-store");
   const createCourse = (id: string, organizationId = orgA, status: "DRAFT" | "PUBLISHED" = "DRAFT") =>
-    db.course.create({ data: { id, organizationId, title: `Course ${id}`, status } });
+    db.course.create({ data: {
+      id, organizationId, title: `Course ${id}`, status,
+      publishedAt: status === "PUBLISHED" ? new Date() : null,
+    } });
   const modulePositions = new Map<string, number>();
   const createModule = (id: string, courseId: string, organizationId = orgA) => {
     const position = (modulePositions.get(courseId) ?? 0) + 1;
@@ -475,7 +478,10 @@ test("PostgreSQL Lesson Builder covers scoped CRUD, content constraints, seriali
     let waitingMutation: Promise<Response> | undefined;
     await db.$transaction(async (transaction) => {
       await transaction.$queryRaw`SELECT "status" FROM "Course" WHERE "id" = ${courseIds.publishRace}::uuid AND "organizationId" = ${orgA}::uuid FOR UPDATE`;
-      await transaction.course.update({ where: { id: courseIds.publishRace }, data: { status: "PUBLISHED" } });
+      await transaction.course.update({
+        where: { id: courseIds.publishRace },
+        data: { status: "PUBLISHED", publishedAt: new Date() },
+      });
       waitingMutation = ownerA.POST(request("POST", { title: "Must wait", type: "TEXT" }), courseIds.publishRace, moduleIds.publishRace);
       await new Promise((resolve) => setTimeout(resolve, 50));
     });

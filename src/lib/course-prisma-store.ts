@@ -6,6 +6,7 @@ const courseResponseFields = {
   title: true,
   description: true,
   status: true,
+  publishedAt: true,
   createdAt: true,
   updatedAt: true,
 } as const;

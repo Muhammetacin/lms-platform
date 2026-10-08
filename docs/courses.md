@@ -1,6 +1,6 @@
 # Courses
 
-**Status: CODE COMPLETE — independent QA/security review required.** LMS-018 establishes the Course model, LMS-019 provides organization-scoped Course CRUD, and LMS-020 adds tenant-owned Course Modules. Publishing remains LMS-023.
+**Status: CODE COMPLETE — independent QA/security review required.** LMS-018 establishes the Course model, LMS-019 provides organization-scoped Course CRUD, LMS-020 adds tenant-owned Course Modules, and LMS-023 adds the first safe publication transition.
 
 ## Ownership and fields
 
@@ -13,6 +13,7 @@ Every Course belongs to exactly one Organization through the required `Course.or
 | `title` | Required text; duplicate titles are allowed within and across organizations |
 | `description` | Optional text, stored as `NULL` when absent |
 | `status` | `CourseStatus`, with `DRAFT` as the database default |
+| `publishedAt` | Nullable timestamp; null for DRAFT and set once on first publication |
 | `createdAt` | Required timestamp, set on insert |
 | `updatedAt` | Required timestamp, maintained by Prisma on Prisma writes |
 
@@ -28,7 +29,7 @@ The FK and candidate key enforce database integrity, but they do not provide aut
 
 ## Management API (LMS-019)
 
-All endpoints require the trusted tenant from `requireTenantContext()` and the existing `MANAGE_COURSES` capability. `OWNER` and `ADMIN` can manage Courses. `MEMBER` cannot use these generic management reads or writes; learner visibility belongs to a later assignment/enrollment flow. Every response sets `Cache-Control: no-store` and exposes only `id`, `title`, `description`, `status`, `createdAt`, and `updatedAt`.
+All endpoints require the trusted tenant from `requireTenantContext()` and the existing `MANAGE_COURSES` capability. `OWNER` and `ADMIN` can manage Courses. `MEMBER` cannot use these generic management reads or writes; learner visibility belongs to a later assignment/enrollment flow. Every response sets `Cache-Control: no-store` and exposes only `id`, `title`, `description`, `status`, `publishedAt`, `createdAt`, and `updatedAt`.
 
 | Method and path | Result |
 | --- | --- |
@@ -37,6 +38,7 @@ All endpoints require the trusted tenant from `requireTenantContext()` and the e
 | `GET /api/organizations/courses/:courseId` | Returns `{ "course": ... }` |
 | `PATCH /api/organizations/courses/:courseId` | Updates Course metadata and returns `{ "course": ... }` |
 | `DELETE /api/organizations/courses/:courseId` | Hard-deletes a draft and returns `{ "deleted": true }` |
+| `POST /api/organizations/courses/:courseId/publish` | Validates completeness and publishes a DRAFT Course; exact body `{}` |
 
 Create accepts only `title` and optional `description`; a new Course is always `DRAFT`. PATCH accepts only `title` and/or `description`, with at least one field. Status is read-only. Create and update reject unknown fields, including tenant, status, and server metadata fields. Mutations use the existing same-origin `application/json` request guard.
 
@@ -48,7 +50,9 @@ The common safe errors are `invalid_request`, `course_not_found`, `published_cou
 
 ## Lifecycle foundation
 
-`CourseStatus` contains `DRAFT` and `PUBLISHED`. A new Course defaults to `DRAFT`; `PUBLISHED` is present as a valid schema value for the later publishing feature. LMS-019 displays the status, creates drafts, rejects client status writes, permits metadata edits to either status, and protects published Courses from generic deletion. It defines no transition rules, publish/unpublish operation, authorization, `publishedAt` timestamp, completeness validation, or publication workflow. LMS-023 owns those behaviors.
+`CourseStatus` contains `DRAFT` and `PUBLISHED`. A new Course defaults to `DRAFT` with `publishedAt = NULL`. LMS-023 supports only `DRAFT → PUBLISHED`; it has no unpublish endpoint. PostgreSQL enforces that DRAFT has a null timestamp and PUBLISHED has a non-null timestamp. The migration backfills historical PUBLISHED rows from `updatedAt` before adding the CHECK constraint. Generic Course CRUD cannot write status or `publishedAt`; metadata edits remain allowed after publication and deletion remains forbidden.
+
+Publication is implemented by [`Course Publishing`](course-publishing.md). Its completion checks and status update run inside one transaction while holding the tenant-scoped Course row lock shared by Module and Lesson mutations. A published Course keeps the timestamp from its first successful transition; repeat publish is idempotent. Module/Lesson structure and content mutations remain locked after publication.
 
 ## Course Modules (LMS-020)
 
@@ -58,7 +62,7 @@ The API is available under `/api/organizations/courses/:courseId/modules`: `GET`
 
 `position` begins at 1 and is unique within a Course. PostgreSQL also checks `position >= 1`. Create appends at `MAX(position) + 1` inside the structural-write transaction. Move positions are restricted to `1..moduleCount`; a move shifts the intervening rows and preserves Module IDs and timestamps. Delete compacts every later position in the same transaction. Moving to the current position is a safe no-op. There is no minimum Module count.
 
-Only `OWNER` and `ADMIN` with `MANAGE_COURSES` can list or manage Modules; `MEMBER` is denied. Reads work for DRAFT and PUBLISHED Courses. All Module mutations return `409 published_course_structure_locked` for a PUBLISHED Course. Each mutation locks its scoped parent Course row before checking status or positions. LMS-023 publishing must acquire this same row lock before transitioning status and evaluating completeness; that serializes publication against Module structure writes.
+Only `OWNER` and `ADMIN` with `MANAGE_COURSES` can list or manage Modules; `MEMBER` is denied. Reads work for DRAFT and PUBLISHED Courses. All Module mutations return `409 published_course_structure_locked` for a PUBLISHED Course. Each mutation locks its scoped parent Course row before checking status or positions. LMS-023 publication acquires this same row lock before transitioning status and evaluating completeness, serializing publication against Module structure writes.
 
 The database directly enforces the Module's Organization FK and the composite `(courseId, organizationId) → Course(id, organizationId)` FK. The latter rejects a Course/Organization mismatch even for writes outside the application. `CourseModule` also has `(id, organizationId)` as a candidate key for LMS-021 child integrity. See [Course Modules](course-modules.md) and [LMS-020](../tickets/LMS-020.md) for the implementation and verification record.
 

@@ -144,6 +144,7 @@ model Course {
   title          String
   description    String?
   status         CourseStatus @default(DRAFT)
+  publishedAt    DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   modules      CourseModule[]
