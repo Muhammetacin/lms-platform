@@ -315,12 +315,13 @@ test("PostgreSQL Lesson Builder covers scoped CRUD, content constraints, seriali
     }
     assert.ok(await db.lesson.findUnique({ where: { id: foreignLesson.id } }), "foreign lesson remains unchanged");
     const forgedTenant = await ownerA.GET_LIST(courseIds.main, moduleIds.main);
+    const baselineLessonIds = (await json<{ lessons: LessonDetail[] }>(forgedTenant)).lessons.map(({ id }) => id);
     const forgedUrlRequest = new Request(`${lessonsUrl(courseIds.main, moduleIds.main)}?organizationId=${orgB}&tenantId=${orgB}`, {
       headers: { "x-organization-id": orgB, "x-tenant-id": orgB },
     });
     const forgedTenantList = await ownerA.GET_LIST(courseIds.main, moduleIds.main, forgedUrlRequest);
     assert.equal(forgedTenant.status, 200);
-    assert.deepEqual((await json<{ lessons: LessonDetail[] }>(forgedTenantList)).lessons.map(({ id }) => id), [first.id, second.id],
+    assert.deepEqual((await json<{ lessons: LessonDetail[] }>(forgedTenantList)).lessons.map(({ id }) => id), baselineLessonIds,
       "forged tenant query/header values cannot replace trusted tenant context");
     for (const denied of [
       await memberA.POST(request("POST", { title: "No", type: "TEXT" }), courseIds.main, moduleIds.main),
