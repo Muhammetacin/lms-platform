@@ -4,9 +4,11 @@
 
 ## Model and ownership
 
-`CourseModule` is a tenant-owned child of `Course`. It stores a UUID `id`, `organizationId`, `courseId`, required title, nullable description, one-based position, and timestamps. The public response omits `organizationId` and `courseId`. Duplicate titles are allowed. A Course may have zero Modules; Lessons and content are outside LMS-020.
+`CourseModule` is a tenant-owned child of `Course`. It stores a UUID `id`, `organizationId`, `courseId`, required title, nullable description, one-based position, and timestamps. The public response omits `organizationId` and `courseId`. Duplicate titles are allowed. A Course may have zero Modules. Its `lessons Lesson[]` relation is added by LMS-021; module Lesson ownership remains enforced by the database composite key.
 
-The database enforces both `organizationId → Organization.id` and `(courseId, organizationId) → Course(id, organizationId)`, with cascading deletes. `@@unique([id, organizationId])` is prepared for a future Lesson composite FK. PostgreSQL also enforces unique `(courseId, position)` and the migration's `position >= 1` CHECK. The `(organizationId, courseId, position)` index supports tenant scoped ordered lists.
+The database enforces both `organizationId → Organization.id` and `(courseId, organizationId) → Course(id, organizationId)`, with cascading deletes. `@@unique([id, organizationId])` is referenced by LMS-021's composite Lesson FK. PostgreSQL also enforces unique `(courseId, position)` and the migration's `position >= 1` CHECK. The `(organizationId, courseId, position)` index supports tenant scoped ordered lists.
+
+LMS-021 adds a required Lesson child through `(moduleId, organizationId) → CourseModule(id, organizationId)`, plus a direct Organization relation. Deleting a Module cascades to its Lessons; deleting a Course cascades through Modules to Lessons. Lesson positions are local to each Module and do not change the Module ordering rules below.
 
 ## API
 
@@ -28,6 +30,8 @@ Create accepts exactly `title` and optional `description`; PATCH accepts exactly
 Positions start at 1, are unique per Course, and are contiguous after all API structural writes. Create computes `MAX(position) + 1` within a transaction. Move accepts only `1..moduleCount`. It parks the selected row at an unused positive position, shifts intervening rows one at a time in a collision-free direction, then places the selected row at its destination. The database uniqueness constraint is never deferred. Position-only SQL updates preserve the row IDs and timestamps. Delete and one-by-one compaction share one transaction; deleting the last or only Module is valid.
 
 Every create, metadata update, move, and delete locks the scoped Course row with `SELECT ... FOR UPDATE`, checks its current status while holding the lock, and performs the change before releasing it. This serializes same-Course create/move/delete operations and closes the read-DRAFT/write-after-publish race. The future LMS-023 publishing transaction must acquire the same row lock before changing status and checking completeness. Organization and Course hard deletes use database cascades.
+
+LMS-022 must use this same Course row lock for Lesson structure/content mutations and reject writes while the Course is `PUBLISHED`. LMS-021 adds no mutation API and does not change the LMS-020 lock behavior.
 
 ## Course lifecycle and scope
 

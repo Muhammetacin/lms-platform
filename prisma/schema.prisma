@@ -18,6 +18,15 @@ enum CourseStatus {
   PUBLISHED
 }
 
+enum LessonType {
+  TEXT
+  VIDEO
+  PDF
+  IMAGE
+  LINK
+  QUIZ
+}
+
 model User {
   id           String                   @id @default(uuid()) @db.Uuid
   email        String                   @unique
@@ -62,6 +71,7 @@ model Organization {
   teams        Team[]
   courses      Course[]
   courseModules CourseModule[]
+  lessons      Lesson[]
   teamMemberships TeamMembership[]
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
@@ -155,6 +165,7 @@ model CourseModule {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   course       Course       @relation(fields: [courseId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  lessons      Lesson[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -162,6 +173,25 @@ model CourseModule {
   @@unique([id, organizationId])
   @@unique([courseId, position])
   @@index([organizationId, courseId, position])
+}
+
+model Lesson {
+  id             String     @id @default(uuid()) @db.Uuid
+  organizationId String     @db.Uuid
+  moduleId       String     @db.Uuid
+  title          String
+  type           LessonType
+  position       Int
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  module       CourseModule @relation(fields: [moduleId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id, organizationId])
+  @@unique([moduleId, position])
+  @@index([organizationId, moduleId, position])
 }
 
 model TeamMembership {

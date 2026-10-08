@@ -118,6 +118,9 @@ jobs:
       - name: PostgreSQL Course Module tests
         run: pnpm test:course-module:db
 
+      - name: PostgreSQL Lesson model tests
+        run: pnpm test:lesson-model:db
+
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
 
