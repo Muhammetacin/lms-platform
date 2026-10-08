@@ -14,6 +14,8 @@ export function createPrismaCoursePreviewStore(db: PrismaClient): CoursePreviewS
             description: true,
             status: true,
             publishedAt: true,
+            createdAt: true,
+            updatedAt: true,
           },
         });
         if (!course) return null;
