@@ -106,6 +106,9 @@ jobs:
       - name: Admin Portal unit and rendering tests
         run: pnpm test:admin-portal
 
+      - name: Course Management UI tests
+        run: pnpm test:course-management-ui
+
       - name: Development bootstrap tests
         run: pnpm test:dev-bootstrap
 
@@ -147,6 +150,9 @@ jobs:
 
       - name: PostgreSQL Admin Portal tests
         run: pnpm test:admin-portal:db
+
+      - name: PostgreSQL Course Management UI integration tests
+        run: pnpm test:course-management-ui:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db

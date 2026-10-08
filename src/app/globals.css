@@ -883,6 +883,338 @@ h1 {
   margin: 20px auto;
 }
 
+.admin-page-header,
+.course-detail-header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-page-header h1,
+.course-detail-header h1 {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: clamp(30px, 5vw, 42px);
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+
+.admin-page-header .admin-eyebrow,
+.course-detail-header .admin-eyebrow {
+  margin-bottom: 7px;
+}
+
+.primary-action,
+.secondary-action,
+.destructive-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-action {
+  background: var(--green);
+  color: #fff;
+}
+
+.primary-action:hover:not(:disabled) {
+  background: var(--green-dark);
+}
+
+.secondary-action {
+  border-color: #bfd4c3;
+  background: #fff;
+  color: var(--green-dark);
+}
+
+.secondary-action:hover:not(:disabled) {
+  background: #edf4ed;
+}
+
+.destructive-action {
+  border-color: #e4baba;
+  background: #fff;
+  color: #9d3030;
+}
+
+.destructive-action:hover:not(:disabled) {
+  background: #fff2f0;
+}
+
+.primary-action:disabled,
+.secondary-action:disabled,
+.destructive-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.primary-action:focus-visible,
+.secondary-action:focus-visible,
+.destructive-action:focus-visible,
+.course-form input:focus-visible,
+.course-form textarea:focus-visible {
+  outline: 3px solid rgb(49 118 83 / 28%);
+  outline-offset: 3px;
+}
+
+.admin-empty-state .empty-state-action {
+  margin-top: 20px;
+}
+
+.course-row-actions,
+.course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.back-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  margin-bottom: 15px;
+  color: var(--green-dark);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.back-link:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid rgb(49 118 83 / 28%);
+  outline-offset: 3px;
+}
+
+.course-form-card,
+.course-description-panel,
+.course-settings,
+.course-date-meta {
+  border: 1px solid #dce5dc;
+  border-radius: 15px;
+  background: rgb(255 255 253 / 94%);
+  box-shadow: 0 12px 32px rgb(38 67 48 / 4%);
+}
+
+.course-form-card {
+  width: min(100%, 760px);
+  margin-top: 22px;
+  padding: clamp(20px, 4vw, 32px);
+}
+
+.course-form {
+  display: grid;
+  gap: 21px;
+  min-width: 0;
+}
+
+.form-field {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.form-field label {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-field input,
+.form-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid #cbd8ce;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.form-field textarea {
+  min-height: 132px;
+  resize: vertical;
+}
+
+.form-field input[aria-invalid="true"],
+.form-field textarea[aria-invalid="true"] {
+  border-color: #b24646;
+}
+
+.form-hint,
+.field-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.form-hint {
+  color: var(--muted);
+}
+
+.field-error,
+.error-message {
+  color: #9d3030;
+}
+
+.success-message {
+  color: #205b3d;
+}
+
+.error-message,
+.success-message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.course-detail-header {
+  align-items: flex-start;
+  margin: 0 0 20px;
+  padding: clamp(20px, 4vw, 30px);
+  border: 1px solid #dce5dc;
+  border-radius: 15px;
+  background: rgb(255 255 253 / 94%);
+}
+
+.course-detail-title {
+  display: grid;
+  min-width: 0;
+  justify-items: start;
+  gap: 10px;
+}
+
+.course-detail-title .admin-eyebrow {
+  margin: 0;
+}
+
+.course-description-panel,
+.course-settings,
+.danger-zone {
+  margin-top: 18px;
+  padding: clamp(20px, 4vw, 28px);
+}
+
+.course-description-panel h2,
+.course-settings h2,
+.danger-zone h2 {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.course-description-text,
+.course-description-empty,
+.danger-zone-note {
+  margin: 10px 0 0;
+  color: #59675e;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.course-date-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin: 18px 0 0;
+  padding: 17px 22px;
+}
+
+.course-date-meta dt {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.course-date-meta dd {
+  margin: 0;
+  font-size: 14px;
+}
+
+.section-heading {
+  margin-bottom: 21px;
+}
+
+.section-heading .admin-eyebrow,
+.danger-zone .admin-eyebrow {
+  margin-bottom: 6px;
+}
+
+.course-settings .course-form {
+  width: min(100%, 760px);
+}
+
+.danger-zone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 19px;
+  border: 1px solid #e3c2c2;
+  border-radius: 15px;
+  background: #fffafa;
+}
+
+.danger-zone-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.confirmation-panel {
+  width: min(100%, 600px);
+  padding: 20px;
+  border: 1px solid #e4baba;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.confirmation-panel h3 {
+  margin: 0;
+  color: #7b2929;
+  font-family: "Manrope", sans-serif;
+  font-size: 18px;
+}
+
+.confirmation-panel p {
+  margin: 9px 0 17px;
+  color: #59675e;
+  line-height: 1.6;
+}
+
+.course-delete-control {
+  min-width: 0;
+}
+
 @media (max-width: 640px) {
   .preview-shell {
     padding: 20px 14px 36px;
@@ -961,5 +1293,35 @@ h1 {
   .admin-course-meta {
     grid-template-columns: minmax(0, 1fr);
     gap: 9px;
+  }
+
+  .admin-page-header,
+  .course-detail-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-page-header > .primary-action,
+  .course-detail-header > .course-actions {
+    align-self: flex-start;
+  }
+
+  .course-row-actions,
+  .course-actions,
+  .form-actions,
+  .danger-zone-actions {
+    width: 100%;
+  }
+
+  .course-row-actions > *,
+  .course-actions > *,
+  .form-actions > *,
+  .danger-zone-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .course-date-meta {
+    gap: 18px;
+    flex-direction: column;
   }
 }

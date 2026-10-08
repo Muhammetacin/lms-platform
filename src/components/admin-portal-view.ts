@@ -137,12 +137,18 @@ function displayDate(value: Date): string {
 
 export function AdminCourseListView({ courses }: { courses: Course[] }) {
   return h("div", { className: "admin-page courses-page" },
-    h("p", { className: "admin-eyebrow" }, "Administration"),
-    h("h1", null, "Courses"),
+    h("header", { className: "admin-page-header" },
+      h("div", null,
+        h("p", { className: "admin-eyebrow" }, "Administration"),
+        h("h1", null, "Courses"),
+      ),
+      h("a", { className: "primary-action", href: "/admin/courses/new" }, "New course"),
+    ),
     courses.length === 0
       ? h("section", { className: "admin-empty-state", "aria-labelledby": "empty-courses-title" },
           h("h2", { id: "empty-courses-title" }, "No courses yet."),
-          h("p", null, "Course creation will be available in the next Course UI milestone."),
+          h("p", null, "Create your first course to start building training content."),
+          h("a", { className: "primary-action empty-state-action", href: "/admin/courses/new" }, "Create course"),
         )
       : h("ul", { className: "admin-course-list", "aria-label": "Courses" },
           courses.map((course) => {
@@ -167,7 +173,10 @@ export function AdminCourseListView({ courses }: { courses: Course[] }) {
                       : "—"),
                   ),
                 ),
-                h("a", { className: "admin-preview-link", href: `/courses/${encodeURIComponent(course.id)}/preview` }, "Preview"),
+                h("div", { className: "course-row-actions" },
+                  h("a", { className: "secondary-action", href: `/admin/courses/${encodeURIComponent(course.id)}` }, "Manage"),
+                  h("a", { className: "admin-preview-link", href: `/courses/${encodeURIComponent(course.id)}/preview` }, "Preview"),
+                ),
               ),
             );
           }),

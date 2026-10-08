@@ -206,7 +206,8 @@ test("Course rows include status, dates, preview links, and no mutation controls
 test("empty Course state is clear and the responsive views use one main landmark", () => {
   const emptyCourses = renderToStaticMarkup(createElement(AdminCourseListView, { courses: [] }));
   assert.match(emptyCourses, /No courses yet\./);
-  assert.match(emptyCourses, /Course creation will be available in the next Course UI milestone\./);
+  assert.match(emptyCourses, /Create your first course to start building training content\./);
+  assert.match(emptyCourses, /href="\/admin\/courses\/new"[^>]*>Create course/);
   assert.doesNotMatch(emptyCourses, /Preview/);
 
   const shell = renderToStaticMarkup(createElement(AdminShellView, {
