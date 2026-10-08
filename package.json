@@ -39,6 +39,8 @@
     "test:course-preview:db": "node --conditions=react-server --experimental-strip-types --test tests/course-preview-postgres.test.ts",
     "test:course-management-ui": "node --experimental-strip-types --test tests/course-management-ui.test.ts",
     "test:course-management-ui:db": "node --conditions=react-server --experimental-strip-types --test tests/course-management-ui-postgres.test.ts",
+    "test:course-builder-ui": "node --experimental-strip-types --test tests/course-builder-ui.test.ts",
+    "test:course-builder-ui:db": "node --conditions=react-server --experimental-strip-types --test tests/course-builder-ui-postgres.test.ts",
     "test:admin-portal": "node --experimental-strip-types --test tests/admin-portal.test.ts",
     "test:admin-portal:db": "node --conditions=react-server --experimental-strip-types --test tests/admin-portal-postgres.test.ts",
     "test:dev-bootstrap": "node --experimental-strip-types --test tests/dev-bootstrap.test.ts",

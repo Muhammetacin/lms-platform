@@ -22,6 +22,8 @@ const courseRecord: CoursePreviewRecord = {
   description: "A course description",
   status: "DRAFT",
   publishedAt: null,
+  createdAt: new Date("2026-10-01T12:00:00.000Z"),
+  updatedAt: new Date("2026-10-02T12:00:00.000Z"),
   modules: [{
     id: "module-1",
     title: "Getting started",
