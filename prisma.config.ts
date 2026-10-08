@@ -1,5 +1,7 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import { defineConfig } from "prisma/config";
+
+loadEnv({ path: [".env.local", ".env"] });
 
 const databaseUrl = process.env.DATABASE_URL;
 const schemaOnlyCommands = ["generate", "validate", "diff"];

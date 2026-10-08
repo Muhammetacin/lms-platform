@@ -1,16 +1,18 @@
 import { redirect } from "next/navigation";
-import { homeDestination } from "@/lib/admin-portal-core";
+import { LoginForm } from "@/app/login/login-form";
 import { getAuthenticatedUser } from "@/lib/auth-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function Home() {
+export default async function LoginPage() {
   let authenticated = false;
   try {
     authenticated = (await getAuthenticatedUser()) !== null;
   } catch {
-    // Fail toward sign-in; the existing auth API reports service availability safely.
+    // Keep the page usable so the existing API can return its safe unavailable response.
   }
-  redirect(homeDestination(authenticated));
+
+  if (authenticated) redirect("/admin");
+  return <LoginForm />;
 }

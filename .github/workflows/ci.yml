@@ -103,6 +103,12 @@ jobs:
       - name: Course Preview unit and rendering tests
         run: pnpm test:course-preview
 
+      - name: Admin Portal unit and rendering tests
+        run: pnpm test:admin-portal
+
+      - name: Development bootstrap tests
+        run: pnpm test:dev-bootstrap
+
       - name: Team membership tests
         run: pnpm test:team-membership
 
@@ -138,6 +144,9 @@ jobs:
 
       - name: PostgreSQL Course Preview tests
         run: pnpm test:course-preview:db
+
+      - name: PostgreSQL Admin Portal tests
+        run: pnpm test:admin-portal:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db
