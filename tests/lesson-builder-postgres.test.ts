@@ -302,7 +302,8 @@ test("PostgreSQL Lesson Builder covers scoped CRUD, content constraints, seriali
     assert.deepEqual(await (await ownerA.GET_LIST(courseIds.main, "malformed-module")).json(), { error: "module_not_found" });
     assert.deepEqual(await (await ownerA.GET_ONE(courseIds.other, moduleIds.main, first.id)).json(), { error: "module_not_found" });
     assert.deepEqual(await (await ownerA.GET_ONE(courseIds.main, moduleIds.main, "malformed-lesson")).json(), { error: "lesson_not_found" });
-    assert.deepEqual(await (await ownerA.GET_ONE(courseIds.main, moduleIds.other, first.id)).json(), { error: "lesson_not_found" });
+    assert.deepEqual(await (await ownerA.GET_ONE(courseIds.main, moduleIds.other, first.id)).json(), { error: "module_not_found" });
+    assert.deepEqual(await (await ownerA.GET_ONE(courseIds.main, moduleIds.types, first.id)).json(), { error: "lesson_not_found" });
     const foreignLesson = await createViaApi(ownerB, courseIds.foreign, moduleIds.foreign, "Tenant B only", "TEXT");
     assert.deepEqual(await (await ownerA.GET_ONE(courseIds.main, moduleIds.main, foreignLesson.id)).json(), { error: "lesson_not_found" });
     for (const result of [
