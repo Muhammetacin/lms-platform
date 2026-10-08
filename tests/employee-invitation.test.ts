@@ -193,7 +193,7 @@ test("re-invitation invalidates the prior token, while disabled delivery creates
   assert.deepEqual(first, { status: "created" });
   assert.deepEqual(second, { status: "created" });
   assert.equal(await validateEmployeeInvitation(firstToken, store), "consumed");
-  assert.equal(await validateEmployeeInvitation(delivered[1], store), "valid");
+  assert.equal(await validateEmployeeInvitation(delivered[1], store, now), "valid");
   assert.equal(delivered[0] === delivered[1], false);
   assert.equal(JSON.stringify(second).includes(delivered[1]), false);
 
