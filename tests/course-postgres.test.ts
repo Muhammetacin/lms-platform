@@ -233,7 +233,7 @@ test("PostgreSQL Course CRUD enforces management access, tenant scope, validatio
     assert.equal(publishedMetadataUpdate.status, 200);
     const publishedMetadataCourse = (await json<{ course: Course }>(publishedMetadataUpdate)).course;
     assert.equal(publishedMetadataCourse.status, "PUBLISHED");
-    assert.equal(publishedMetadataCourse.publishedAt?.toISOString(), publishedCourse.publishedAt?.toISOString());
+    assert.equal(publishedMetadataCourse.publishedAt, publishedCourse.publishedAt?.toISOString());
 
     const moduleDeletedWithCourse = await db.courseModule.create({
       data: {
