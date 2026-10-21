@@ -16,6 +16,11 @@
 .env
 .env.*
 !.env.example
+!.env.e2e.example
+
+# Playwright output
+/playwright-report/
+/test-results/
 
 # Logs and package manager state
 *.log

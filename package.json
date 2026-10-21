@@ -14,6 +14,7 @@
     "db:validate": "prisma validate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:e2e": "node --experimental-strip-types scripts/migrate-e2e.ts",
     "db:health": "node --experimental-strip-types scripts/db-health.mjs",
     "test:db-config": "node --experimental-strip-types --test tests/database-url.test.ts",
     "test:auth": "node --experimental-strip-types --test tests/authentication.test.ts",
@@ -40,6 +41,8 @@
     "test:course-management-ui": "node --experimental-strip-types --test tests/course-management-ui.test.ts",
     "test:course-management-ui:db": "node --conditions=react-server --experimental-strip-types --test tests/course-management-ui-postgres.test.ts",
     "test:course-builder-ui": "node --experimental-strip-types --test tests/course-builder-ui.test.ts",
+    "test:e2e": "pnpm db:generate && playwright test",
+    "test:e2e:headed": "pnpm db:generate && playwright test --headed",
     "test:course-builder-ui:db": "node --conditions=react-server --experimental-strip-types --test tests/course-builder-ui-postgres.test.ts",
     "test:admin-portal": "node --experimental-strip-types --test tests/admin-portal.test.ts",
     "test:admin-portal:db": "node --conditions=react-server --experimental-strip-types --test tests/admin-portal-postgres.test.ts",
@@ -62,7 +65,9 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/node": "22.19.15",
+    "@types/pg": "8.23.1",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "dotenv": "^18.0.5",

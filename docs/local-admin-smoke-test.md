@@ -1,5 +1,7 @@
 # Local Admin Portal smoke test
 
+For automated Chromium acceptance and the CEO's final sign-off record, see [Course Epic — Windows E2E and local acceptance](./course-epic-local-acceptance.md). This manual flow continues to use the development database and `http://localhost:3000`; the automated suite uses a separate disposable database and port.
+
 This flow creates a local `OWNER` account using the application's existing password hashing and session implementation. It does not reset a database, create sample Courses, or use `TEST_DATABASE_URL`.
 
 1. Start PostgreSQL and create/use a local development database named `lms_platform`.
@@ -20,4 +22,4 @@ This flow creates a local `OWNER` account using the application's existing passw
 16. On a separate DRAFT Course, select **Delete course**, review the permanent-deletion confirmation, then choose **Delete permanently**. Confirm the Course is removed from `/admin/courses` and dashboard counts refresh. **Cancel** must leave the Course intact.
 17. Use **Sign out** and confirm the browser returns to `/login`. If logout fails, the page remains open and shows a generic error.
 
-For a multi-tenant smoke check, create a second organization and owner using a separate local setup, then confirm each account sees and edits only its own Courses. Course management takes the tenant only from authenticated server context; no organization selector or tenant field is part of the forms. PostgreSQL integration tests use the separately configured `TEST_DATABASE_URL`; the bootstrap command reads only `DATABASE_URL` and never falls back to the test database.
+For a multi-tenant smoke check, use the synthetic second-organization fixtures in `pnpm test:e2e`, or create a second organization and owner using a separate local setup. Confirm each account sees and edits only its own Courses. Course management takes the tenant only from authenticated server context; no organization selector or tenant field is part of the forms. PostgreSQL integration tests use the separately configured `TEST_DATABASE_URL`; the bootstrap command reads only `DATABASE_URL` and never falls back to either test database.

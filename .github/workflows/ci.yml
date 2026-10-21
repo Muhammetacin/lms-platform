@@ -10,6 +10,73 @@ permissions:
   contents: read
 
 jobs:
+  e2e:
+    name: Course Epic browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: lms_platform_e2e
+          POSTGRES_USER: lms_app
+          POSTGRES_PASSWORD: lms_e2e_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lms_app -d lms_platform_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      E2E_DATABASE_URL: postgresql://lms_app:lms_e2e_password@127.0.0.1:5432/lms_platform_e2e?schema=public
+      E2E_BASE_URL: http://127.0.0.1:3100
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Prisma schema
+        run: pnpm db:validate
+
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
+      - name: Apply migrations to isolated E2E database
+        run: pnpm db:migrate:deploy
+        env:
+          DATABASE_URL: postgresql://lms_app:lms_e2e_password@127.0.0.1:5432/lms_platform_e2e?schema=public
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Course Epic browser acceptance
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lms-087-playwright-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
   validate:
     name: Lint, database checks, typecheck, and build
     runs-on: ubuntu-latest

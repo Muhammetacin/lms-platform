@@ -1,6 +1,9 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import { config as loadEnv } from "dotenv";
 import { PrismaClient } from "../src/generated/prisma/client.ts";
 import { requireDatabaseUrl } from "../src/lib/database-url.ts";
+
+loadEnv({ path: [".env.local", ".env"] });
 
 let client;
 try {
