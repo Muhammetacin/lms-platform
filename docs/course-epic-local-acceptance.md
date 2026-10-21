@@ -55,15 +55,20 @@ notepad .env.e2e.local
 
 Set `E2E_DATABASE_URL` to the `lms_platform_e2e` database on a loopback host (`localhost`, `127.0.0.1`, or `::1`). Keep `E2E_BASE_URL=http://127.0.0.1:3100`. Playwright rejects a non-loopback database or app URL, any database name other than `lms_platform_e2e`, and reuse of `DATABASE_URL` or `TEST_DATABASE_URL`.
 
-Apply migrations and provision the development Owner. `pnpm dev:bootstrap` uses the real password hashing implementation and does not read `E2E_DATABASE_URL`.
+Apply migrations separately to the development and E2E databases, then provision the development Owner. The first migration command reads `DATABASE_URL` from `.env.local` and targets `lms_platform`. The E2E helper reads `E2E_DATABASE_URL` from `.env.e2e.local`, validates that it is a reachable loopback PostgreSQL URL for exactly `lms_platform_e2e`, then temporarily supplies that value to Prisma as `DATABASE_URL` while running the existing migrations. It restores the prior `DATABASE_URL` even if Prisma fails. The helper uses `prisma migrate deploy`; it does not drop, truncate, or empty a database. Never use the development or integration-test database as the E2E target. `pnpm dev:bootstrap` uses the real password hashing implementation and only the development `DATABASE_URL`.
 
 ```powershell
 pnpm db:validate
 pnpm db:generate
+# Uses DATABASE_URL from .env.local (lms_platform).
 pnpm db:migrate:deploy
+# Validates and migrates only E2E_DATABASE_URL from .env.e2e.local (lms_platform_e2e).
+pnpm db:migrate:e2e
 pnpm db:health
 pnpm dev:bootstrap
 ```
+
+Keep both local environment files out of source control. Do not paste database URLs or passwords into logs, issue reports, or committed files. `pnpm test:e2e` is intentionally allowed to reset synthetic fixtures only in the dedicated `lms_platform_e2e` database after its live database-name guard; it does not reset `lms_platform` or `lms_platform_test`.
 
 ## Run the browser acceptance suite
 

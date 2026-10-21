@@ -56,6 +56,24 @@ export function validateE2EEnvironment(env: NodeJS.ProcessEnv): void {
 
 export function assertCurrentDatabase(actual: string): void {
   if (actual !== EXPECTED_DATABASE) {
-    throw new Error(`Refusing destructive E2E setup: connected database is ${actual}, expected ${EXPECTED_DATABASE}.`);
+    throw new Error(`Refusing E2E database operation: connected database is ${actual}, expected ${EXPECTED_DATABASE}.`);
+  }
+}
+
+export function withTemporaryDatabaseUrl<T>(
+  env: NodeJS.ProcessEnv,
+  databaseUrl: string,
+  operation: () => T,
+): T {
+  const originalDatabaseUrl = env.DATABASE_URL;
+  try {
+    env.DATABASE_URL = databaseUrl;
+    return operation();
+  } finally {
+    if (originalDatabaseUrl === undefined) {
+      delete env.DATABASE_URL;
+    } else {
+      env.DATABASE_URL = originalDatabaseUrl;
+    }
   }
 }

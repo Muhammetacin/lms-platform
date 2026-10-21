@@ -14,6 +14,7 @@
     "db:validate": "prisma validate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:e2e": "node --experimental-strip-types scripts/migrate-e2e.ts",
     "db:health": "node --experimental-strip-types scripts/db-health.mjs",
     "test:db-config": "node --experimental-strip-types --test tests/database-url.test.ts",
     "test:auth": "node --experimental-strip-types --test tests/authentication.test.ts",
