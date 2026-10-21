@@ -38,7 +38,15 @@ test("001 authentication, protected pages, and credential handling", async ({ pa
 });
 
 test("002 create, update, persist, list, and count a course", async ({ page, e2e }, testInfo) => {
-  const course = await createCourseThroughUI(page, e2e.users.ownerA, testInfo);
+  await login(page, e2e.users.ownerA);
+  await page.goto("/admin");
+  const courseCount = page.getByRole("region", { name: "Organization course summary" })
+    .getByRole("article").filter({ has: page.getByRole("heading", { name: "Courses", exact: true }) })
+    .getByRole("paragraph");
+  await expect(courseCount).toHaveText(/^\d+$/);
+  const countBeforeCreate = Number(await courseCount.textContent());
+
+  const course = await createCourse(page, `LMS-087 ${testInfo.title} ${crypto.randomUUID().slice(0, 8)}`);
   await expect(page.getByRole("heading", { name: course.title, exact: true })).toBeVisible();
   await expect(page.getByText("DRAFT", { exact: true }).first()).toBeVisible();
   await page.getByLabel("Title").fill(`${course.title} updated`);
@@ -51,9 +59,7 @@ test("002 create, update, persist, list, and count a course", async ({ page, e2e
   await page.goto("/admin/courses");
   await expect(page.getByRole("heading", { name: `${course.title} updated`, exact: true })).toBeVisible();
   await page.goto("/admin");
-  const courseCount = page.getByRole("region", { name: "Organization course summary" })
-    .getByRole("article").filter({ has: page.getByRole("heading", { name: "Courses", exact: true }) });
-  await expect(courseCount.getByRole("paragraph")).toHaveText("1");
+  await expect(courseCount).toHaveText(String(countBeforeCreate + 1));
 });
 
 test("003 module create, edit, reorder, boundary controls, and delete confirmation", async ({ page, e2e }, testInfo) => {
