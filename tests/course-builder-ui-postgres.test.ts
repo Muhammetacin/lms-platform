@@ -255,7 +255,7 @@ test("Course Builder request contracts run the production Course, Module, Lesson
       { title: "Read this", position: 2 },
     ]);
     assert.deepEqual(builderRead.builder.modules[1]?.lessons[1]?.content, { text: "First line\nSecond line" });
-    assert.deepEqual(builderRead.builder.modules[0]?.lessons[0]?.content, { text: null });
+    assert.deepEqual(builderRead.builder.modules[0]?.lessons[0]?.content, { text: "Module B content" });
     assertNoStore(await ownerPreview.GET(request(`${coursePath(course.id)}/preview`), course.id));
 
     const published = await publish(adminPublish, course.id);
