@@ -6,36 +6,25 @@ import {
 import { CourseDeleteControl } from "@/components/course-delete-control";
 import { CourseForm } from "@/components/course-form";
 import { CourseManagementDetailView } from "@/components/course-management-view";
-import { AuthorizationError } from "@/lib/authorization-core";
-import { TenantContextError } from "@/lib/tenant-context-core";
-import { getManagedCourse } from "@/lib/course-management-server";
+import { CourseBuilder } from "@/components/course-builder";
+import { builderPageAccessMessage } from "@/lib/course-builder-core";
+import { getManagedCourseBuilder } from "@/lib/course-builder-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type CoursePageProps = { params: Promise<{ courseId: string }> };
 
-function deniedPage(error: unknown) {
-  if (
-    (error instanceof AuthorizationError && error.code === "unauthenticated") ||
-    (error instanceof TenantContextError && error.code === "unauthenticated")
-  ) redirect("/login");
-
-  if (
-    (error instanceof AuthorizationError && error.code === "forbidden") ||
-    (error instanceof TenantContextError && ["no_organization_membership", "invalid_organization_context"].includes(error.code))
-  ) return <AccessUnavailableView />;
-
-  return <AdminDataUnavailableView />;
-}
-
 export default async function CourseManagementPage({ params }: CoursePageProps) {
   const { courseId } = await params;
-  let result: Awaited<ReturnType<typeof getManagedCourse>>;
+  let result: Awaited<ReturnType<typeof getManagedCourseBuilder>>;
   try {
-    result = await getManagedCourse(courseId);
+    result = await getManagedCourseBuilder(courseId);
   } catch (error) {
-    return deniedPage(error);
+    const access = builderPageAccessMessage(error);
+    if (access === "login") redirect("/login");
+    if (access === "denied") return <AccessUnavailableView />;
+    return <AdminDataUnavailableView />;
   }
   if (result.kind === "not_found") notFound();
 
@@ -51,6 +40,7 @@ export default async function CourseManagementPage({ params }: CoursePageProps) 
           initialDescription={course.description}
         />
       }
+      builder={<CourseBuilder builder={result.builder} />}
       deleteControl={<CourseDeleteControl courseId={course.id} allowDelete={course.status === "DRAFT"} />}
     />
   );

@@ -243,6 +243,8 @@ test("PostgreSQL Course Preview enforces hierarchy, permissions, tenant scope, a
         description: null,
         status: "DRAFT",
         publishedAt: null,
+        createdAt: snapshotCourse.createdAt,
+        updatedAt: snapshotCourse.updatedAt,
         modules: [{
           id: snapshotModule.id,
           title: "After module",

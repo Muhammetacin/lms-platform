@@ -81,3 +81,21 @@ The protected Admin Portal offers `/admin/courses` with **New course**, **Manage
 The UI reuses `POST /api/organizations/courses`, `PATCH /api/organizations/courses/:courseId`, and `DELETE /api/organizations/courses/:courseId`. It does not add a mutation endpoint or status transition. The server page verifies Admin Portal access and obtains the trusted tenant with `requireTenantContext()` before calling the tenant-scoped `courseStore.get(organizationId, courseId)`. Malformed, missing, and foreign Course IDs all use the same Next.js `notFound()` result. Forms send only `title` and `description`; delete sends `{}`. No organization or tenant selector/field is accepted. OWNER and ADMIN with `MANAGE_COURSES` can manage; MEMBER is denied by the existing server-side access layer.
 
 Client validation mirrors the existing backend title (trimmed 2–160 Unicode code points) and description (optional, maximum 4,000 Unicode code points, blank becomes `null`) limits for feedback. The backend remains authoritative. Known API error codes map to generic user messages, request buttons guard duplicate submissions, and successful edits refresh server-rendered Course data. Course Builder editing for Modules and Lessons is LMS-086; browser-flow acceptance is LMS-087.
+
+## Course Builder UI (LMS-086)
+
+The existing `/admin/courses/:courseId` management page now includes **Course content** and **Publishing**. Its Server Component obtains `requireTenantContext()` and verifies `MANAGE_COURSES` before it reads Course, Module, Lesson, or content data. The Builder reuses the production `coursePreviewStore` read model: one tenant-scoped `REPEATABLE READ` snapshot loads the Course, ordered Modules, and all ordered Lessons/content in bounded queries. The internal record includes Course timestamps for the LMS-085 details view; the Preview API response remains unchanged. Foreign, malformed, and missing Course IDs use the same `notFound()` result.
+
+DRAFT structure and content are editable in place. Module and Lesson creation, metadata edits, deletes, and moves use the LMS-020 and LMS-022 endpoints. Move controls submit the requested one-based position to the existing move routes; the UI renders backend ordering by `position ASC, id ASC` and never writes ordering locally. Confirmations protect Module and Lesson deletion. Changing a content-bearing Lesson type asks for confirmation because the backend clears incompatible content.
+
+TEXT content is ordinary escaped text. VIDEO, PDF, IMAGE, and LINK editors accept HTTPS URLs and only show the hostname plus an explicit **Open resource** action in read-only views. The Builder never embeds or fetches user URLs. QUIZ displays the LMS-025 boundary message and offers no mock configuration fields. Published Courses retain their structure, content summaries, and Preview link; structure, content, and publish controls are absent. LMS-085 title/description editing remains available.
+
+Publishing calls only `POST /api/organizations/courses/:courseId/publish` with `{}`. The explicit confirmation explains that publication locks structure. Safe messages map known publishing issue codes to local Module/Lesson titles; unknown issue data is replaced by a generic message. The backend remains authoritative for completeness and the 409 published-structure lock.
+
+The Builder uses same-origin JSON request helpers with strict body allowlists. The browser supplies no tenant, organization, status, position on metadata, or server metadata fields. 401/403/404/409 responses are handled with safe messages and refresh/navigation. Text and resource URLs are never interpreted as HTML or automatically loaded.
+
+`pnpm test:course-builder-ui` covers validation, request contracts, Builder views, editable/read-only states, confirmations, issue mapping, authorization ordering, XSS, and external-load restrictions. `pnpm test:course-builder-ui:db` drives the existing Course, Module, Lesson, Preview, and Publishing handlers with production Prisma stores through the full DRAFT-to-PUBLISHED flow and tenant/role checks.
+
+## Course Epic gate
+
+After LMS-086, **Course Epic status: FEATURE COMPLETE — ACCEPTANCE PENDING**. LMS-087 remains the final E2E/browser acceptance, local smoke-test, and final DONE gate. LMS-087 is not expected to add Builder features.

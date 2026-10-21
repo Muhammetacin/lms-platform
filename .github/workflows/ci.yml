@@ -109,6 +109,9 @@ jobs:
       - name: Course Management UI tests
         run: pnpm test:course-management-ui
 
+      - name: Course Builder UI tests
+        run: pnpm test:course-builder-ui
+
       - name: Development bootstrap tests
         run: pnpm test:dev-bootstrap
 
@@ -153,6 +156,9 @@ jobs:
 
       - name: PostgreSQL Course Management UI integration tests
         run: pnpm test:course-management-ui:db
+
+      - name: PostgreSQL Course Builder UI integration tests
+        run: pnpm test:course-builder-ui:db
 
       - name: PostgreSQL tenant isolation tests
         run: pnpm test:tenant-isolation:db

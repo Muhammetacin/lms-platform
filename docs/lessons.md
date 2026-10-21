@@ -67,3 +67,11 @@ Deleting a Lesson's Module deletes its Lessons. Deleting a Course cascades throu
 LMS-022 adds no learner page, preview, rich editor, publish endpoint, Quiz model, storage bucket, upload flow, asset proxy, or audit subsystem. LMS-024 owns safe content rendering and preview; LMS-023 owns publishing and completeness validation.
 
 LMS-024 renders TEXT Lesson source as escaped React text with preserved line breaks. VIDEO/PDF/IMAGE/LINK are never fetched or embedded during preview; a resource card provides an explicit link only when `parseLessonUrl()` accepts the stored HTTPS value. QUIZ renders a placeholder until LMS-025 provides Quiz configuration. See [Course Preview](course-preview.md).
+
+## Course Builder UI (LMS-086)
+
+The protected `/admin/courses/:courseId` page edits Lessons inside their existing Modules. DRAFT Lessons can be created with one of the exact `TEXT`, `VIDEO`, `PDF`, `IMAGE`, `LINK`, or `QUIZ` enum values; title and type edits use `PATCH`, content uses the existing `PUT .../:lessonId/content`, and deletion and ordering use the existing `DELETE` and `POST .../:lessonId/move` routes. Move up/down buttons send the backend position, and server data is refreshed after each successful mutation.
+
+TEXT uses a multiline plain-text editor with the backend's 100,000 Unicode code-point limit. URL lesson types use HTTPS-only inputs, limited to 2,048 code points with no credentials. The UI makes no resource requests; published summaries show a parsed hostname and an explicit safe external link. Type changes that would clear configured content require confirmation. QUIZ remains a placeholder until the Quiz epic.
+
+Published Lessons remain visible with their type, content status, and safe summaries, while all structural and content controls are removed. LMS-023 still decides whether the Course can be published and returns the machine-readable issue codes rendered by the Builder. No Lesson model or API changes are introduced by LMS-086.
