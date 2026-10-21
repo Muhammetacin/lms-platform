@@ -7,6 +7,12 @@
 - Do not add secrets, credentials, or real environment values to tracked files. Keep `.env.example` limited to safe placeholders and documented variable names.
 - Do not silently change the product requirements or the selected technology stack. Record material architecture changes in a new ADR.
 
+## Epic delivery and acceptance
+
+- Deliver functional epics vertically: Database → Backend/API → Frontend/UI → Integration/E2E → Local acceptance → Epic DONE.
+- A code-complete ticket or green CI does not make its parent epic DONE. Keep the Course Epic at **ACCEPTANCE PENDING** until the CEO records explicit acceptance against the final reviewed commit and local acceptance checklist.
+- Record the exact tested commit, CI run, local environment, results, and blockers in the epic acceptance record. Do not infer acceptance from silence, merge status, or a successful automated run.
+
 ## Engineering conventions
 
 - Use TypeScript and Next.js App Router for application code.

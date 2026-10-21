@@ -16,6 +16,16 @@ The platform is intended to grow into a multi-tenant service. Its architecture s
 4. **Incremental delivery:** implement product capabilities through scoped tickets with verifiable acceptance criteria.
 5. **Operational quality:** maintain type safety, automated checks, and clear project documentation.
 
+## Course Epic delivery gate
+
+The Course Epic is delivered vertically through LMS-084 Admin Portal Foundation, LMS-085 Course Management UI, LMS-086 Course Builder UI, and LMS-087 Course Epic E2E & Local Acceptance. The required path is:
+
+```text
+Database → Backend/API → Frontend/UI → Integration/E2E → Local acceptance → Epic DONE
+```
+
+LMS-087 supplies real-browser acceptance through the running Next.js application and production APIs, plus a separate Windows local acceptance checklist for the CEO. CI and code completion are necessary but do not record business acceptance. The epic remains **ACCEPTANCE PENDING** until the CEO explicitly accepts the final reviewed commit in that checklist. See [LMS-087](../tickets/LMS-087.md) and the [local Course Epic acceptance guide](course-epic-local-acceptance.md).
+
 ## Initial technical direction
 
 The web application uses Next.js App Router and TypeScript, with pnpm for package management and ESLint for static analysis. GitHub Actions validates changes. PostgreSQL and Prisma provide persistence; LMS-010 establishes application-layer isolation for employee management, while future tenant-owned resources remain separately scoped.
