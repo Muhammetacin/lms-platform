@@ -8,6 +8,7 @@ import { CourseModuleView, AddModuleFormView } from "../src/components/course-mo
 import { LessonEditorView, AddLessonFormView } from "../src/components/lesson-editor-view.ts";
 import { LessonContentEditorView } from "../src/components/lesson-content-editor-view.ts";
 import { CoursePublishControlView } from "../src/components/course-publish-control-view.ts";
+import { lessonTypes } from "../src/lib/lesson-core.ts";
 import {
   builderApiErrorMessage,
   cancelLessonTypeChange,
@@ -169,9 +170,12 @@ test("Move up/down controls disable at the first and last positions", () => {
 
 test("lesson create and edit forms use exact enum values and metadata allowlists", () => {
   const markup = render(h(AddLessonFormView, { open: true }));
-  for (const type of ["TEXT", "VIDEO", "PDF", "IMAGE", "LINK", "QUIZ"]) {
-    assert.match(markup, new RegExp(`<option value="${type}"`));
-  }
+  assert.match(markup, /role="combobox"[^>]+aria-expanded="false"/);
+  assert.match(markup, /aria-labelledby="new-lesson-type-label"/);
+  assert.match(markup, /name="type" value="TEXT"/);
+  assert.match(markup, /class="lesson-type-trigger"[^>]*>[\s\S]*?<span>Text<\/span>/);
+  assert.doesNotMatch(markup, /<select|<option/);
+  assert.deepEqual(lessonTypes, ["TEXT", "VIDEO", "PDF", "IMAGE", "LINK", "QUIZ"]);
   assert.deepEqual(JSON.parse(createLessonRequest("Welcome", "TEXT").body), { title: "Welcome", type: "TEXT" });
   assert.deepEqual(JSON.parse(updateLessonRequest({ title: "Updated", type: "VIDEO" }).body), { title: "Updated", type: "VIDEO" });
   assert.deepEqual(JSON.parse(deleteLessonRequest().body), {});
@@ -179,7 +183,11 @@ test("lesson create and edit forms use exact enum values and metadata allowlists
   assert.equal(validateLessonType("OTHER").valid, false);
   const metadata = render(lessonView({ editing: true }));
   assert.match(metadata, /Lesson title/);
-  assert.match(metadata, /<select/);
+  assert.match(metadata, /role="combobox"[^>]+aria-labelledby="lesson-[^"]+-type-label"/);
+  assert.match(metadata, /name="type" value="TEXT"/);
+  assert.doesNotMatch(metadata, /<select|<option/);
+  const pendingMetadata = render(lessonView({ editing: true, pending: true }));
+  assert.match(pendingMetadata, /role="combobox"[^>]+disabled=""/);
   assert.doesNotMatch(metadata, /name="(?:position|content|organizationId|tenantId)"/);
 });
 

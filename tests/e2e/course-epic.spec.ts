@@ -11,6 +11,7 @@ import {
   login,
   moduleCard,
   saveLessonText,
+  selectLessonType,
 } from "./support/flows.ts";
 
 test("001 authentication, protected pages, and credential handling", async ({ page, e2e }) => {
@@ -141,15 +142,15 @@ test("005 lesson type confirmation cancels safely and accepts exactly one metada
     if (request.method() === "PATCH" && request.url().includes(mutationPath)) patches.push(request.postData() ?? "");
   });
   await typeLesson.getByRole("button", { name: "Edit lesson" }).click();
-  await page.getByLabel("Type", { exact: true }).selectOption("VIDEO");
+  await selectLessonType(typeLesson, "VIDEO");
   await page.getByRole("button", { name: "Save lesson" }).click();
   await expect(page.getByRole("heading", { name: "Change lesson type?" })).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(typeLesson.getByLabel("Lesson content")).toHaveValue("Keep this text until acceptance.");
-  await expect(typeLesson.getByLabel("Type", { exact: true })).toHaveValue("TEXT");
+  await expect(typeLesson.getByRole("combobox", { name: "Type", exact: true })).toHaveText("Text");
   expect(patches).toHaveLength(0);
 
-  await page.getByLabel("Type", { exact: true }).selectOption("VIDEO");
+  await selectLessonType(typeLesson, "VIDEO");
   await page.getByRole("button", { name: "Save lesson" }).click();
   const response = page.waitForResponse((candidate) => candidate.url().includes(mutationPath) && candidate.request().method() === "PATCH");
   await page.getByRole("button", { name: "Change type" }).click();
@@ -161,8 +162,129 @@ test("005 lesson type confirmation cancels safely and accepts exactly one metada
   await expect(lessonCard(page, "Type lesson").getByLabel("Lesson content")).toHaveCount(0);
 });
 
-test("006 preview preserves order and plain text while keeping resources as safe external links", async ({ page, e2e }, testInfo) => {
+test("Lesson Type selector exposes all values and supports keyboard, pointer, and responsive use", async ({ page, e2e }, testInfo) => {
   await createCourseThroughUI(page, e2e.users.ownerA, testInfo);
+  await addModule(page, "Selector module");
+  const courseModule = moduleCard(page, "Selector module");
+  await courseModule.getByRole("button", { name: "+ Add lesson" }).click();
+
+  const title = courseModule.getByLabel("Lesson title");
+  const trigger = courseModule.getByRole("combobox", { name: "Type", exact: true });
+  await page.mouse.move(0, 0);
+  await expect(trigger).toHaveText("Text");
+  await title.focus();
+  await page.keyboard.press("Tab");
+  await expect(trigger).toBeFocused();
+  expect(await trigger.evaluate((element) => element.matches(":focus-visible"))).toBe(true);
+
+  await trigger.press("Enter");
+  const listbox = page.getByRole("listbox", { name: "Type", exact: true });
+  const options = page.getByRole("option");
+  await expect(listbox).toBeVisible();
+  await expect(options).toHaveCount(6);
+  for (const label of ["Text", "Video", "PDF", "Image", "Link", "Quiz"]) {
+    await expect(page.getByRole("option", { name: label, exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole("option", { name: "Text", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+  await page.keyboard.press("Escape");
+  await expect(listbox).toHaveCount(0);
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveText("Text");
+  await expect(trigger).toBeFocused();
+
+  await trigger.press("ArrowDown");
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveText("Text");
+  await expect(trigger).toBeFocused();
+
+  await trigger.press("Space");
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveText("Text");
+
+  await page.keyboard.press("Tab");
+  await expect(listbox).toHaveCount(0);
+  await expect(courseModule.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
+  await trigger.focus();
+
+  await trigger.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  const videoOption = page.getByRole("option", { name: "Video", exact: true });
+  await expect(trigger).toBeFocused();
+  expect(await trigger.getAttribute("aria-activedescendant")).toBe(await videoOption.getAttribute("id"));
+  await page.keyboard.press("Escape");
+  await expect(trigger).toHaveText("Text");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  for (const width of [1440, 768, 375]) {
+    await page.setViewportSize({ width, height: 812 });
+    await trigger.click();
+    const bounds = await page.getByRole("listbox", { name: "Type", exact: true }).evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    });
+    expect(bounds.left).toBeGreaterThanOrEqual(0);
+    expect(bounds.right).toBeLessThanOrEqual(width);
+    expect(bounds.top).toBeGreaterThanOrEqual(0);
+    expect(bounds.bottom).toBeLessThanOrEqual(812);
+    await page.keyboard.press("Escape");
+  }
+
+  await trigger.click();
+  await title.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  await trigger.click();
+  await page.getByRole("option", { name: "Video", exact: true }).click();
+  await expect(trigger).toHaveText("Video");
+  await expect(trigger).toBeFocused();
+  await title.fill("Mouse-selected lesson");
+  const createResponse = page.waitForResponse((response) => response.request().method() === "POST" && /\/lessons$/.test(response.url()));
+  await courseModule.getByRole("button", { name: "Add lesson", exact: true }).click();
+  const created = await (await createResponse).json() as { lesson?: { type?: string } };
+  expect(created.lesson?.type).toBe("VIDEO");
+
+  const lesson = lessonCard(page, "Mouse-selected lesson");
+  await lesson.getByRole("button", { name: "Edit lesson" }).click();
+  await selectLessonType(lesson, "PDF");
+  await expect(lesson.getByRole("combobox", { name: "Type", exact: true })).toHaveText("PDF");
+  const updateResponse = page.waitForResponse((response) => response.request().method() === "PATCH" && /\/lessons\//.test(response.url()));
+  await lesson.getByRole("button", { name: "Save lesson" }).click();
+  const updated = await (await updateResponse).json() as { lesson?: { type?: string } };
+  expect(updated.lesson?.type).toBe("PDF");
+  await expect(lesson.getByText("Lesson 1 · PDF", { exact: true })).toBeVisible();
+});
+
+test.describe("Lesson Type touch interaction", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+
+  test("touch tap selects the requested lesson type", async ({ page, e2e }, testInfo) => {
+    await createCourseThroughUI(page, e2e.users.ownerA, testInfo);
+    await addModule(page, "Touch selector module");
+    const courseModule = moduleCard(page, "Touch selector module");
+    await courseModule.getByRole("button", { name: "+ Add lesson" }).tap();
+    await courseModule.getByLabel("Lesson title").fill("Touch-selected lesson");
+
+    const trigger = courseModule.getByRole("combobox", { name: "Type", exact: true });
+    await trigger.tap();
+    await page.getByRole("option", { name: "Image", exact: true }).tap();
+    await expect(trigger).toHaveText("Image");
+    await expect(trigger).toBeFocused();
+
+    const createResponse = page.waitForResponse((response) => response.request().method() === "POST" && /\/lessons$/.test(response.url()));
+    await courseModule.getByRole("button", { name: "Add lesson", exact: true }).tap();
+    const created = await (await createResponse).json() as { lesson?: { type?: string } };
+    expect(created.lesson?.type).toBe("IMAGE");
+  });
+});
+
+test("006 preview preserves order and plain text while keeping resources as safe external links", async ({ page, e2e }, testInfo) => {
+  const { courseId } = await createCourseThroughUI(page, e2e.users.ownerA, testInfo);
   await addModule(page, "Preview module one");
   await addModule(page, "Preview module two");
   await addLesson(page, "Preview module one", "Plain text lesson", "TEXT");
@@ -191,6 +313,15 @@ test("006 preview preserves order and plain text while keeping resources as safe
   await expect(external).toHaveAttribute("rel", "noopener noreferrer");
   await expect(external).toHaveAttribute("referrerpolicy", "no-referrer");
   expect(externalRequests).toEqual([]);
+
+  const backLink = page.getByRole("link", { name: "← Back to Course Builder" });
+  await expect(backLink).toHaveAttribute("href", `/admin/courses/${courseId}`);
+  const directPreview = await page.context().newPage();
+  await directPreview.goto(`/courses/${courseId}/preview`);
+  await expect(directPreview.getByText("Draft preview")).toBeVisible();
+  await directPreview.getByRole("link", { name: "← Back to Course Builder" }).click();
+  await expect(directPreview).toHaveURL(new RegExp(`/admin/courses/${courseId}$`));
+  await directPreview.close();
 });
 
 test("007 publishing reports progressively incomplete module, lesson, text, and quiz states", async ({ page, e2e }, testInfo) => {
@@ -230,6 +361,7 @@ test("008 publish confirmation locks structure while metadata and preview remain
   await expect(moduleCard(page, "Ready module").getByRole("button", { name: "Move Ready module up" })).toHaveCount(0);
   await expect(moduleCard(page, "Ready module").getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
   await expect(lessonCard(page, "Ready text").getByRole("button", { name: "Edit lesson" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Type", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Delete course" })).toHaveCount(0);
   await page.getByLabel("Title").fill("Published metadata update");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -241,6 +373,14 @@ test("008 publish confirmation locks structure while metadata and preview remain
   await page.getByRole("link", { name: "Preview course" }).last().click();
   await expect(page.getByText("Published", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Published metadata update" })).toBeVisible();
+  const backLink = page.getByRole("link", { name: "← Back to Course Builder" });
+  await expect(backLink).toHaveAttribute("href", `/admin/courses/${courseId}`);
+  const directPreview = await page.context().newPage();
+  await directPreview.goto(`/courses/${courseId}/preview`);
+  await expect(directPreview.getByText("Published", { exact: true })).toBeVisible();
+  await directPreview.getByRole("link", { name: "← Back to Course Builder" }).click();
+  await expect(directPreview).toHaveURL(new RegExp(`/admin/courses/${courseId}$`));
+  await directPreview.close();
 });
 
 test("009 draft course deletion is cancelable and updates list and dashboard", async ({ page, e2e }, testInfo) => {

@@ -147,6 +147,7 @@ export function CourseModuleEditor({
       {editable ? (
         <AddLessonFormView
           open={lessonFormOpen}
+          typeId={`module-${module.id}-new-lesson-type`}
           pending={lessonMutation.pending}
           title={lessonTitle}
           type={lessonType}

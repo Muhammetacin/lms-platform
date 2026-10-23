@@ -200,6 +200,27 @@ h1 {
   padding: clamp(24px, 5vw, 60px) 24px 56px;
 }
 
+.preview-back-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  margin-bottom: 16px;
+  color: var(--green-dark);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.preview-back-link:hover {
+  text-decoration: underline;
+}
+
+.preview-back-link:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid rgb(49 118 83 / 28%);
+  outline-offset: 3px;
+}
+
 .preview-header,
 .preview-content,
 .preview-unavailable {
@@ -1050,6 +1071,87 @@ h1 {
   color: var(--ink);
   font: inherit;
   line-height: 1.5;
+}
+
+.lesson-type-trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid #cbd8ce;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fff 0%, #fbfdfb 100%);
+  box-shadow: 0 2px 5px rgb(38 67 48 / 5%);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lesson-type-trigger:hover:not(:disabled),
+.lesson-type-trigger[aria-expanded="true"] {
+  border-color: #8cac91;
+  background: #fff;
+}
+
+.lesson-type-trigger:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.lesson-type-indicator {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  margin: -4px 3px 0 0;
+  transform: rotate(45deg);
+  border-right: 2px solid #52705a;
+  border-bottom: 2px solid #52705a;
+}
+
+.lesson-type-listbox {
+  position: fixed;
+  z-index: 1000;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 5px;
+  border: 1px solid #d5e1d6;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 36px rgb(27 50 34 / 18%);
+  color: var(--ink);
+}
+
+.lesson-type-option {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #29382e;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lesson-type-option[data-active="true"] {
+  background: #edf6ef;
+  color: var(--green-dark);
+}
+
+.lesson-type-option[aria-selected="true"] {
+  font-weight: 700;
+}
+
+.lesson-type-check {
+  color: var(--green);
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .form-field textarea {
