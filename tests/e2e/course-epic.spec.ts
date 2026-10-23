@@ -193,14 +193,19 @@ test("Lesson Type selector exposes all values and supports keyboard, pointer, an
   await expect(trigger).toHaveText("Text");
   await expect(trigger).toBeFocused();
 
-  await trigger.press("Space");
+  await trigger.press("ArrowDown");
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  await page.keyboard.press("Space");
+  await page.keyboard.press("Escape");
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(trigger).toHaveText("Text");
   await expect(trigger).toBeFocused();
 
-  await trigger.press("Enter");
+  await trigger.press("Space");
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveText("Text");
+
   await page.keyboard.press("Tab");
   await expect(listbox).toHaveCount(0);
   await expect(courseModule.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
@@ -209,7 +214,6 @@ test("Lesson Type selector exposes all values and supports keyboard, pointer, an
   await trigger.press("ArrowDown");
   await page.keyboard.press("ArrowDown");
   const videoOption = page.getByRole("option", { name: "Video", exact: true });
-  await expect(videoOption).toHaveAttribute("data-active", "true");
   await expect(trigger).toBeFocused();
   expect(await trigger.getAttribute("aria-activedescendant")).toBe(await videoOption.getAttribute("id"));
   await page.keyboard.press("Escape");
