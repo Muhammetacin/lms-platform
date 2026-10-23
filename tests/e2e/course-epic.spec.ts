@@ -170,6 +170,7 @@ test("Lesson Type selector exposes all values and supports keyboard, pointer, an
 
   const title = courseModule.getByLabel("Lesson title");
   const trigger = courseModule.getByRole("combobox", { name: "Type", exact: true });
+  await page.mouse.move(0, 0);
   await expect(trigger).toHaveText("Text");
   await title.focus();
   await page.keyboard.press("Tab");
