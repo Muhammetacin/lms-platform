@@ -81,6 +81,11 @@ export function LessonTypeSelect({
   }
 
   function onTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (event.key === "Tab" && open) {
+      closeListbox();
+      return;
+    }
+
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       if (!open) {
@@ -183,7 +188,6 @@ export function LessonTypeSelect({
       disabled,
       onClick: () => (open ? closeListbox() : openListbox()),
       onKeyDown: onTriggerKeyDown,
-      onBlur: () => { if (open) closeListbox(); },
     },
       h("span", null, selectedOption?.label ?? value),
       h("span", { className: "lesson-type-indicator", "aria-hidden": "true" }),

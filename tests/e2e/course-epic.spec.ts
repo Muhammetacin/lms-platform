@@ -197,6 +197,8 @@ test("Lesson Type selector exposes all values and supports keyboard, pointer, an
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Space");
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveText("Text");
+  await expect(trigger).toBeFocused();
 
   await trigger.press("Enter");
   await page.keyboard.press("Tab");
@@ -205,11 +207,14 @@ test("Lesson Type selector exposes all values and supports keyboard, pointer, an
   await trigger.focus();
 
   await trigger.press("ArrowDown");
-  await trigger.press("ArrowDown");
-  await trigger.press("Enter");
-  await expect(trigger).toHaveText("Video");
-  await title.fill("Keyboard-selected lesson");
-  await expect(trigger).toHaveText("Video");
+  await page.keyboard.press("ArrowDown");
+  const videoOption = page.getByRole("option", { name: "Video", exact: true });
+  await expect(videoOption).toHaveAttribute("data-active", "true");
+  await expect(trigger).toBeFocused();
+  expect(await trigger.getAttribute("aria-activedescendant")).toBe(await videoOption.getAttribute("id"));
+  await page.keyboard.press("Escape");
+  await expect(trigger).toHaveText("Text");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
 
   for (const width of [1440, 768, 375]) {
     await page.setViewportSize({ width, height: 812 });
@@ -228,19 +233,49 @@ test("Lesson Type selector exposes all values and supports keyboard, pointer, an
   await trigger.click();
   await title.click();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  await trigger.click();
+  await page.getByRole("option", { name: "Video", exact: true }).click();
+  await expect(trigger).toHaveText("Video");
+  await expect(trigger).toBeFocused();
+  await title.fill("Mouse-selected lesson");
   const createResponse = page.waitForResponse((response) => response.request().method() === "POST" && /\/lessons$/.test(response.url()));
   await courseModule.getByRole("button", { name: "Add lesson", exact: true }).click();
   const created = await (await createResponse).json() as { lesson?: { type?: string } };
   expect(created.lesson?.type).toBe("VIDEO");
 
-  const lesson = lessonCard(page, "Keyboard-selected lesson");
+  const lesson = lessonCard(page, "Mouse-selected lesson");
   await lesson.getByRole("button", { name: "Edit lesson" }).click();
   await selectLessonType(lesson, "PDF");
+  await expect(lesson.getByRole("combobox", { name: "Type", exact: true })).toHaveText("PDF");
   const updateResponse = page.waitForResponse((response) => response.request().method() === "PATCH" && /\/lessons\//.test(response.url()));
   await lesson.getByRole("button", { name: "Save lesson" }).click();
   const updated = await (await updateResponse).json() as { lesson?: { type?: string } };
   expect(updated.lesson?.type).toBe("PDF");
   await expect(lesson.getByText("Lesson 1 · PDF", { exact: true })).toBeVisible();
+});
+
+test.describe("Lesson Type touch interaction", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+
+  test("touch tap selects the requested lesson type", async ({ page, e2e }, testInfo) => {
+    await createCourseThroughUI(page, e2e.users.ownerA, testInfo);
+    await addModule(page, "Touch selector module");
+    const courseModule = moduleCard(page, "Touch selector module");
+    await courseModule.getByRole("button", { name: "+ Add lesson" }).tap();
+    await courseModule.getByLabel("Lesson title").fill("Touch-selected lesson");
+
+    const trigger = courseModule.getByRole("combobox", { name: "Type", exact: true });
+    await trigger.tap();
+    await page.getByRole("option", { name: "Image", exact: true }).tap();
+    await expect(trigger).toHaveText("Image");
+    await expect(trigger).toBeFocused();
+
+    const createResponse = page.waitForResponse((response) => response.request().method() === "POST" && /\/lessons$/.test(response.url()));
+    await courseModule.getByRole("button", { name: "Add lesson", exact: true }).tap();
+    const created = await (await createResponse).json() as { lesson?: { type?: string } };
+    expect(created.lesson?.type).toBe("IMAGE");
+  });
 });
 
 test("006 preview preserves order and plain text while keeping resources as safe external links", async ({ page, e2e }, testInfo) => {
