@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CoursePreviewView } from "../src/components/course-preview.ts";
+import { CoursePreviewUnavailable, CoursePreviewView } from "../src/components/course-preview.ts";
 import {
   createCoursePreviewHandlers,
   toCoursePreview,
@@ -234,6 +234,8 @@ test("server rendering escapes TEXT, keeps line breaks, and never auto-loads res
   assert.match(markup, /Getting started/);
   assert.match(markup, /Read this|First line/);
   assert.match(markup, /Draft preview/);
+  assert.match(markup, new RegExp(`href="/admin/courses/${courseId}"`));
+  assert.match(markup, /← Back to Course Builder/);
   assert.match(markup, /First line\nSecond line/);
   assert.match(markup, /&lt;script&gt;alert\(&quot;xss&quot;\)&lt;\/script&gt;\n&lt;img src=x onerror=alert\(1\)&gt;/);
   assert.match(markup, /Quiz configuration is not available yet\./);
@@ -246,9 +248,17 @@ test("server rendering escapes TEXT, keeps line breaks, and never auto-loads res
   assert.match(markup, /Resource not configured/);
   assert.doesNotMatch(markup, /<script\b|<img\b|<iframe\b|<video\b|<embed\b|<object\b/i);
   assert.doesNotMatch(markup, /href="javascript:/i);
+  assert.doesNotMatch(markup, /organizationId|moduleId|createdAt|updatedAt/);
 
   const componentSource = await readFile(new URL("../src/components/course-preview.ts", import.meta.url), "utf8");
   assert.doesNotMatch(componentSource, /dangerouslySetInnerHTML/);
+  assert.match(componentSource, /encodeURIComponent\(course\.id\)/);
+});
+
+test("unavailable preview does not expose a Course ID or Builder navigation", () => {
+  const markup = renderToStaticMarkup(createElement(CoursePreviewUnavailable));
+  assert.match(markup, /Preview unavailable/);
+  assert.doesNotMatch(markup, /Back to Course Builder|href="\/admin\/courses\//);
 });
 
 test("published state, empty course, and empty module render accessible placeholders", () => {
@@ -260,6 +270,7 @@ test("published state, empty course, and empty module render accessible placehol
   });
   const markup = renderToStaticMarkup(createElement(CoursePreviewView, { course: published }));
   assert.match(markup, /Published/);
+  assert.match(markup, new RegExp(`href="/admin/courses/${courseId}"`));
   assert.match(markup, /dateTime="2026-10-08T12:34:56\.000Z"/);
   assert.match(markup, /No lessons have been added to this module yet\./);
   assert.doesNotMatch(markup, /Draft preview/);

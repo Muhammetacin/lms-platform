@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import type { E2EUser } from "./fixtures.ts";
+import { lessonTypeLabels } from "../../../src/lib/course-builder-ui-core.ts";
+import type { LessonTypeValue } from "../../../src/lib/lesson-core.ts";
 
 export async function login(page: Page, user: E2EUser) {
   await page.goto("/login");
@@ -28,6 +30,11 @@ export function lessonCard(page: Page, title: string) {
   return page.locator(".lesson-editor-card").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
 }
 
+export async function selectLessonType(scope: Locator, type: LessonTypeValue) {
+  await scope.getByRole("combobox", { name: "Type", exact: true }).click();
+  await scope.page().getByRole("option", { name: lessonTypeLabels[type], exact: true }).click();
+}
+
 export async function addModule(page: Page, title: string) {
   await page.getByRole("button", { name: "+ Add module" }).click();
   await page.getByLabel("Module title").fill(title);
@@ -39,11 +46,11 @@ export async function addModule(page: Page, title: string) {
   return body.module.id;
 }
 
-export async function addLesson(page: Page, moduleTitle: string, title: string, type: "TEXT" | "VIDEO" | "QUIZ" = "TEXT") {
+export async function addLesson(page: Page, moduleTitle: string, title: string, type: LessonTypeValue = "TEXT") {
   const courseModule = moduleCard(page, moduleTitle);
   await courseModule.getByRole("button", { name: "+ Add lesson" }).click();
   await page.getByLabel("Lesson title").fill(title);
-  await page.getByLabel("Type", { exact: true }).selectOption(type);
+  await selectLessonType(courseModule, type);
   const responsePromise = page.waitForResponse((response) => response.request().method() === "POST" && /\/api\/organizations\/courses\/[^/]+\/modules\/[^/]+\/lessons$/.test(response.url()));
   await page.getByRole("button", { name: "Add lesson", exact: true }).click();
   await lessonCard(page, title).waitFor();

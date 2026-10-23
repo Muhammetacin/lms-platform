@@ -2,6 +2,7 @@ import { createElement as h, type FormEvent, type ReactNode } from "react";
 import type { CoursePreviewLesson } from "../lib/course-preview-core.ts";
 import { lessonTypes, type LessonTypeValue } from "../lib/lesson-core.ts";
 import { lessonTypeLabels } from "../lib/course-builder-ui-core.ts";
+import { LessonTypeSelect } from "./lesson-type-select.ts";
 
 export type LessonEditorViewProps = {
   lesson: CoursePreviewLesson;
@@ -30,6 +31,8 @@ export type LessonEditorViewProps = {
   onTitleChange?(value: string): void;
   onTypeChange?(value: LessonTypeValue): void;
 };
+
+const lessonTypeOptions = lessonTypes.map((value) => ({ value, label: lessonTypeLabels[value] }));
 
 export function LessonEditorView({
   lesson,
@@ -87,13 +90,16 @@ export function LessonEditorView({
         fieldError ? h("p", { className: "field-error", id: titleErrorId, role: "alert" }, fieldError) : null,
       ),
       h("div", { className: "form-field" },
-        h("label", { htmlFor: `lesson-${lesson.id}-type` }, "Type"),
-        h("select", {
+        h("label", { id: `lesson-${lesson.id}-type-label`, htmlFor: `lesson-${lesson.id}-type` }, "Type"),
+        h(LessonTypeSelect, {
           id: `lesson-${lesson.id}-type`,
+          labelId: `lesson-${lesson.id}-type-label`,
           name: "type",
           value: type,
-          onChange: (event: { currentTarget: { value: string } }) => onTypeChange?.(event.currentTarget.value as LessonTypeValue),
-        }, lessonTypes.map((value) => h("option", { key: value, value }, lessonTypeLabels[value]))),
+          options: lessonTypeOptions,
+          disabled: pending,
+          onValueChange: onTypeChange,
+        }),
       ),
       proposedType ? h("section", { className: "confirmation-panel builder-confirmation", "aria-labelledby": `change-type-${lesson.id}-heading` },
         h("h5", { id: `change-type-${lesson.id}-heading` }, "Change lesson type?"),
@@ -121,6 +127,7 @@ export function LessonEditorView({
 
 export function AddLessonFormView({
   open,
+  typeId = "new-lesson-type",
   pending = false,
   title = "",
   type = "TEXT",
@@ -132,6 +139,7 @@ export function AddLessonFormView({
   onTypeChange,
 }: {
   open: boolean;
+  typeId?: string;
   pending?: boolean;
   title?: string;
   type?: LessonTypeValue;
@@ -151,10 +159,16 @@ export function AddLessonFormView({
       h("input", { id: "new-lesson-title", name: "title", value: title, onChange: (event: { currentTarget: { value: string } }) => onTitleChange?.(event.currentTarget.value) }),
     ),
     h("div", { className: "form-field" },
-      h("label", { htmlFor: "new-lesson-type" }, "Type"),
-      h("select", { id: "new-lesson-type", name: "type", value: type, onChange: (event: { currentTarget: { value: string } }) => onTypeChange?.(event.currentTarget.value as LessonTypeValue) },
-        lessonTypes.map((value) => h("option", { key: value, value }, lessonTypeLabels[value])),
-      ),
+      h("label", { id: `${typeId}-label`, htmlFor: typeId }, "Type"),
+      h(LessonTypeSelect, {
+        id: typeId,
+        labelId: `${typeId}-label`,
+        name: "type",
+        value: type,
+        options: lessonTypeOptions,
+        disabled: pending,
+        onValueChange: onTypeChange,
+      }),
     ),
     h("div", { className: "form-actions" },
       h("button", { className: "secondary-action", type: "button", disabled: pending, onClick: onCancel }, "Cancel"),

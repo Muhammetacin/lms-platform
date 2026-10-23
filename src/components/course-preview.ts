@@ -55,6 +55,10 @@ export function CoursePreviewView({ course }: { course: CoursePreview }) {
   const publishedDate = course.publishedAt === null ? null : new Date(course.publishedAt);
 
   return h("main", { className: "preview-shell" },
+    h("a", {
+      className: "preview-back-link",
+      href: `/admin/courses/${encodeURIComponent(course.id)}`,
+    }, "← Back to Course Builder"),
     h("header", { className: "preview-header" },
       h("div", { className: "preview-course-copy" },
         h("p", { className: "preview-eyebrow" }, "Course preview"),
