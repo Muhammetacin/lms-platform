@@ -140,7 +140,6 @@ export function LessonEditor({
       }}
     >
       <LessonContentEditor
-        key={`${lesson.id}:${lesson.type}:${lesson.content && "text" in lesson.content ? lesson.content.text ?? "" : lesson.content && "url" in lesson.content ? lesson.content.url ?? "" : ""}`}
         courseId={courseId}
         moduleId={moduleId}
         lesson={lesson}

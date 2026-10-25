@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import type { CoursePreviewLesson } from "@/lib/course-preview-core";
 import { lessonHasConfiguredContent, updateLessonContentRequest, validateLessonText, validateLessonUrl } from "@/lib/course-builder-ui-core";
-import { LessonContentEditorView } from "@/components/lesson-content-editor-view";
+import { LessonContentEditorDrawerView } from "@/components/lesson-content-editor-drawer-view";
 import { useCourseBuilderMutation } from "@/components/use-course-builder-mutation";
 
 function lessonText(lesson: CoursePreviewLesson): string {
@@ -20,6 +20,15 @@ function textSummary(text: string): string | null {
   return characters.length > 240 ? `${characters.slice(0, 240).join("")}…` : text;
 }
 
+type ContentDraft = {
+  serverKey: string;
+  text: string;
+  url: string;
+  savedText: string;
+  savedUrl: string;
+  configured: boolean;
+};
+
 export function LessonContentEditor({
   courseId,
   moduleId,
@@ -32,10 +41,32 @@ export function LessonContentEditor({
   editable: boolean;
 }) {
   const mutation = useCourseBuilderMutation("content");
-  const [text, setText] = useState(lessonText(lesson));
-  const [url, setUrl] = useState(lessonUrl(lesson));
+  const initialText = lessonText(lesson);
+  const initialUrl = lessonUrl(lesson);
+  const initialConfigured = lessonHasConfiguredContent(lesson.type, lesson.content);
+  const serverKey = JSON.stringify([lesson.id, lesson.type, initialText, initialUrl, initialConfigured]);
+  const [draft, setDraft] = useState<ContentDraft>(() => ({
+    serverKey,
+    text: initialText,
+    url: initialUrl,
+    savedText: initialText,
+    savedUrl: initialUrl,
+    configured: initialConfigured,
+  }));
+  if (draft.serverKey !== serverKey) {
+    setDraft({
+      serverKey,
+      text: initialText,
+      url: initialUrl,
+      savedText: initialText,
+      savedUrl: initialUrl,
+      configured: initialConfigured,
+    });
+  }
+  const { text, url, savedText, savedUrl, configured: savedConfigured } = draft;
+  const [editing, setEditing] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
-  const configured = lessonHasConfiguredContent(lesson.type, lesson.content);
+  const dirty = text !== savedText || url !== savedUrl;
   const contentPath = `/api/organizations/courses/${encodeURIComponent(courseId)}/modules/${encodeURIComponent(moduleId)}/lessons/${encodeURIComponent(lesson.id)}/content`;
 
   async function saveContent(event: FormEvent<HTMLFormElement>) {
@@ -48,7 +79,11 @@ export function LessonContentEditor({
         return;
       }
       const result = await mutation.run(contentPath, updateLessonContentRequest({ type: "TEXT", text: validated.value }));
-      if (result?.ok) mutation.setSuccessMessage("Content saved.");
+      if (result?.ok) {
+        const savedValue = validated.value ?? "";
+        setDraft((current) => ({ ...current, text: savedValue, savedText: savedValue, configured: Boolean(validated.value) }));
+        setEditing(false);
+      }
       return;
     }
     if (lesson.type === "QUIZ") return;
@@ -58,38 +93,54 @@ export function LessonContentEditor({
       return;
     }
     const result = await mutation.run(contentPath, updateLessonContentRequest({ type: lesson.type, url: validated.value.value }));
-    if (result?.ok) mutation.setSuccessMessage("Content saved.");
+    if (result?.ok) {
+      const savedValue = validated.value.value ?? "";
+      setDraft((current) => ({ ...current, url: savedValue, savedUrl: savedValue, configured: Boolean(validated.value.value) }));
+      setEditing(false);
+    }
   }
 
-  const safeUrl = lesson.type === "TEXT" || lesson.type === "QUIZ" ? null : validateLessonUrl(lessonUrl(lesson));
+  const safeUrl = lesson.type === "TEXT" || lesson.type === "QUIZ" ? null : validateLessonUrl(savedUrl);
   const safeLink = safeUrl?.valid ? safeUrl.value : null;
 
   return (
-    <LessonContentEditorView
+    <LessonContentEditorDrawerView
       lessonId={lesson.id}
       type={lesson.type}
       editable={editable}
-      configured={configured}
+      editing={editing}
+      dirty={dirty}
+      configured={savedConfigured}
       text={text}
-      url={editable ? url : safeLink?.href ?? ""}
-      summary={lesson.type === "TEXT" ? textSummary(lessonText(lesson)) : null}
+      url={url}
+      savedUrl={safeLink?.href ?? ""}
+      summary={lesson.type === "TEXT" ? textSummary(savedText) : null}
       hostname={safeLink?.hostname ?? null}
-      resourceUnavailable={lesson.type !== "TEXT" && lesson.type !== "QUIZ" && configured && safeLink === null}
+      resourceUnavailable={lesson.type !== "TEXT" && lesson.type !== "QUIZ" && savedConfigured && safeLink === null}
       pending={mutation.pending}
       errorMessage={fieldError ?? mutation.errorMessage}
-      successMessage={mutation.successMessage}
+      onEdit={() => {
+        setDraft((current) => ({ ...current, text: current.savedText, url: current.savedUrl }));
+        setFieldError(null);
+        mutation.setErrorMessage(null);
+        setEditing(true);
+      }}
+      onClose={() => {
+        setEditing(false);
+        setDraft((current) => ({ ...current, text: current.savedText, url: current.savedUrl }));
+        setFieldError(null);
+        mutation.setErrorMessage(null);
+      }}
       onSubmit={saveContent}
       onTextChange={(value) => {
-        setText(value);
+        setDraft((current) => ({ ...current, text: value }));
         setFieldError(null);
         mutation.setErrorMessage(null);
-        mutation.setSuccessMessage(null);
       }}
       onUrlChange={(value) => {
-        setUrl(value);
+        setDraft((current) => ({ ...current, url: value }));
         setFieldError(null);
         mutation.setErrorMessage(null);
-        mutation.setSuccessMessage(null);
       }}
     />
   );

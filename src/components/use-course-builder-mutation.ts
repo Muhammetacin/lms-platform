@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { announceCourseBuilderToast } from "@/components/course-builder-toast-region";
 import {
   builderApiErrorMessage,
   knownBuilderError,
@@ -22,7 +23,6 @@ export function useCourseBuilderMutation(action: BuilderErrorAction) {
   const pendingRef = useRef(false);
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   async function run(path: string, request: JsonRequestOptions): Promise<{
     ok: boolean;
@@ -33,7 +33,6 @@ export function useCourseBuilderMutation(action: BuilderErrorAction) {
     pendingRef.current = true;
     setPending(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
     try {
       const response = await fetch(path, request);
       const body = await responseBody(response);
@@ -53,7 +52,16 @@ export function useCourseBuilderMutation(action: BuilderErrorAction) {
         }
         return { ok: false, status: response.status, body };
       }
-      setSuccessMessage("Changes saved.");
+      if (action === "module" || action === "lesson" || action === "content") {
+        announceCourseBuilderToast({
+          title: action === "content"
+            ? "Lesinhoud opgeslagen"
+            : action === "module"
+              ? "Module changes saved"
+              : "Lesson changes saved",
+          message: "Your changes have been saved successfully.",
+        });
+      }
       router.refresh();
       return { ok: true, status: response.status, body };
     } catch {
@@ -65,5 +73,5 @@ export function useCourseBuilderMutation(action: BuilderErrorAction) {
     }
   }
 
-  return { pending, errorMessage, setErrorMessage, successMessage, setSuccessMessage, run };
+  return { pending, errorMessage, setErrorMessage, run };
 }

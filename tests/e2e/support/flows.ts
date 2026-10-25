@@ -30,6 +30,24 @@ export function lessonCard(page: Page, title: string) {
   return page.locator(".lesson-editor-card").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
 }
 
+export async function moduleAction(page: Page, moduleTitle: string, action: string) {
+  const courseModule = moduleCard(page, moduleTitle);
+  await courseModule.getByRole("button", { name: `More actions for ${moduleTitle}` }).click();
+  const accessibleAction = action === "Move up" || action === "Move down"
+    ? `Move ${moduleTitle} ${action.slice("Move ".length)}`
+    : action;
+  await courseModule.getByRole("button", { name: accessibleAction, exact: true }).click();
+}
+
+export async function lessonAction(page: Page, lessonTitle: string, action: string) {
+  const lesson = lessonCard(page, lessonTitle);
+  await lesson.getByRole("button", { name: `More actions for ${lessonTitle}` }).click();
+  const accessibleAction = action === "Move up" || action === "Move down"
+    ? `Move ${lessonTitle} ${action.slice("Move ".length)}`
+    : action;
+  await lesson.getByRole("button", { name: accessibleAction, exact: true }).click();
+}
+
 export async function selectLessonType(scope: Locator, type: LessonTypeValue) {
   await scope.getByRole("combobox", { name: "Type", exact: true }).click();
   await scope.page().getByRole("option", { name: lessonTypeLabels[type], exact: true }).click();
@@ -61,12 +79,14 @@ export async function addLesson(page: Page, moduleTitle: string, title: string, 
 
 export async function saveLessonText(page: Page, title: string, text: string) {
   const lesson = lessonCard(page, title);
+  await lesson.getByRole("button", { name: "Edit content" }).click();
   await lesson.getByLabel("Lesson content").fill(text);
   const responsePromise = page.waitForResponse((response) => response.url().includes("/content") && response.request().method() === "PUT");
   await lesson.getByRole("button", { name: "Save content" }).click();
   if (!(await responsePromise).ok()) throw new Error("Saving lesson text did not succeed.");
-  await page.reload();
-  await expect(lessonCard(page, title).getByLabel("Lesson content")).toHaveValue(text);
+  await expect(page.getByRole("status").filter({ hasText: "Lesinhoud opgeslagen" })).toBeVisible();
+  await expect(lesson.getByRole("button", { name: "Edit content" })).toBeVisible();
+  await expect(lesson.locator(".lesson-content-summary")).toContainText(text.slice(0, 220));
 }
 
 export async function createCourseThroughUI(page: Page, user: E2EUser, testInfo: TestInfo) {
