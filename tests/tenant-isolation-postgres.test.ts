@@ -88,10 +88,10 @@ test("PostgreSQL enforces the employee tenant boundary through production handle
     ] });
     await db.user.createMany({ data: Object.values(users) });
     const memberships = await db.organizationMembership.createManyAndReturn({ data: [
-      { userId: users.ownerA.id, organizationId: orgA, role: "OWNER", employeeName: "A Owner" },
+      { userId: users.ownerA.id, organizationId: orgA, role: "OWNER", employeeName: "A Owner", jobTitle: "Tenant A owner title", department: "Tenant A department" },
       { userId: users.ownerASecond.id, organizationId: orgA, role: "OWNER", employeeName: "A Second Owner" },
-      { userId: users.ownerB.id, organizationId: orgB, role: "OWNER", employeeName: "B Owner" },
-      { userId: users.memberB.id, organizationId: orgB, role: "MEMBER", employeeName: "B Member" },
+      { userId: users.ownerB.id, organizationId: orgB, role: "OWNER", employeeName: "B Owner", jobTitle: "Tenant B owner title", department: "Tenant B department" },
+      { userId: users.memberB.id, organizationId: orgB, role: "MEMBER", employeeName: "B Member", jobTitle: "Tenant B member title", department: "Tenant B members" },
       { userId: users.multi.id, organizationId: orgA, role: "ADMIN", employeeName: "A Name" },
       { userId: users.multi.id, organizationId: orgB, role: "MEMBER", employeeName: "B Name" },
       { userId: users.inactive.id, organizationId: orgA, role: "OWNER", employeeName: "Inactive Owner", active: false },
@@ -109,10 +109,26 @@ test("PostgreSQL enforces the employee tenant boundary through production handle
     const handlersB = makeHandlers(asUser(users.ownerB));
     const memberHandlersB = makeHandlers(asUser(users.memberB));
 
-    assert.deepEqual((await (await handlersA.GET()).json() as { employees: { id: string }[] }).employees.map(({ id }) => id).sort(),
+    const listAResponse = await handlersA.GET();
+    const listA = (await listAResponse.json() as { employees: Array<Record<string, unknown>> }).employees;
+    assert.equal(listA.find(({ id }) => id === memberIn(users.ownerA.id, orgA).id)?.jobTitle, "Tenant A owner title");
+    assert.ok(listA.every((item) => ![ownerBMembership.id, memberIn(users.memberB.id, orgB).id, multiB.id].includes(String(item.id))));
+    assert.deepEqual(listA.map(({ id }) => id).sort(),
       [memberIn(users.ownerA.id, orgA).id, memberIn(users.ownerASecond.id, orgA).id, multiA.id, inactiveA.id].sort());
-    assert.deepEqual((await (await handlersB.GET()).json() as { employees: { id: string }[] }).employees.map(({ id }) => id).sort(),
+    const listBResponse = await handlersB.GET();
+    const listB = (await listBResponse.json() as { employees: Array<Record<string, unknown>> }).employees;
+    assert.equal(listB.find(({ id }) => id === ownerBMembership.id)?.department, "Tenant B department");
+    assert.ok(listB.every((item) => ![memberIn(users.ownerA.id, orgA).id, memberIn(users.ownerASecond.id, orgA).id, multiA.id].includes(String(item.id))));
+    assert.deepEqual(listB.map(({ id }) => id).sort(),
       [ownerBMembership.id, memberIn(users.memberB.id, orgB).id, multiB.id].sort());
+    const memberList = await memberHandlersB.GET();
+    assert.equal(memberList.status, 200);
+    const memberRows = (await memberList.json() as { employees: Array<Record<string, unknown>> }).employees;
+    const otherBEmployee = memberRows.find(({ id }) => id === multiB.id)!;
+    assert.equal(Object.hasOwn(otherBEmployee, "jobTitle"), false,
+      "A MEMBER cannot read another membership's profile fields.");
+    assert.equal(Object.hasOwn(otherBEmployee, "department"), false);
+    assert.equal(memberRows.find(({ id }) => id === memberIn(users.memberB.id, orgB).id)?.jobTitle, "Tenant B member title");
     const foreignRead = await handlersA.GET_ONE(ownerBMembership.id);
     const unknownRead = await handlersA.GET_ONE(crypto.randomUUID());
     assert.equal(foreignRead.status, 404);

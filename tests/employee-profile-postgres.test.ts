@@ -10,6 +10,7 @@ import {
 import {
   createPrismaEmployeeManagementStore,
 } from "../src/lib/employee-management-prisma-store.ts";
+import { createEmployeeManagementHandlers } from "../src/lib/employee-management-core.ts";
 import { createEmployeeProfileHandlers } from "../src/lib/employee-profile-core.ts";
 import {
   resolveTenantContext,
@@ -74,6 +75,18 @@ test("PostgreSQL enforces employee profile tenant scope, membership ownership, a
     readBody: async (request) => request.json(),
     logError: () => {},
   });
+  const makeManagementHandlers = (identity: AuthenticatedUser | null) => createEmployeeManagementHandlers({
+    async requireTenantContext() {
+      return resolveTenantContext(identity, undefined, membershipStore);
+    },
+    async requirePermission(organizationId, permission) {
+      return requireOrganizationPermission(identity, organizationId, permission, membershipStore);
+    },
+    store,
+    isTrustedRequest: () => true,
+    readBody: async (request) => request.json(),
+    logError: () => {},
+  });
   const request = (value: unknown) => new Request(
     "https://lms.example.test/api/organizations/employees/profile",
     {
@@ -124,6 +137,48 @@ test("PostgreSQL enforces employee profile tenant scope, membership ownership, a
     const ownerHandlersB = makeHandlers(asUser(users.ownerB));
     const adminHandlersA = makeHandlers(asUser(users.adminA));
     const memberHandlersA = makeHandlers(asUser(users.memberA));
+    const memberManagementHandlersA = makeManagementHandlers(asUser(users.memberA));
+
+    await store.updateProfile(orgA, memberA.id, { jobTitle: "Instructor", department: "Learning" });
+    await store.updateProfile(orgA, otherMemberA.id, { jobTitle: "Private title", department: "Private department" });
+    await store.updateProfile(orgB, ownerB.id, { jobTitle: "Tenant B title", department: "Tenant B department" });
+    const employeeList = await makeManagementHandlers(asUser(users.ownerA)).GET();
+    assert.equal(employeeList.status, 200);
+    const employeeRows = (await employeeList.json() as { employees: Array<Record<string, unknown>> }).employees;
+    assert.deepEqual(
+      employeeRows.find(({ id }) => id === memberA.id) && {
+        jobTitle: employeeRows.find(({ id }) => id === memberA.id)?.jobTitle,
+        department: employeeRows.find(({ id }) => id === memberA.id)?.department,
+      },
+      { jobTitle: "Instructor", department: "Learning" },
+      "The OWNER list includes organization profile fields.",
+    );
+    const adminList = await makeManagementHandlers(asUser(users.adminA)).GET();
+    assert.equal(adminList.status, 200);
+    const adminRows = (await adminList.json() as { employees: Array<Record<string, unknown>> }).employees;
+    assert.equal(adminRows.find(({ id }) => id === otherMemberA.id)?.department, "Private department");
+    assert.equal(employeeRows.some(({ id }) => id === ownerB.id), false);
+    assert.equal(adminRows.some(({ id }) => id === ownerB.id), false);
+    assert.ok(employeeRows.every((row) => !Object.hasOwn(row, "userId")));
+
+    const memberList = await memberManagementHandlersA.GET();
+    assert.equal(memberList.status, 200, "MEMBER keeps previously authorized list access.");
+    const memberRows = (await memberList.json() as { employees: Array<Record<string, unknown>> }).employees;
+    assert.ok(memberRows.some(({ id }) => id === ownerA.id));
+    assert.ok(memberRows.some(({ id }) => id === otherMemberA.id));
+    assert.equal(memberRows.find(({ id }) => id === memberA.id)?.jobTitle, "Instructor",
+      "MEMBER can read profile fields on their own membership.");
+    const otherMemberRow = memberRows.find(({ id }) => id === otherMemberA.id)!;
+    assert.equal(Object.hasOwn(otherMemberRow, "jobTitle"), false);
+    assert.equal(Object.hasOwn(otherMemberRow, "department"), false);
+    assert.ok(memberRows.every((row) => !Object.hasOwn(row, "userId")));
+
+    const tenantBList = await makeManagementHandlers(asUser(users.ownerB)).GET();
+    const tenantBRows = (await tenantBList.json() as { employees: Array<Record<string, unknown>> }).employees;
+    assert.ok(tenantBRows.some(({ id, jobTitle, department }) =>
+      id === ownerB.id && jobTitle === "Tenant B title" && department === "Tenant B department"));
+    assert.equal(tenantBRows.some(({ id }) => [ownerA.id, adminA.id, memberA.id, otherMemberA.id].includes(String(id))), false,
+      "The OWNER list remains scoped to its authenticated tenant.");
 
     const ownerRead = await ownerHandlersA.GET(memberA.id);
     assert.equal(ownerRead.status, 200);

@@ -26,6 +26,7 @@ export function AdminDataUnavailableView() {
 export function AdminNavigationView({ pathname }: { pathname: string }) {
   const dashboardActive = pathname === "/admin" || pathname === "/admin/";
   const coursesActive = pathname === "/admin/courses" || pathname.startsWith("/admin/courses/");
+  const employeesActive = pathname === "/admin/employees" || pathname.startsWith("/admin/employees/");
 
   return h("nav", { className: "admin-nav", "aria-label": "Administration" },
     h("ul", null,
@@ -39,6 +40,11 @@ export function AdminNavigationView({ pathname }: { pathname: string }) {
         className: coursesActive ? "admin-nav-link is-active" : "admin-nav-link",
         "aria-current": coursesActive ? "page" : undefined,
       }, "Courses")),
+      h("li", null, h("a", {
+        href: "/admin/employees",
+        className: employeesActive ? "admin-nav-link is-active" : "admin-nav-link",
+        "aria-current": employeesActive ? "page" : undefined,
+      }, "Employees")),
     ),
   );
 }
