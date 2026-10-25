@@ -85,6 +85,7 @@ export function EmployeeOverview() {
   const [importPending, setImportPending] = useState(false);
   const importPendingRef = useRef(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [deactivateTarget, setDeactivateTarget] = useState<Employee | null>(null);
   const [deactivatePending, setDeactivatePending] = useState(false);
@@ -215,7 +216,7 @@ export function EmployeeOverview() {
       reloadEmployees();
       announceCourseBuilderToast({ title: "Employees imported", message: `${imported} ${imported === 1 ? "employee was" : "employees were"} imported. No invitation emails were sent.` });
     } catch {
-      setImportErrors(["Employee import is temporarily unavailable. No employees were imported. Check your connection and try again."]);
+      setImportErrors(["The import outcome could not be confirmed. Check the employee list before retrying."]);
     } finally {
       importPendingRef.current = false;
       setImportPending(false);
@@ -264,7 +265,7 @@ export function EmployeeOverview() {
           <p className="employee-page-intro">Manage the people and profiles in your organization.</p>
         </div>
         <div className="employee-page-actions">
-          <button className="secondary-action" type="button" onClick={() => { setImportErrors([]); setImportOpen(true); }}>Import CSV</button>
+          <button className="secondary-action" type="button" onClick={() => { setImportFile(null); setImportErrors([]); if (importFileInputRef.current) importFileInputRef.current.value = ""; setImportOpen(true); }}>Import CSV</button>
           <button className="primary-action" type="button" onClick={() => { setCreateError(null); setCreateOpen(true); }}>Add employee</button>
         </div>
       </header>
@@ -357,7 +358,7 @@ export function EmployeeOverview() {
         description="Create an organization membership using the employee’s email and name. New employees receive the Member role."
         dirty={Boolean(createEmail || createName)}
         pending={createPending}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => { setCreateOpen(false); setCreateEmail(""); setCreateName(""); setCreateError(null); }}
       >
         {(requestClose) => (
           <form className="employee-form" onSubmit={submitCreate}>
@@ -385,14 +386,19 @@ export function EmployeeOverview() {
         description="Upload one CSV. The complete batch is validated before any employee is added."
         dirty={importFile !== null}
         pending={importPending}
-        onClose={() => { setImportOpen(false); setImportErrors([]); }}
+        onClose={() => {
+          setImportOpen(false);
+          setImportFile(null);
+          setImportErrors([]);
+          if (importFileInputRef.current) importFileInputRef.current.value = "";
+        }}
       >
         {(requestClose) => (
           <form className="employee-form" onSubmit={submitImport}>
-            {importErrors.length > 0 ? <div className="employee-import-errors" role="alert" aria-label="Import errors"><p>The import was not completed. Review these issues and try again:</p><ul>{importErrors.map((message, index) => <li key={`${index}-${message}`}>{message}</li>)}</ul></div> : null}
+            {importErrors.length > 0 ? <div className="employee-import-errors" role="alert" aria-label="Import errors"><p>Review the import status and any issues below before retrying:</p><ul>{importErrors.map((message, index) => <li key={`${index}-${message}`}>{message}</li>)}</ul></div> : null}
             <div className="form-field">
               <label htmlFor="employee-csv-file">CSV file</label>
-              <input id="employee-csv-file" name="file" type="file" accept=".csv,text/csv" required disabled={importPending} onChange={(event) => { setImportFile(event.currentTarget.files?.[0] ?? null); setImportErrors([]); }} />
+              <input ref={importFileInputRef} id="employee-csv-file" name="file" type="file" accept=".csv,text/csv" required disabled={importPending} onChange={(event) => { setImportFile(event.currentTarget.files?.[0] ?? null); setImportErrors([]); }} />
               <p className="form-hint">Required headers: email,name. Optional: jobTitle,department,phone,employeeNumber. Maximum 1 MiB and {maxImportRows} employees.</p>
             </div>
             <div className="form-actions">
@@ -484,7 +490,7 @@ export function EmployeeProfilePage({ employeeId }: { employeeId: string }) {
   async function submitProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!profile || !draft || savePendingRef.current) return;
-    const validation = validateEmployeeProfileDraft(draft);
+    const validation = validateEmployeeProfileDraft(draft, profile.employeeName !== null);
     setFieldErrors(validation);
     setSaveError(null);
     if (Object.keys(validation).length > 0) return;
@@ -618,7 +624,7 @@ export function EmployeeProfilePage({ employeeId }: { employeeId: string }) {
             {saveError ? <p className="error-message" role="alert">{saveError}</p> : null}
             <div className="form-field">
               <label htmlFor="profile-employee-name">Employee name</label>
-              <input id="profile-employee-name" value={draft.employeeName} maxLength={120} aria-invalid={fieldErrors.employeeName ? "true" : undefined} aria-describedby={fieldErrors.employeeName ? "profile-employee-name-error" : undefined} onChange={(event) => setDraft({ ...draft, employeeName: event.currentTarget.value })} required />
+              <input id="profile-employee-name" value={draft.employeeName} maxLength={120} aria-invalid={fieldErrors.employeeName ? "true" : undefined} aria-describedby={fieldErrors.employeeName ? "profile-employee-name-error" : undefined} onChange={(event) => setDraft({ ...draft, employeeName: event.currentTarget.value })} required={profile.employeeName !== null} />
               {fieldErrors.employeeName ? <p className="field-error" id="profile-employee-name-error" role="alert">{fieldErrors.employeeName}</p> : null}
             </div>
             {(["jobTitle", "department", "phone", "employeeNumber"] as const).map((field) => {

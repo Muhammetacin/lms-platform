@@ -66,7 +66,12 @@ class MemoryStore implements EmployeeStore, TenantMembershipStore, Authorization
   async list(organizationId: string) {
     if (this.failEmployees) throw new Error("database password must not be returned");
     this.check();
-    return [...this.memberships.values()].filter((item) => item.organizationId === organizationId).map((item) => this.view(item));
+    return [...this.memberships.values()].filter((item) => item.organizationId === organizationId).map((item) => ({
+      ...this.view(item),
+      userId: item.userId,
+      jobTitle: item.jobTitle ?? null,
+      department: item.department ?? null,
+    }));
   }
 
   async get(organizationId: string, employeeId: string) {
@@ -181,6 +186,37 @@ test("OWNER and ADMIN manage, MEMBER reads only, and unauthenticated operations 
     await makeHandlers(store, null, orgA).PATCH(request("PATCH", { name: "Updated Name" }), "not-a-uuid"),
     await makeHandlers(store, null, orgA).DEACTIVATE(request("POST"), "not-a-uuid"),
   ]) assert.equal(result.status, 401);
+});
+
+test("employee lists retain member access while limiting profile fields to permitted memberships", async () => {
+  const store = new MemoryStore();
+  const admin: AuthenticatedUser = { id: "7aa6d920-65d1-4d2e-97c0-7b236f40d8ef", email: "admin@example.com", name: "Admin" };
+  const otherMember: AuthenticatedUser = { id: "8aa6d920-65d1-4d2e-97c0-7b236f40d8ef", email: "other@example.com", name: "Other Member" };
+  store.add(employeeA, orgA, owner, "OWNER");
+  store.add(employeeB, orgA, member, "MEMBER");
+  store.add(employeeC, orgA, otherMember, "MEMBER");
+  store.add("6efc943b-32ac-4af9-8db7-8d5bfa9cc6aa", orgA, admin, "ADMIN");
+  store.memberships.get(employeeB)!.jobTitle = "Member title";
+  store.memberships.get(employeeB)!.department = "Member department";
+  store.memberships.get(employeeC)!.jobTitle = "Private title";
+  store.memberships.get(employeeC)!.department = "Private department";
+
+  const ownerEmployees = (await (await makeHandlers(store, owner, orgA).GET()).json() as { employees: Array<Record<string, unknown>> }).employees;
+  const adminEmployees = (await (await makeHandlers(store, admin, orgA).GET()).json() as { employees: Array<Record<string, unknown>> }).employees;
+  assert.equal(ownerEmployees.find(({ id }) => id === employeeC)?.jobTitle, "Private title");
+  assert.equal(adminEmployees.find(({ id }) => id === employeeC)?.department, "Private department");
+  assert.ok(ownerEmployees.every((item) => !Object.hasOwn(item, "userId")));
+  assert.ok(adminEmployees.every((item) => !Object.hasOwn(item, "userId")));
+
+  const memberResponse = await makeHandlers(store, member, orgA).GET();
+  assert.equal(memberResponse.status, 200);
+  const memberEmployees = (await memberResponse.json() as { employees: Array<Record<string, unknown>> }).employees;
+  assert.deepEqual(memberEmployees.map(({ id }) => id).sort(), [employeeA, employeeB, employeeC, "6efc943b-32ac-4af9-8db7-8d5bfa9cc6aa"].sort());
+  assert.equal(memberEmployees.find(({ id }) => id === employeeB)?.jobTitle, "Member title");
+  const otherEmployee = memberEmployees.find(({ id }) => id === employeeC)!;
+  assert.equal(Object.hasOwn(otherEmployee, "jobTitle"), false);
+  assert.equal(Object.hasOwn(otherEmployee, "department"), false);
+  assert.ok(memberEmployees.every((item) => !Object.hasOwn(item, "userId")));
 });
 
 test("owner-only permission protects owner membership lifecycle and last active owner", async () => {

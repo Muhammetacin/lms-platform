@@ -11,10 +11,13 @@ export type Employee = {
   name: string | null;
   role: "OWNER" | "ADMIN" | "MEMBER";
   active: boolean;
-  /** Profile values are included by the bounded list endpoint for the Admin UI. */
+  /** Profile values are included in list responses only for authorized memberships. */
   jobTitle?: string | null;
   department?: string | null;
 };
+
+/** Internal list record; userId is used for field-level authorization, never returned. */
+export type EmployeeListRecord = Employee & { userId: string };
 
 export class EmployeeConflictError extends Error {
   constructor() {
@@ -31,7 +34,7 @@ export class LastOwnerError extends Error {
 }
 
 export interface EmployeeStore {
-  list(organizationId: string): Promise<Employee[]>;
+  list(organizationId: string): Promise<EmployeeListRecord[]>;
   get(organizationId: string, employeeId: string): Promise<Employee | null>;
   create(
     organizationId: string,
@@ -54,7 +57,7 @@ export type EmployeeManagementDependencies = {
   requirePermission(
     organizationId: string,
     permission: OrganizationPermission,
-  ): Promise<unknown>;
+  ): Promise<{ role: Employee["role"] }>;
   store: EmployeeStore;
   isTrustedRequest(request: Request): boolean;
   readBody(request: Request): Promise<unknown>;
@@ -135,8 +138,18 @@ export function createEmployeeManagementHandlers(dependencies: EmployeeManagemen
     async GET() {
       try {
         const tenant = await dependencies.requireTenantContext();
-        await dependencies.requirePermission(tenant.organizationId, "VIEW_ORGANIZATION");
-        return json({ employees: await dependencies.store.list(tenant.organizationId) });
+        const membership = await dependencies.requirePermission(tenant.organizationId, "VIEW_ORGANIZATION");
+        const canViewAllProfiles = membership.role !== "MEMBER";
+        if (canViewAllProfiles) {
+          await dependencies.requirePermission(tenant.organizationId, "VIEW_EMPLOYEE_PROFILES");
+        }
+        const records = await dependencies.store.list(tenant.organizationId);
+        const employees = records.map(({ userId, jobTitle, department, ...employee }) =>
+          canViewAllProfiles || userId === tenant.userId
+            ? { ...employee, jobTitle, department }
+            : employee,
+        );
+        return json({ employees });
       } catch (error) {
         return errorResponse(error, "list", dependencies.logError);
       }

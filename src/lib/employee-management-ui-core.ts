@@ -73,7 +73,7 @@ export function employeeImportApiErrorMessage(status: number, body: unknown): st
     return employeeImportErrorMessages(body);
   }
   if (status === 413) return ["The CSV file must be no larger than 1 MiB."];
-  if (status >= 500) return ["Employee import is temporarily unavailable. No employees were imported. Try again shortly."];
+  if (status >= 500) return ["The import outcome could not be confirmed. Check the employee list before retrying."];
   return ["The CSV could not be imported. Check the file and try again."];
 }
 
@@ -87,10 +87,15 @@ export function profileDraftFrom(profile: EmployeeProfile): EmployeeProfileDraft
   };
 }
 
-export function validateEmployeeProfileDraft(draft: EmployeeProfileDraft): Partial<Record<keyof EmployeeProfileDraft, string>> {
+export function validateEmployeeProfileDraft(
+  draft: EmployeeProfileDraft,
+  requireEmployeeName = true,
+): Partial<Record<keyof EmployeeProfileDraft, string>> {
   const errors: Partial<Record<keyof EmployeeProfileDraft, string>> = {};
-  const nameLength = [...draft.employeeName.trim()].length;
-  if (nameLength < 2 || nameLength > 120 || /[\u0000-\u001f\u007f-\u009f\p{Cs}]/u.test(draft.employeeName.trim())) {
+  const employeeName = draft.employeeName.trim();
+  const nameLength = [...employeeName].length;
+  if ((requireEmployeeName || nameLength > 0)
+    && (nameLength < 2 || nameLength > 120 || /[\u0000-\u001f\u007f-\u009f\p{Cs}]/u.test(employeeName))) {
     errors.employeeName = "Enter a name between 2 and 120 characters.";
   }
   for (const field of ["jobTitle", "department", "phone", "employeeNumber"] as const) {
@@ -105,7 +110,7 @@ export function validateEmployeeProfileDraft(draft: EmployeeProfileDraft): Parti
 export function profilePatchFrom(draft: EmployeeProfileDraft): Record<string, string | null> {
   const optional = (value: string) => value.trim() || null;
   return {
-    employeeName: draft.employeeName.trim(),
+    ...(draft.employeeName.trim() ? { employeeName: draft.employeeName.trim() } : {}),
     jobTitle: optional(draft.jobTitle),
     department: optional(draft.department),
     phone: optional(draft.phone),

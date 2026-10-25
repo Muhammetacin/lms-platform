@@ -111,6 +111,113 @@ test("CSV import succeeds atomically and reports row validation failures", async
   expect((afterInvalidImport.body as { employees: Array<{ email: string }> }).employees.some((employee) => employee.email === `valid-${suffix}@example.test`)).toBe(false);
 });
 
+test("confirmed discard clears employee and CSV drafts before reopening", async ({ page, e2e }) => {
+  await login(page, e2e.users.ownerA);
+  await page.goto("/admin/employees");
+  await page.route("**/api/organizations/employees", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "employee_management_unavailable" }) });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.getByRole("button", { name: "Add employee", exact: true }).click();
+  let createDialog = page.getByRole("dialog", { name: "Add employee" });
+  await createDialog.getByLabel("Employee name").fill("Discard this employee");
+  await createDialog.getByLabel("Email").fill("discard@example.test");
+  await createDialog.getByRole("button", { name: "Add employee", exact: true }).click();
+  await expect(createDialog.getByRole("alert")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog", { name: "Discard unsaved changes?" }).getByRole("button", { name: "Discard changes" }).click();
+  await expect(createDialog).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Add employee", exact: true }).click();
+  createDialog = page.getByRole("dialog", { name: "Add employee" });
+  await expect(createDialog.getByLabel("Employee name")).toHaveValue("");
+  await expect(createDialog.getByLabel("Email")).toHaveValue("");
+  await expect(createDialog.getByRole("alert")).toHaveCount(0);
+  await createDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(createDialog).toHaveCount(0);
+  await page.getByRole("button", { name: "Add employee", exact: true }).click();
+  createDialog = page.getByRole("dialog", { name: "Add employee" });
+  await expect(createDialog.getByLabel("Employee name")).toHaveValue("");
+  await expect(createDialog.getByLabel("Email")).toHaveValue("");
+  await createDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+
+  await page.getByRole("button", { name: "Import CSV", exact: true }).click();
+  let importDialog = page.getByRole("dialog", { name: "Import employees" });
+  const fileInput = importDialog.getByLabel("CSV file");
+  await fileInput.setInputFiles({
+    name: "discard.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("email,name\ndiscarded@example.test,Discarded\n"),
+  });
+  await expect(fileInput).not.toHaveValue("");
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog", { name: "Discard unsaved changes?" }).getByRole("button", { name: "Discard changes" }).click();
+  await expect(importDialog).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Import CSV", exact: true }).click();
+  importDialog = page.getByRole("dialog", { name: "Import employees" });
+  await expect(importDialog.getByLabel("CSV file")).toHaveValue("");
+  await expect(importDialog.getByRole("button", { name: "Import employees", exact: true })).toBeDisabled();
+});
+
+test("ambiguous employee import failures ask administrators to check the list before retrying", async ({ page, e2e }) => {
+  await login(page, e2e.users.adminA);
+  await page.goto("/admin/employees");
+  let failAsNetwork = false;
+  await page.route("**/api/organizations/employees/import", async (route) => {
+    if (failAsNetwork) {
+      await route.abort();
+      return;
+    }
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "employee_import_unavailable", message: "private database detail" }) });
+  });
+  await page.getByRole("button", { name: "Import CSV", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Import employees" });
+  await dialog.getByLabel("CSV file").setInputFiles({
+    name: "ambiguous.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("email,name\ncheck@example.test,Check Result\n"),
+  });
+  await dialog.getByRole("button", { name: "Import employees", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Check the employee list before retrying");
+  await expect(dialog.getByRole("alert")).not.toContainText("No employees were imported");
+  await expect(dialog.getByRole("alert")).not.toContainText("private database detail");
+  failAsNetwork = true;
+  await dialog.getByRole("button", { name: "Import employees", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Check the employee list before retrying");
+  await expect(dialog.getByRole("alert")).not.toContainText("No employees were imported");
+});
+
+test("existing profile without an employee name can save other profile fields", async ({ page, e2e }) => {
+  await login(page, e2e.users.ownerA);
+  const list = await apiRequest(page, employeesPath, "GET");
+  const owner = (list.body as { employees: Array<{ id: string; email: string }> }).employees.find((employee) => employee.email === e2e.users.ownerA.email);
+  expect(owner).toBeTruthy();
+  const profilePath = `${employeesPath}/${owner!.id}/profile`;
+  const initialProfile = await apiRequest(page, profilePath, "GET");
+  expect((initialProfile.body as { profile: { employeeName: string | null } }).profile.employeeName).toBeNull();
+
+  await page.goto(`/admin/employees/${owner!.id}`);
+  await page.getByRole("button", { name: "Edit profile" }).click();
+  const editDialog = page.getByRole("dialog", { name: "Edit employee profile" });
+  const nameInput = editDialog.getByLabel("Employee name");
+  await expect(nameInput).toHaveValue("");
+  await expect(nameInput).not.toHaveAttribute("required");
+  await editDialog.getByLabel("Job title").fill("Organization owner");
+  const profilePatch = page.waitForResponse((response) => response.request().method() === "PATCH" && response.url().endsWith("/profile"));
+  await editDialog.getByRole("button", { name: "Save profile", exact: true }).click();
+  const saved = await profilePatch;
+  expect(saved.status()).toBe(200);
+  expect(saved.request().postDataJSON()).not.toHaveProperty("employeeName");
+  const updatedProfile = (await apiRequest(page, profilePath, "GET")).body as { profile: { employeeName: string | null; jobTitle: string | null } };
+  expect(updatedProfile.profile.employeeName).toBeNull();
+  expect(updatedProfile.profile.jobTitle).toBe("Organization owner");
+});
+
 test("deactivation can be canceled, confirmed, and protects the last active owner", async ({ page, e2e }) => {
   await login(page, e2e.users.ownerA);
   await page.goto("/admin/employees");

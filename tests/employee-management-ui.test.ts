@@ -54,6 +54,21 @@ test("profile editor matches the organization profile contract and keeps identit
   assert.equal(validateEmployeeProfileDraft({ ...draft, department: "x".repeat(121) }).department, "Use up to 120 characters without control characters.");
 });
 
+test("profile without an organization-specific name can be partially updated", () => {
+  const unnamedProfile = { ...profile, employeeName: null };
+  const draft = profileDraftFrom(unnamedProfile);
+  assert.equal(draft.employeeName, "");
+  assert.deepEqual(validateEmployeeProfileDraft(draft, false), {});
+  assert.equal(validateEmployeeProfileDraft({ ...draft, employeeName: "A" }, false).employeeName,
+    "Enter a name between 2 and 120 characters.");
+  assert.deepEqual(profilePatchFrom({ ...draft, jobTitle: "Senior instructor" }), {
+    jobTitle: "Senior instructor",
+    department: "Learning",
+    phone: "+32 2 555 01 23",
+    employeeNumber: "EMP-001",
+  });
+});
+
 test("API and CSV failures show actionable safe messages without leaking backend details", () => {
   assert.equal(employeeApiErrorMessage(409, { error: "last_owner_required" }), "The last active owner cannot be deactivated.");
   assert.equal(employeeApiErrorMessage(409, { error: "employee_number_already_exists" }), "That employee number is already used in your organization.");
@@ -68,7 +83,7 @@ test("API and CSV failures show actionable safe messages without leaking backend
     "File: The CSV file must be no larger than 1 MiB.",
   ]);
   assert.deepEqual(employeeImportApiErrorMessage(503, { error: "employee_import_unavailable", message: "private database details" }), [
-    "Employee import is temporarily unavailable. No employees were imported. Try again shortly.",
+    "The import outcome could not be confirmed. Check the employee list before retrying.",
   ]);
   assert.doesNotMatch(JSON.stringify(employeeImportErrorMessages({ errors: [{ row: 2, field: "email", code: "duplicate_email", value: "private@example.test" }] })), /private@example\.test/);
 });
