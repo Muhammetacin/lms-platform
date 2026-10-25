@@ -134,6 +134,8 @@ test("PostgreSQL enforces TeamMembership tenant integrity, lifecycle, uniqueness
     assert.equal(Object.hasOwn(otherPrivacyRow, "jobTitle"), false);
     assert.equal(Object.hasOwn(otherPrivacyRow, "department"), false);
     assert.ok(privacyRows.every((row) => !Object.hasOwn(row, "userId")));
+    const privacyMembershipCount = await db.teamMembership.count({ where: { organizationId: orgA } });
+    assert.equal(privacyMembershipCount, 2);
 
     // Forged tenant fields and global User IDs are not accepted as employee IDs.
     for (const extra of ["organizationId", "tenantId"]) {
@@ -155,7 +157,7 @@ test("PostgreSQL enforces TeamMembership tenant integrity, lifecycle, uniqueness
     const attackTwoBody = await attackTwo.json();
     assert.deepEqual(attackTwoBody, { error: "team_not_found" });
     assert.deepEqual(await attackThree.json(), attackTwoBody);
-    assert.equal(await db.teamMembership.count(), 0);
+    assert.equal(await db.teamMembership.count({ where: { organizationId: orgA } }), privacyMembershipCount);
 
     // PostgreSQL itself rejects inconsistent Team, Membership, or organization tuples.
     for (const data of [
@@ -166,7 +168,7 @@ test("PostgreSQL enforces TeamMembership tenant integrity, lifecycle, uniqueness
       const error = await db.teamMembership.create({ data }).then(() => null, (caught: unknown) => caught);
       assert.ok(hasPrismaCode(error, "P2003"), "cross-tenant tuple must fail a PostgreSQL composite foreign key");
     }
-    assert.equal(await db.teamMembership.count(), 0);
+    assert.equal(await db.teamMembership.count({ where: { organizationId: orgA } }), privacyMembershipCount);
 
     // OWNER adds; the persisted tuple links Team and OrganizationMembership in A.
     const added = await ownerA.POST(request("POST", { employeeId: employeeA.id }), teamA.id);
