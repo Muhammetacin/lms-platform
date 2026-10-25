@@ -1,0 +1,120 @@
+# MVP Backlog
+
+This document is the central planning view for the remaining functional MVP and the parallel business-readiness work. It was prepared on 2026-10-25 after reviewing the 30 ticket files in this repository (`LMS-001`–`LMS-024` and `LMS-084`–`LMS-089`) and the [Product Vision](00-product-vision.md).
+
+The detailed scope and implementation history stay in the ticket files. This backlog records epic order, current epic status, dependencies, next actions, and the evidence required to accept each epic.
+
+## Epic status flow
+
+Use these statuses in this order:
+
+`PLANNED → IN PROGRESS → QA → CEO ACCEPTANCE → DONE`
+
+| Status | Meaning |
+| --- | --- |
+| `PLANNED` | Scope and dependencies are known; implementation has not started. |
+| `IN PROGRESS` | The epic is being implemented against its agreed scope. |
+| `QA` | Implementation is complete and is undergoing the required functional, regression, and security review. |
+| `CEO ACCEPTANCE` | Required QA has passed; formal business acceptance is waiting to be recorded. |
+| `DONE` | Acceptance criteria and required sign-off are recorded. |
+
+An epic moves to `DONE` only after its acceptance record exists. Ticket-level states such as “CODE COMPLETE” do not replace these epic statuses.
+
+## Existing Ticket Register
+
+This register preserves each ticket's status as written in its file. The GitHub column separately reports whether the implementation is present on `main` or its implementation pull request is merged. A merge does not change a ticket's recorded status to `DONE`. Ticket delivery notes are historical and remain untouched; where an old note says that a PR is open or unmerged, use the current GitHub PR state in the adjacent column for the merge fact.
+
+For LMS-001–LMS-012, the ticket files and implementation commits are present on GitHub `main`; no separate ticket implementation PR was found in the repository PR history. For the later tickets, the linked PR is the implementation PR, except LMS-014, whose later PR #7 only backfilled its ticket record.
+
+| Ticket and existing file | Status recorded in ticket | GitHub implementation / merge status | Particularities or open acceptance points |
+| --- | --- | --- | --- |
+| [LMS-001 — Repository & Project Foundation](../tickets/LMS-001.md) | `DONE` | Present on `main`; no separate ticket PR found. | Ticket records its acceptance criteria as complete. |
+| [LMS-002 — Database Foundation](../tickets/LMS-002.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | QA review is separate; ticket requires CEO/PO approval before production use. It is not recorded as `DONE`. |
+| [LMS-003 — Base Database Conventions](../tickets/LMS-003.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | Ticket explicitly says QA review is pending and must not be marked QA, approved, or DONE by implementation alone. |
+| [LMS-004 — User Model](../tickets/LMS-004.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | Ticket says QA review and approval remain separate from code completion; no `DONE` status is recorded. |
+| [LMS-005 — Organization Model](../tickets/LMS-005.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | Ticket says QA review and approval remain separate from code completion; no `DONE` status is recorded. |
+| [LMS-006 — Organization Membership](../tickets/LMS-006.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | Ticket says QA review and approval remain separate from code completion; no `DONE` status is recorded. |
+| [LMS-007 — Authentication](../tickets/LMS-007.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | Shared brute-force protection remains under LMS-060 before public production exposure; the ticket does not record formal `DONE`. |
+| [LMS-008 — Authorization](../tickets/LMS-008.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | The ticket records implementation completion, not a separate formal `DONE` acceptance. |
+| [LMS-009 — Tenant Context](../tickets/LMS-009.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | The ticket records implementation completion, not a separate formal `DONE` acceptance. |
+| [LMS-010 — Establish Tenant Isolation](../tickets/LMS-010.md) | `CODE COMPLETE — external QA/security review required` | Present on `main`; no separate ticket PR found. | Independent external QA/security review remains required; the ticket explicitly says not to mark it `DONE`. |
+| [LMS-011 — Organization Settings](../tickets/LMS-011.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | Ticket records external QA/security review as outstanding; it is not `DONE`. |
+| [LMS-012 — Employee Management](../tickets/LMS-012.md) | `CODE COMPLETE` | Present on `main`; no separate ticket PR found. | Ticket records external QA/security review as outstanding; employee UI is outside this ticket and remains LMS-090. |
+| [LMS-013 — Employee Profile](../tickets/LMS-013.md) | `CODE COMPLETE` | [PR #1](https://github.com/Muhammetacin/lms-platform/pull/1) is merged. | Ticket records independent external QA/security review as outstanding; profile audit events depend on LMS-058. |
+| [LMS-014 — Employee Invitation / Account Activation](../tickets/LMS-014.md) | `DONE` | Implementation [PR #2](https://github.com/Muhammetacin/lms-platform/pull/2) is merged; ticket-record backfill [PR #7](https://github.com/Muhammetacin/lms-platform/pull/7) is also merged. | Ticket was added as a historical governance backfill after implementation and review. Real email delivery and shared audit remain LMS-052 and LMS-058 follow-ups outside this ticket's scope. |
+| [LMS-015 — Team Model](../tickets/LMS-015.md) | `CODE COMPLETE` | [PR #3](https://github.com/Muhammetacin/lms-platform/pull/3) is merged. | The ticket says `DONE` requires independent QA/COO review and merge; GitHub confirms the merge, but the ticket status remains `CODE COMPLETE` and does not record the review as accepted. |
+| [LMS-016 — Team Membership](../tickets/LMS-016.md) | `CODE COMPLETE` | [PR #4](https://github.com/Muhammetacin/lms-platform/pull/4) is merged. | Ticket reserves `DONE` for after merge; it still records `CODE COMPLETE`, with no formal `DONE` status. Team audit events depend on LMS-058. |
+| [LMS-017 — Employee Import](../tickets/LMS-017.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW. Implementation and PostgreSQL CI pass; independent review and merge are still pending.` | [PR #5](https://github.com/Muhammetacin/lms-platform/pull/5) is merged. | The ticket's note that merge is pending is stale against GitHub's merged PR state. Its status remains as written; independent QA/security review and formal `DONE` are not recorded. |
+| [LMS-018 — Course Model](../tickets/LMS-018.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW.` | [PR #6](https://github.com/Muhammetacin/lms-platform/pull/6) is merged. | Ticket says independent QA/security review is required before `DONE`; it remains recorded as code complete. |
+| [LMS-019 — Course CRUD](../tickets/LMS-019.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #8](https://github.com/Muhammetacin/lms-platform/pull/8) is merged. | Ticket says independent QA/security review is required before `DONE`; merge is confirmed, but no formal `DONE` status is recorded. |
+| [LMS-020 — Course Modules](../tickets/LMS-020.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #9](https://github.com/Muhammetacin/lms-platform/pull/9) is merged. | Ticket's QA/security review gate is distinct from the merge; the ticket is not recorded as `DONE`. |
+| [LMS-021 — Lesson Model](../tickets/LMS-021.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #10](https://github.com/Muhammetacin/lms-platform/pull/10) is merged. | The ticket contains an older note saying PR #10 was open/unmerged; current GitHub metadata confirms it is merged. Independent QA/security review and formal `DONE` are not recorded. |
+| [LMS-022 — Lesson Builder](../tickets/LMS-022.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #11](https://github.com/Muhammetacin/lms-platform/pull/11) is merged. | The ticket's open-PR delivery note is historical; current GitHub metadata confirms the merge. Its code-complete status is not `DONE`. |
+| [LMS-023 — Course Publishing](../tickets/LMS-023.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #12](https://github.com/Muhammetacin/lms-platform/pull/12) is merged. | The ticket's open/unmerged note is historical; current GitHub metadata confirms the merge. The ticket does not record formal `DONE`. |
+| [LMS-024 — Course Preview](../tickets/LMS-024.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #13](https://github.com/Muhammetacin/lms-platform/pull/13) is merged. | The ticket says its PR should remain open for QA/security review; GitHub confirms the merge. The ticket status remains code complete, not `DONE`. |
+| [LMS-084 — Admin Portal Foundation](../tickets/LMS-084.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #14](https://github.com/Muhammetacin/lms-platform/pull/14) is merged. | Ticket's QA-ready status is retained; it does not record formal `DONE`. It is part of the Course Epic, which still awaits CEO acceptance. |
+| [LMS-085 — Course Management UI](../tickets/LMS-085.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #15](https://github.com/Muhammetacin/lms-platform/pull/15) is merged. | Ticket's QA-ready status is retained; the Course Epic's later browser/local acceptance and formal CEO acceptance remain separate. |
+| [LMS-086 — Course Builder UI](../tickets/LMS-086.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #16](https://github.com/Muhammetacin/lms-platform/pull/16) is merged. | Ticket states feature completion is still acceptance pending and LMS-087 is the E2E/browser and local final gate. The Course Epic is not `DONE`. |
+| [LMS-087 — Course Epic E2E & Local Acceptance](../tickets/LMS-087.md) | `CODE COMPLETE — READY FOR QA/SECURITY REVIEW` | [PR #17](https://github.com/Muhammetacin/lms-platform/pull/17) is merged. | CEO local acceptance remains pending; the sign-off record is unsigned. The Course Epic remains `ACCEPTANCE PENDING`. |
+| [LMS-088 — Course UX Polish & Final Acceptance](../tickets/LMS-088.md) | `CODE COMPLETE — READY FOR COO QA/SECURITY REVIEW` | [PR #18](https://github.com/Muhammetacin/lms-platform/pull/18) is merged. | The ticket's COO review, exact-head checks, local retest, and CEO acceptance are distinct from merge. It explicitly does not close the Course Epic. |
+| [LMS-089 — Course Builder UX Redesign (MVP Interim)](../tickets/LMS-089.md) | `IMPLEMENTED — LOCAL DATABASE/CEO ACCEPTANCE PENDING` | [PR #19](https://github.com/Muhammetacin/lms-platform/pull/19) is merged; the ticket records passing CI on its reviewed implementation head. | Local PostgreSQL/E2E acceptance was not completed in the recorded environment; CEO local acceptance remains pending. The Course Epic is not formally accepted or `DONE`. |
+
+### Foundation epic summary
+
+LMS-001–LMS-017 establish the repository, database, identity, authorization, tenant context, organization, employee, and Team foundations. GitHub confirms the work is present on `main`; implementation PRs #1–#5 are merged for LMS-013–LMS-017 (LMS-014 also has the merged ticket-record backfill PR #7). The ticket files formally mark LMS-001 and LMS-014 `DONE`; the other tickets retain their recorded `CODE COMPLETE` states, including tickets with outstanding QA/security review. A merged implementation is not a formal ticket-level `DONE` acceptance.
+
+## MVP delivery order
+
+The Course Epic is a current acceptance gate. LMS-090 is the next feature priority; it follows the Course Epic's existing implementation and does not reopen that scope. The business-readiness track runs alongside the feature sequence.
+
+| Priority | Epic | Current status | Dependencies | Next action | Acceptance criteria |
+| --- | --- | --- | --- | --- | --- |
+| Gate, parallel closeout | Course Epic: course authoring and publishing (`LMS-018`–`LMS-024`, `LMS-084`–`LMS-089`) | `CEO ACCEPTANCE` | Reviewed Course Epic commit; LMS-087 browser/local acceptance path; CEO walkthrough | Complete the LMS-087 local walkthrough and the ticket-specific LMS-088/089 UX checks against the exact reviewed commit; record the CEO's formal decision in the acceptance record. | CEO decision is recorded against the reviewed commit; the LMS-087 course creation, modules/lessons, preview, and publishing checklist and the LMS-088/089 UX checks are complete; remaining acceptance defects are resolved or explicitly recorded; epic status changes to `DONE` only after sign-off. |
+| P1 — next | Employee Management UI (`LMS-090`) | `PLANNED` | Admin Portal foundation (`LMS-084`); employee, profile, invitation, and import capabilities (`LMS-012`–`LMS-014`, `LMS-017`); authentication, authorization, and tenant context (`LMS-007`–`LMS-010`). Real invitation sending depends on LMS-052. | Define the employee screens and interaction states against the existing APIs, including how unavailable email delivery is shown until LMS-052 is ready. | Authorized OWNER/ADMIN users can find, view, add, edit profile details, deactivate, and import employees using the existing tenant-scoped APIs; permissions and tenant boundaries are respected; validation, empty, loading, success, and failure states are clear; invitation delivery is never shown as successful before the real adapter works; responsive and accessibility checks pass. |
+| P2 | Team Management UI | `PLANNED` | LMS-015 Team API and LMS-016 Team Membership; employee identities from LMS-012/017; complete the Employee Management UI sequence first; audit events use the shared LMS-058 mechanism. | Define the Team list, create/edit/delete, and membership management flows using the existing Team and membership APIs. | OWNER/ADMIN users can manage organization-owned Teams and add/remove organization employees; tenant and role checks are enforced; empty, validation, pending, and error states are handled; no Team assignment, hierarchy, or permissions are implied beyond existing APIs; mutations are covered by the shared audit mechanism when LMS-058 is available. |
+| P3 | Email delivery (`LMS-052`) | `PLANNED` | LMS-014's invitation delivery boundary and activation flow; approved provider/configuration and secret handling. | Confirm the provider, delivery contract, operational ownership, and invitation templates, then implement the real adapter under the existing LMS-052 reference. | Eligible invitations are delivered through a real provider; failures are returned and observable without claiming success or exposing invitation tokens; templates and links support the existing one-time, expiring activation flow; secrets stay out of source and logs; delivery behavior is verified in QA. |
+| P4 | Learner Portal | `PLANNED` | Authentication and account activation (`LMS-007`, `LMS-014`, with delivery enabled by LMS-052); published Course content and safe rendering (`LMS-023`–`LMS-024`); Employee and Team foundations. | Establish the authenticated learner shell and navigation first. Define the learner-facing course experience against published content; course access is enabled only when P5 assignment rules are implemented. | Active learners can reach a learner-focused portal without admin access; the base interface supports a no-assignment state; only published, assigned, and authorized course content is shown once P5 is complete; learner routes do not expose admin controls or cross-tenant data; keyboard, responsive, and accessibility behavior passes QA. |
+| P5 | Course assignments | `PLANNED` | Learner Portal shell (P4); published Courses; active employee memberships; Team and Team Membership APIs/UI (LMS-015/016 and P2). | Define how an administrator assigns a published Course to an employee or Team and how those assignments grant learner access. | Authorized administrators can create, inspect, change, and revoke individual and Team assignments; learners see only courses assigned to them through an active organization membership; tenant boundaries and role checks are enforced; duplicate and conflicting assignments have defined outcomes; assignment changes are observable through LMS-058 when available. |
+| P6 | Quiz Builder (`LMS-025`) | `PLANNED` | Course Builder and the existing `QUIZ` Lesson Type reservation; Course publishing rules; learner-side quiz delivery in the portal. | Continue the Quiz work under the existing LMS-025 roadmap reference; do not create a replacement Quiz ticket. | Authorized authors can configure and edit the agreed MVP quiz types and attach them to a Course; validation and published-course behavior are defined; learners can complete an assigned quiz through the portal; attempts and results are persisted and protected by tenant and learner authorization; required QA covers authoring and learner flows. |
+| P7 | Learning progress | `PLANNED` | Course assignments (P5); Learner Portal (P4); Quiz Builder and results (P6) for quiz-bearing Courses. | Agree on the MVP completion and progress rules for Lessons, Courses, and quizzes, then implement the learner and administrator views. | Progress is derived from persisted learner activity and the agreed completion rules; learners can see their own status; authorized administrators can see organization-scoped status; repeat attempts, incomplete work, and revoked access have defined behavior; progress cannot be changed by forging another learner's identity or tenant. |
+| P8 | Reporting | `PLANNED` | Employee and Team management; course assignments, quiz outcomes, and progress (P5–P7); shared audit/reporting boundaries (`LMS-058`) where applicable. | Agree on the MVP questions and report fields, then build organization-scoped reports from accepted source data. | Reports answer the agreed MVP questions for Courses, learners, Teams, assignments, and progress; filters and totals use the same tenant and authorization rules as source data; empty and large-result behavior is defined; exports, if included in scope, contain only authorized fields; results are checked against source records. |
+| P9 | MVP release | `PLANNED` | All functional MVP epics above; Course Epic formal acceptance; email delivery (`LMS-052`); shared audit (`LMS-058`) and rate limiting (`LMS-060`) release gates; operational and pilot readiness. | Prepare a release checklist with exact-head CI, browser acceptance, data backup/recovery, support ownership, monitoring, and pilot rollout steps. | Required CI and browser checks pass on the release commit; critical security and tenant-isolation checks pass; login brute-force protection is in place under LMS-060 before public production exposure; required audit events use LMS-058; invitation delivery works; the CEO records MVP acceptance and a named pilot cohort can be onboarded with support and rollback steps. |
+
+## Parallel release gates and roadmap references
+
+These identifiers are existing roadmap references and remain part of the plan:
+
+- **LMS-025 — Quiz:** the Quiz Builder epic at P6.
+- **LMS-052 — Email delivery:** the real invitation email integration at P3.
+- **LMS-058 — Audit:** the shared audit mechanism used by employee, Team, invitation, assignment, and other sensitive mutations; it is a release dependency where required events are in scope.
+- **LMS-060 — Rate limiting:** shared brute-force protection required before public production exposure of login, as recorded in the authentication documentation.
+
+Do not create duplicate tickets for these roadmap items. This planning document does not create or change product APIs, database models, or ticket scope.
+
+| Priority | Epic | Current status | Dependencies | Next action | Acceptance criteria |
+| --- | --- | --- | --- | --- | --- |
+| Parallel release gate | Shared audit (`LMS-058`) | `PLANNED` | Existing employee, invitation, Team, and future assignment mutation boundaries; approved event and retention requirements. | Confirm the MVP audit-event list and implement it through the existing LMS-058 roadmap item. | Required sensitive MVP actions record actor, organization, action, target, and timestamp using the shared mechanism; audit data is tenant-protected and does not contain secrets or invitation tokens; required events can be verified before release. |
+| Parallel release gate | Shared rate limiting (`LMS-060`) | `PLANNED` | Authentication routes and a deployment-aware shared limiter with a trusted client identity contract. | Confirm deployment and trusted-proxy assumptions, then complete LMS-060 before public production login exposure. | Login brute-force attempts are limited across application instances using the reviewed identity contract; limits and failure behavior are documented and tested; credentials and sensitive request data are not logged. |
+
+## Parallel business readiness
+
+| Priority | Epic | Current status | Dependencies | Next action | Acceptance criteria |
+| --- | --- | --- | --- | --- | --- |
+| Parallel with P1 onward | Pilot customers, pricing model, and commercial preparation | `PLANNED` | Product Vision and a demoable Course/Admin path; CEO/business-owner decisions; security and operational readiness for the chosen pilot profile. | Start customer discovery in parallel with LMS-090: identify candidate pilot organizations, validate their learning-management needs, and develop a pricing hypothesis. | A documented pilot profile and candidate list exist; discovery records validated needs and success measures; pricing assumptions and packaging options are documented for a decision; onboarding, support, privacy/security, and commercial materials are ready for the selected pilot; launch/no-launch decision and responsible owners are recorded. |
+
+This work proceeds alongside engineering and does not change the feature priority order. Pilot commitments and commercial promises must match capabilities actually accepted for the MVP.
+
+The Learner Portal may begin with its authenticated shell, navigation, and no-assignment interface before Course Assignments is implemented. Access to an individual or Team's assigned courses remains gated on P5 Course Assignments and its authorization rules; a portal interface alone grants no course access.
+
+## Post-MVP frontend review
+
+| Epic | Current status | Dependencies | Next action | Acceptance criteria |
+| --- | --- | --- | --- | --- |
+| Full frontend review | `PLANNED` | Functional MVP complete and accepted, including Admin, Learner, Quiz, employee management, and reporting experiences. This review follows the functional MVP and is not a release prerequisite. | After the MVP is functionally complete, review the full product across visual consistency, responsive behavior, accessibility, and end-to-end task clarity. | Findings cover Admin, Learner, Quiz, employee management, reporting, responsive behavior, visual consistency, and accessibility; each finding has severity and an owner or explicit disposition; agreed follow-up work is prioritized separately from the completed MVP. |
+
+## Planning rules
+
+- Keep the functional order P1 through P9; handle the Course Epic acceptance gate and business-readiness work in parallel.
+- Preserve the CEO acceptance gate for the Course Epic until the formal final acceptance is recorded.
+- Keep the comprehensive frontend review after functional MVP completion.
+- Before implementation starts on a planned epic, agree its detailed scope and acceptance evidence in the relevant existing roadmap ticket or a newly assigned ticket. Do not reuse an existing LMS identifier for a different scope.

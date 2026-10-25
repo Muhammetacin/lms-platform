@@ -24,7 +24,7 @@ pnpm db:health
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in with the bootstrap email and password. Keep real credentials in ignored environment files; never commit them. See [database setup](./docs/database.md), [the browser smoke flow](./docs/local-admin-smoke-test.md), and [Course Epic local acceptance](./docs/course-epic-local-acceptance.md).
+Open [http://localhost:3000](http://localhost:3000) and sign in with the bootstrap email and password. Keep real credentials in ignored environment files; never commit them. See [database setup](./docs/database.md), [the browser smoke flow](./docs/local-admin-smoke-test.md), [Course Epic local acceptance](./docs/course-epic-local-acceptance.md), and the [central MVP backlog](./docs/mvp-backlog.md).
 
 ## Commands
 
@@ -56,4 +56,4 @@ tickets/                 Scoped development tickets and acceptance criteria
 
 ## Project guidance
 
-Read [AGENT_RULES.md](./AGENT_RULES.md) before making changes. The product direction and Course Epic completion gate are in [docs/00-product-vision.md](./docs/00-product-vision.md). Windows E2E setup and the CEO’s acceptance checklist are in [docs/course-epic-local-acceptance.md](./docs/course-epic-local-acceptance.md), with browser scenarios under `tests/e2e/`. The epic remains **ACCEPTANCE PENDING** until the CEO explicitly signs off on the final reviewed commit.
+Read [AGENT_RULES.md](./AGENT_RULES.md) before making changes. The product direction and Course Epic completion gate are in [docs/00-product-vision.md](./docs/00-product-vision.md). The [central MVP backlog](./docs/mvp-backlog.md) records the remaining epic order, dependencies, acceptance criteria, and parallel commercial planning. Windows E2E setup and the CEO’s acceptance checklist are in [docs/course-epic-local-acceptance.md](./docs/course-epic-local-acceptance.md), with browser scenarios under `tests/e2e/`. The Course Epic remains **ACCEPTANCE PENDING** until the CEO explicitly signs off on the final reviewed commit.
