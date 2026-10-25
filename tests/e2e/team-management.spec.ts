@@ -93,7 +93,7 @@ test("team overview creates, validates, edits, searches, and discards unsaved te
   await page.getByLabel("Search loaded teams").fill("updated lms-091");
   await expect(teamCard).toBeVisible();
   await page.getByLabel("Search loaded teams").fill("not present");
-  await expect(page.getByRole("status")).toContainText("No teams match this search in the loaded list");
+  await expect(page.locator(".team-list-panel").getByRole("status")).toContainText("No teams match this search in the loaded list");
   await page.getByLabel("Search loaded teams").fill("");
 
   for (const width of [1440, 768, 375]) {
@@ -128,7 +128,7 @@ test("active employees can belong to multiple teams and team removal and deletio
   const primaryAdd = page.getByRole("button", { name: "Add employee", exact: true });
   await primaryAdd.click();
   dialog = page.getByRole("dialog", { name: "Add employee to team" });
-  await dialog.getByLabel("Active employee").selectOption(employee.id);
+  await dialog.getByLabel("Active employee", { exact: true }).selectOption(employee.id);
   const addResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/members"));
   await dialog.getByRole("button", { name: "Add to team" }).click();
   expect((await addResponse).status()).toBe(201);
@@ -152,7 +152,7 @@ test("active employees can belong to multiple teams and team removal and deletio
   await secondCard.getByRole("link", { name: "Manage team" }).click();
   await page.getByRole("button", { name: "Add employee", exact: true }).click();
   dialog = page.getByRole("dialog", { name: "Add employee to team" });
-  await dialog.getByLabel("Active employee").selectOption(employee.id);
+  await dialog.getByLabel("Active employee", { exact: true }).selectOption(employee.id);
   await dialog.getByRole("button", { name: "Add to team" }).click();
   await expect(page.locator(".team-member-card").filter({ hasText: employeeEmail })).toBeVisible();
   const secondTeamId = new URL(page.url()).pathname.split("/").at(-1)!;
