@@ -75,5 +75,10 @@ test("team pages reuse only the tenant-scoped Team, membership, and employee API
   assert.match(source, /permanently removes its team memberships\. Employee accounts are not deleted/);
   assert.match(source, /dirty=\{teamDirty\}/);
   assert.match(source, /dirty=\{Boolean\(employeeId\)\}/);
+  assert.equal(
+    (source.match(/method:\s*"DELETE",\s*headers:\s*\{\s*"Content-Type":\s*"application\/json"\s*\}/g) ?? []).length,
+    2,
+    "Team and member deletion send the JSON content type required by the same-origin guard",
+  );
   assert.doesNotMatch(source, /\/api\/organizations\/teams\/[^\s"']*\/assignments/);
 });

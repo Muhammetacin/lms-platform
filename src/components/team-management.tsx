@@ -211,7 +211,10 @@ export function TeamOverview() {
     setDeleteError(null);
     setDeletePending(true);
     try {
-      const response = await fetch(teamsEndpoint + "/" + encodeURIComponent(deleteTarget.id), { method: "DELETE" });
+      const response = await fetch(teamsEndpoint + "/" + encodeURIComponent(deleteTarget.id), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
       const body = await responseBody(response);
       if (!response.ok) throw new ApiFailure(response.status, body);
       setTeams((current) => current.filter((team) => team.id !== deleteTarget.id));
@@ -502,7 +505,7 @@ export function TeamDetailPage({ teamId }: { teamId: string }) {
     try {
       const response = await fetch(
         teamsEndpoint + "/" + encodeURIComponent(teamId) + "/members/" + encodeURIComponent(removeTarget.id),
-        { method: "DELETE" },
+        { method: "DELETE", headers: { "Content-Type": "application/json" } },
       );
       const body = await responseBody(response);
       if (!response.ok) throw new ApiFailure(response.status, body);
