@@ -190,7 +190,7 @@ test("active employees can belong to multiple teams and team removal and deletio
   await secondCard.getByRole("button", { name: "Delete", exact: true }).click();
   confirmation = page.getByRole("dialog", { name: "Delete team?" });
   const deleteResponse = page.waitForResponse((response) => response.request().method() === "DELETE" && response.url().endsWith("/" + secondTeamId));
-  await confirmation.getByRole("button", { name: "Delete team" }).click();
+  await confirmation.getByRole("button", { name: "Delete team", exact: true }).click();
   expect((await deleteResponse).status()).toBe(200);
   await expect(secondCard).toHaveCount(0);
 
