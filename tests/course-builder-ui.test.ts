@@ -285,6 +285,8 @@ test("TEXT editor preserves multiline source as escaped text and enforces backen
     lessonId: textLessonId,
     type: "TEXT",
     editable: true,
+    editing: true,
+    dirty: false,
     configured: true,
     text: "First line\nSecond line",
   }));
@@ -309,6 +311,8 @@ test("URL editor accepts only HTTPS without credentials and sends only url", () 
     lessonId: videoLessonId,
     type: "VIDEO",
     editable: true,
+    editing: true,
+    dirty: false,
     configured: true,
     url: "https://video.example.test/watch/1",
   }));
@@ -320,7 +324,7 @@ test("URL editor accepts only HTTPS without credentials and sends only url", () 
     type: "VIDEO",
     editable: false,
     configured: true,
-    url: "https://video.example.test/watch/1",
+    savedUrl: "https://video.example.test/watch/1",
     hostname: "video.example.test",
   }));
   assert.match(publishedResource, /href="https:\/\/video\.example\.test\/watch\/1"/);
@@ -365,7 +369,7 @@ test("draft structure is editable; published structure is read-only while Previe
     h(LessonEditorView, { lesson: builder.modules[0]!.lessons[0]!, index: 0, lessonCount: 2, editable: true }),
     h(CoursePublishControlView, { published: false }),
   ) }));
-  assert.match(draftMarkup, />Edit<\/button>/);
+  assert.match(draftMarkup, />Edit module<\/button>/);
   assert.match(draftMarkup, />Edit lesson<\/button>/);
   assert.match(draftMarkup, />Publish course<\/button>/);
 
@@ -437,6 +441,7 @@ test("accessible markup has headings, labels, alerts, status, no tenant fields, 
   const clientSource = await readFile(new URL("../src/components/course-builder.tsx", import.meta.url), "utf8");
   const lessonSource = await readFile(new URL("../src/components/lesson-content-editor.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(`${clientSource}\n${lessonSource}`, /dangerouslySetInnerHTML|<iframe|<video|<img|<embed|<object/i);
+  assert.match(lessonSource, /useCourseBuilderMutation\("content"\)/);
 });
 
 test("initial builder data is loaded after trusted tenant and MANAGE_COURSES authorization", async () => {

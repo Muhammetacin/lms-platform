@@ -8,6 +8,7 @@ import { CourseBuilderView } from "@/components/course-builder-view";
 import { CourseModuleEditor } from "@/components/course-module-editor";
 import { CoursePublishControl } from "@/components/course-publish-control";
 import { useCourseBuilderMutation } from "@/components/use-course-builder-mutation";
+import { CourseBuilderToastRegion } from "@/components/course-builder-toast-region";
 
 export function CourseBuilder({ builder }: { builder: CourseBuilderData }) {
   const editable = builder.status === "DRAFT";
@@ -90,6 +91,7 @@ export function CourseBuilder({ builder }: { builder: CourseBuilderData }) {
         </div>
       ) : null}
       <CoursePublishControl builder={builder} />
+      <CourseBuilderToastRegion />
     </CourseBuilderView>
   );
 }

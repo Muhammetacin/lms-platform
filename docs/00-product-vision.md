@@ -26,6 +26,10 @@ Database → Backend/API → Frontend/UI → Integration/E2E → Local acceptanc
 
 LMS-087 supplies real-browser acceptance through the running Next.js application and production APIs, plus a separate Windows local acceptance checklist for the CEO. CI and code completion are necessary but do not record business acceptance. The epic remains **ACCEPTANCE PENDING** until the CEO explicitly accepts the final reviewed commit in that checklist. See [LMS-087](../tickets/LMS-087.md) and the [local Course Epic acceptance guide](course-epic-local-acceptance.md).
 
+## Post-MVP frontend review
+
+After all core MVP epics are complete, conduct a company-wide frontend review across Admin, Learner, Quiz, employee management, reporting, responsive behavior, visual consistency, and accessibility. This review is a future milestone and is not part of LMS-089 or the Course Builder interim UX work.
+
 ## Initial technical direction
 
 The web application uses Next.js App Router and TypeScript, with pnpm for package management and ESLint for static analysis. GitHub Actions validates changes. PostgreSQL and Prisma provide persistence; LMS-010 establishes application-layer isolation for employee management, while future tenant-owned resources remain separately scoped.

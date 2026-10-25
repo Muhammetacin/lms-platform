@@ -41,6 +41,7 @@ export function CourseModuleEditor({
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonType, setLessonType] = useState<LessonTypeValue>("TEXT");
   const [lessonFieldError, setLessonFieldError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(true);
 
   async function saveModule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -102,6 +103,8 @@ export function CourseModuleEditor({
       index={index}
       moduleCount={moduleCount}
       editable={editable}
+      expanded={expanded}
+      onToggleExpanded={() => setExpanded((current) => !current)}
       editing={editing}
       confirmingDelete={confirmingDelete}
       pending={moduleMutation.pending}
@@ -132,19 +135,7 @@ export function CourseModuleEditor({
       onSubmit={saveModule}
       onTitleChange={setTitle}
       onDescriptionChange={setDescription}
-    >
-      {module.lessons.map((lesson, lessonIndex) => (
-        <LessonEditor
-          key={lesson.id}
-          courseId={courseId}
-          moduleId={module.id}
-          lesson={lesson}
-          index={lessonIndex}
-          lessonCount={module.lessons.length}
-          editable={editable}
-        />
-      ))}
-      {editable ? (
+      lessonActions={editable ? (
         <AddLessonFormView
           open={lessonFormOpen}
           typeId={`module-${module.id}-new-lesson-type`}
@@ -174,6 +165,18 @@ export function CourseModuleEditor({
           }}
         />
       ) : null}
+    >
+      {module.lessons.map((lesson, lessonIndex) => (
+        <LessonEditor
+          key={lesson.id}
+          courseId={courseId}
+          moduleId={module.id}
+          lesson={lesson}
+          index={lessonIndex}
+          lessonCount={module.lessons.length}
+          editable={editable}
+        />
+      ))}
     </CourseModuleView>
   );
 }

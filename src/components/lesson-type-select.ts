@@ -170,7 +170,7 @@ export function LessonTypeSelect({
           h("span", null, option.label),
           option.value === value ? h("span", { className: "lesson-type-check", "aria-hidden": "true" }, "✓") : null,
         ))),
-        document.body,
+        document.getElementById(id)?.closest("dialog") ?? document.body,
       )
     : null;
 
