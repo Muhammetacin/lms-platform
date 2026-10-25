@@ -98,7 +98,7 @@ test("003 module create, edit, reorder, boundary controls, and delete confirmati
   await deleteModuleDialog.getByRole("button", { name: "Cancel" }).click();
   await expect(moduleCard(page, "Module Alpha")).toBeVisible();
   await moduleAction(page, "Module Alpha", "Delete module");
-  await page.getByRole("dialog", { name: "Delete module?" }).getByRole("button", { name: "Delete module" }).click();
+  await page.getByRole("dialog", { name: "Delete module?" }).getByRole("button", { name: "Delete module", exact: true }).click();
   await expect(moduleCard(page, "Module Alpha")).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Module Beta edited" })).toBeVisible();
@@ -139,7 +139,7 @@ test("004 lesson types, content persistence, ordering, and delete confirmation",
   await page.getByRole("dialog", { name: "Delete lesson?" }).getByRole("button", { name: "Cancel" }).click();
   await expect(temporary).toBeVisible();
   await lessonAction(page, "Temporary lesson", "Delete lesson");
-  await page.getByRole("dialog", { name: "Delete lesson?" }).getByRole("button", { name: "Delete lesson" }).click();
+  await page.getByRole("dialog", { name: "Delete lesson?" }).getByRole("button", { name: "Delete lesson", exact: true }).click();
   await expect(temporary).toHaveCount(0);
   await page.reload();
   const textAfterReload = lessonCard(page, "Text lesson renamed");
@@ -165,7 +165,7 @@ test("005 lesson type confirmation cancels safely and accepts exactly one metada
   await selectLessonType(typeLesson, "VIDEO");
   await page.getByRole("button", { name: "Save lesson" }).click();
   await expect(page.getByRole("heading", { name: "Change lesson type?" })).toBeVisible();
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("dialog", { name: "Change lesson type?" }).getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(typeLesson.getByRole("combobox", { name: "Type", exact: true })).toHaveText("Text");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await typeLesson.getByRole("button", { name: "Edit content" }).click();
@@ -384,7 +384,7 @@ test("008 publish confirmation locks structure while metadata and preview remain
   await page.getByRole("button", { name: "Publish course" }).click();
   await expect(page.getByRole("heading", { name: "Publish course?" })).toBeVisible();
   await page.getByRole("button", { name: "Publish course", exact: true }).last().click();
-  await expect(page.getByRole("status")).toContainText("Published course");
+  await expect(page.getByRole("status").filter({ hasText: "Published course" })).toBeVisible();
   await expect(page.getByText("PUBLISHED", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Published date").locator(".." )).not.toContainText("—");
   await expect(page.getByRole("button", { name: "+ Add module" })).toHaveCount(0);
