@@ -231,6 +231,8 @@ export function EmployeeOverview() {
       const response = await fetch(`${employeesEndpoint}/${encodeURIComponent(deactivateTarget.id)}/deactivate`, {
         method: "POST",
         credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
       });
       const body = await readResponseBody(response);
       if (response.status === 401) {
@@ -527,7 +529,12 @@ export function EmployeeProfilePage({ employeeId }: { employeeId: string }) {
     setDeactivatePending(true);
     setDeactivateError(null);
     try {
-      const response = await fetch(`${employeesEndpoint}/${encodeURIComponent(profile.id)}/deactivate`, { method: "POST", credentials: "same-origin" });
+      const response = await fetch(`${employeesEndpoint}/${encodeURIComponent(profile.id)}/deactivate`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
       const body = await readResponseBody(response);
       if (response.status === 401) {
         redirectForSession(router);

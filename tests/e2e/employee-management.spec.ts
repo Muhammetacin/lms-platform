@@ -82,7 +82,7 @@ test("CSV import succeeds atomically and reports row validation failures", async
     buffer: Buffer.from(`email,name,jobTitle,department,phone,employeeNumber\nimport-${suffix}@example.test,Imported ${suffix},Instructor,Training,+32 2 555 01 23,IMP-${suffix}\n`),
   });
   const importResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/employees/import"));
-  await dialog.getByRole("button", { name: "Import employees" }).click();
+  await dialog.getByRole("button", { name: "Import employees", exact: true }).click();
   const imported = await importResponse;
   expect(imported.status()).toBe(200);
   await expect(page.getByRole("status").filter({ hasText: "Employees imported" })).toBeVisible();
@@ -102,7 +102,7 @@ test("CSV import succeeds atomically and reports row validation failures", async
     buffer: Buffer.from(`email,name\nvalid-${suffix}@example.test,Valid ${suffix}\nnot-an-email,Invalid ${suffix}\n`),
   });
   const invalidResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/employees/import"));
-  await invalidDialog.getByRole("button", { name: "Import employees" }).click();
+  await invalidDialog.getByRole("button", { name: "Import employees", exact: true }).click();
   expect((await invalidResponse).status()).toBe(400);
   await expect(invalidDialog.getByRole("alert")).toContainText("Row 3, email");
   await expect(invalidDialog.getByRole("alert")).toContainText("Enter a valid email address");
