@@ -112,6 +112,28 @@ test("PostgreSQL enforces TeamMembership tenant integrity, lifecycle, uniqueness
     const employeeToDelete = await db.organizationMembership.findFirstOrThrow({ where: { userId: users.employeeToDelete.id, organizationId: orgA }, select: { id: true } });
     const concurrentEmployee = await db.organizationMembership.findFirstOrThrow({ where: { userId: users.concurrentEmployee.id, organizationId: orgA }, select: { id: true } });
     const employeeB = await db.organizationMembership.findFirstOrThrow({ where: { userId: users.employeeB.id, organizationId: orgB }, select: { id: true } });
+    const memberAId = await db.organizationMembership.findFirstOrThrow({ where: { userId: users.memberA.id, organizationId: orgA }, select: { id: true } });
+
+    // MEMBER keeps team reads, but only sees protected profile fields on their own membership.
+    const privacyTeam = await teamStore.create(orgA, { name: "Membership privacy team", description: null });
+    await db.organizationMembership.update({ where: { id: memberAId.id }, data: { jobTitle: "Member title", department: "Member department" } });
+    assert.equal((await ownerA.POST(request("POST", { employeeId: memberAId.id }), privacyTeam.id)).status, 201);
+    assert.equal((await ownerA.POST(request("POST", { employeeId: employeeA.id }), privacyTeam.id)).status, 201);
+    const memberPrivacyRead = await memberA.GET(privacyTeam.id);
+    assert.equal(memberPrivacyRead.status, 200);
+    const privacyRows = (await memberPrivacyRead.json() as { members: Array<Record<string, unknown>> }).members;
+    assert.deepEqual(
+      privacyRows.find(({ id }) => id === memberAId.id) && {
+        jobTitle: privacyRows.find(({ id }) => id === memberAId.id)?.jobTitle,
+        department: privacyRows.find(({ id }) => id === memberAId.id)?.department,
+      },
+      { jobTitle: "Member title", department: "Member department" },
+      "MEMBER can read profile fields on their own organization membership.",
+    );
+    const otherPrivacyRow = privacyRows.find(({ id }) => id === employeeA.id)!;
+    assert.equal(Object.hasOwn(otherPrivacyRow, "jobTitle"), false);
+    assert.equal(Object.hasOwn(otherPrivacyRow, "department"), false);
+    assert.ok(privacyRows.every((row) => !Object.hasOwn(row, "userId")));
 
     // Forged tenant fields and global User IDs are not accepted as employee IDs.
     for (const extra of ["organizationId", "tenantId"]) {

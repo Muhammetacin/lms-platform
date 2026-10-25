@@ -176,6 +176,9 @@ jobs:
       - name: Employee Management UI tests
         run: pnpm test:employee-management-ui
 
+      - name: Team Management UI tests
+        run: pnpm test:team-management-ui
+
       - name: Course Management UI tests
         run: pnpm test:course-management-ui
 

@@ -28,6 +28,7 @@ export function createPrismaTeamMembershipStore(db: PrismaClient): TeamMembershi
           take: 100,
           select: {
             id: true,
+            userId: true,
             employeeName: true,
             jobTitle: true,
             department: true,
@@ -35,7 +36,7 @@ export function createPrismaTeamMembershipStore(db: PrismaClient): TeamMembershi
           },
         });
 
-        return rows.map(toTeamMember);
+        return rows.map((row) => ({ ...toTeamMember(row), userId: row.userId }));
       });
     },
 
