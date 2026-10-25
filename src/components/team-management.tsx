@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { CourseBuilderDialog } from "@/components/course-builder-dialog";
-import { announceCourseBuilderToast } from "@/components/course-builder-toast-region";
+import { announceCourseBuilderToast, CourseBuilderToastRegion } from "@/components/course-builder-toast-region";
 import {
   filterAddableEmployees,
   filterTeams,
@@ -340,6 +340,7 @@ export function TeamOverview() {
           </div>
         </div>
       </CourseBuilderDialog>
+      <CourseBuilderToastRegion />
     </div>
   );
 }
@@ -642,6 +643,7 @@ export function TeamDetailPage({ teamId }: { teamId: string }) {
           </div>
         </div>
       </CourseBuilderDialog>
+      <CourseBuilderToastRegion />
     </div>
   );
 }

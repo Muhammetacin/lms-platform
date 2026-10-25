@@ -239,7 +239,7 @@ test("inactive employees cannot be added and list and member API failures have r
   });
   await page.goto("/admin/teams");
   await expect(page.getByRole("heading", { name: "Teams are unavailable" })).toBeVisible();
-  await expect(page.getByRole("alert")).not.toContainText("private backend data");
+  await expect(page.locator(".team-error-panel")).not.toContainText("private backend data");
   await page.unroute("**/api/organizations/teams");
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByRole("heading", { name: team.name })).toBeVisible();
