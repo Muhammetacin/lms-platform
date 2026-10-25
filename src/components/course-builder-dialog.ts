@@ -71,6 +71,30 @@ export function CourseBuilderDialog({
       event.preventDefault();
       requestClose();
     },
+    onKeyDown: (event: {
+      key: string;
+      shiftKey: boolean;
+      target: EventTarget | null;
+      currentTarget: EventTarget;
+      preventDefault(): void;
+    }) => {
+      if (event.key !== "Tab") return;
+      const dialog = event.currentTarget as HTMLDialogElement;
+      if (event.target instanceof HTMLElement && event.target.closest("dialog") !== dialog) return;
+
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+        "a[href], button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex='-1'])",
+      )).filter((element) => element.closest("dialog") === dialog && !element.hidden && element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    },
     onClick: (event: { target: EventTarget | null; currentTarget: EventTarget | null }) => {
       if (event.target === event.currentTarget) requestClose();
     },

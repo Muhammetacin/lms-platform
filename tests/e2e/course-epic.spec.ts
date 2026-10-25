@@ -9,6 +9,8 @@ import {
   createCourseThroughUI,
   lessonAction,
   lessonCard,
+  lessonContentInput,
+  lessonResourceInput,
   login,
   moduleAction,
   moduleCard,
@@ -114,15 +116,15 @@ test("004 lesson types, content persistence, ordering, and delete confirmation",
   await expect(lessonCard(page, "Text lesson renamed")).toBeVisible();
   const video = lessonCard(page, "Video lesson");
   await video.getByRole("button", { name: "Edit content" }).click();
-  await video.getByLabel("Resource URL").fill("https://media.example.test/intro.mp4");
+  await lessonResourceInput(page).fill("https://media.example.test/intro.mp4");
   const videoSave = page.waitForResponse((response) => response.url().includes("/content") && response.request().method() === "PUT");
   await video.getByRole("button", { name: "Save content" }).click();
   expect((await videoSave).ok()).toBe(true);
   await page.reload();
   const videoAfterReload = lessonCard(page, "Video lesson");
   await videoAfterReload.getByRole("button", { name: "Edit content" }).click();
-  await expect(videoAfterReload.getByLabel("Resource URL")).toHaveValue("https://media.example.test/intro.mp4");
-  await videoAfterReload.getByRole("button", { name: "Cancel" }).click();
+  await expect(lessonResourceInput(page)).toHaveValue("https://media.example.test/intro.mp4");
+  await page.getByRole("button", { name: "Cancel" }).click();
   const lessonMoveUp = page.waitForResponse((response) => response.url().endsWith("/move") && response.request().method() === "POST");
   await lessonAction(page, "Video lesson", "Move up");
   expect((await lessonMoveUp).ok()).toBe(true);
@@ -142,10 +144,10 @@ test("004 lesson types, content persistence, ordering, and delete confirmation",
   await page.reload();
   const textAfterReload = lessonCard(page, "Text lesson renamed");
   await textAfterReload.getByRole("button", { name: "Edit content" }).click();
-  await expect(textAfterReload.getByLabel("Lesson content")).toHaveValue("First line\nSecond line");
-  await textAfterReload.getByRole("button", { name: "Cancel" }).click();
+  await expect(lessonContentInput(page)).toHaveValue("First line\nSecond line");
+  await page.getByRole("button", { name: "Cancel" }).click();
   await videoAfterReload.getByRole("button", { name: "Edit content" }).click();
-  await expect(videoAfterReload.getByLabel("Resource URL")).toHaveValue("https://media.example.test/intro.mp4");
+  await expect(lessonResourceInput(page)).toHaveValue("https://media.example.test/intro.mp4");
 });
 
 test("005 lesson type confirmation cancels safely and accepts exactly one metadata mutation", async ({ page, e2e }, testInfo) => {
@@ -167,8 +169,8 @@ test("005 lesson type confirmation cancels safely and accepts exactly one metada
   await expect(typeLesson.getByRole("combobox", { name: "Type", exact: true })).toHaveText("Text");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await typeLesson.getByRole("button", { name: "Edit content" }).click();
-  await expect(typeLesson.getByLabel("Lesson content")).toHaveValue("Keep this text until acceptance.");
-  await typeLesson.getByRole("button", { name: "Cancel" }).click();
+  await expect(lessonContentInput(page)).toHaveValue("Keep this text until acceptance.");
+  await page.getByRole("button", { name: "Cancel" }).click();
   expect(patches).toHaveLength(0);
 
   await typeLesson.getByRole("button", { name: "Edit lesson" }).click();
@@ -179,12 +181,12 @@ test("005 lesson type confirmation cancels safely and accepts exactly one metada
   expect((await response).ok()).toBe(true);
   await lessonCard(page, "Type lesson").getByRole("button", { name: "Edit content" }).click();
   await expect(page.getByRole("dialog", { name: "Edit Video resource" })).toBeVisible();
-  await expect(page.getByLabel("Resource URL")).toBeVisible();
+  await expect(lessonResourceInput(page)).toBeVisible();
   expect(patches).toHaveLength(1);
   await page.reload();
   await lessonCard(page, "Type lesson").getByRole("button", { name: "Edit content" }).click();
-  await expect(lessonCard(page, "Type lesson").getByLabel("Resource URL")).toHaveValue("");
-  await expect(lessonCard(page, "Type lesson").getByLabel("Lesson content")).toHaveCount(0);
+  await expect(lessonResourceInput(page)).toHaveValue("");
+  await expect(lessonContentInput(page)).toHaveCount(0);
 });
 
 test("Lesson Type selector exposes all values and supports keyboard, pointer, and responsive use", async ({ page, e2e }, testInfo) => {
@@ -318,9 +320,9 @@ test("006 preview preserves order and plain text while keeping resources as safe
   await addLesson(page, "Preview module two", "External video", "VIDEO");
   const resource = lessonCard(page, "External video");
   await resource.getByRole("button", { name: "Edit content" }).click();
-  await resource.getByLabel("Resource URL").fill("https://media.example.test/course.mp4");
+  await lessonResourceInput(page).fill("https://media.example.test/course.mp4");
   const resourceSave = page.waitForResponse((response) => response.url().includes("/content") && response.request().method() === "PUT");
-  await resource.getByRole("button", { name: "Save content" }).click();
+  await page.getByRole("button", { name: "Save content" }).click();
   expect((await resourceSave).ok()).toBe(true);
   await expect(page.getByRole("status").filter({ hasText: "Lesinhoud opgeslagen" })).toBeVisible();
   const externalRequests: string[] = [];
@@ -514,7 +516,7 @@ test("012 mobile layout, keyboard navigation, labels, and error visibility", asy
   expect(drawerBounds.top).toBe(0);
   expect(drawerBounds.width).toBe(375);
   expect(drawerBounds.height).toBe(812);
-  await expect(page.getByLabel("Lesson content")).toBeFocused();
+  await expect(lessonContentInput(page)).toBeFocused();
   await drawer.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("button", { name: "Publish course" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Preview course" }).last()).toBeVisible();
@@ -604,7 +606,7 @@ test("013 accessible dialogs protect unsaved changes and content save reports on
   const savedLesson = lessonCard(page, "Saved metadata");
   await savedLesson.getByRole("button", { name: "Edit content" }).click();
   const contentDialog = page.getByRole("dialog", { name: "Edit lesson content" });
-  const content = contentDialog.getByLabel("Lesson content");
+  const content = lessonContentInput(page);
   await expect(content).toBeFocused();
   await content.fill("This content must survive a failed save.");
   await page.keyboard.press("Escape");

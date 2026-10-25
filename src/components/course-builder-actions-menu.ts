@@ -17,7 +17,7 @@ export function CourseBuilderActionsMenu({
       }
     },
   },
-    h("summary", { "aria-label": `More actions for ${label}` },
+    h("summary", { role: "button", "aria-label": `More actions for ${label}` },
       h("span", { "aria-hidden": "true" }, "•••"),
     ),
     h("div", { className: "course-builder-actions-menu__items", role: "group", "aria-label": `${label} actions` }, children),
