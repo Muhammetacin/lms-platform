@@ -11,6 +11,9 @@ export type Employee = {
   name: string | null;
   role: "OWNER" | "ADMIN" | "MEMBER";
   active: boolean;
+  /** Profile values are included by the bounded list endpoint for the Admin UI. */
+  jobTitle?: string | null;
+  department?: string | null;
 };
 
 export class EmployeeConflictError extends Error {

@@ -63,7 +63,7 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run Course Epic browser acceptance
+      - name: Run Playwright browser acceptance suite
         run: pnpm test:e2e
 
       - name: Upload Playwright report and diagnostics
@@ -172,6 +172,9 @@ jobs:
 
       - name: Admin Portal unit and rendering tests
         run: pnpm test:admin-portal
+
+      - name: Employee Management UI tests
+        run: pnpm test:employee-management-ui
 
       - name: Course Management UI tests
         run: pnpm test:course-management-ui

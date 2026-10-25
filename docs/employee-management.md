@@ -15,7 +15,7 @@ Creating an employee looks up or creates a `User` using the exact supplied email
 
 ## API
 
-Every operation calls LMS-009 `requireTenantContext()` without a client-provided organization candidate, and then uses `tenant.organizationId`. Responses set `Cache-Control: no-store` and expose only employee ID, email, display name, role, and active state.
+Every operation calls LMS-009 `requireTenantContext()` without a client-provided organization candidate, and then uses `tenant.organizationId`. Responses set `Cache-Control: no-store` and expose only the employee ID, email, organization-specific display name, role, active state, and (on the bounded list) job title and department. They never expose tenant IDs or credentials.
 
 | Method and route | Capability | Behavior |
 | --- | --- | --- |
@@ -24,6 +24,8 @@ Every operation calls LMS-009 `requireTenantContext()` without a client-provided
 | `GET /api/organizations/employees/:employeeId` | `VIEW_ORGANIZATION` | Read one membership scoped to its ID and the trusted organization ID. |
 | `PATCH /api/organizations/employees/:employeeId` | `MANAGE_MEMBERS` | Change only the organization-specific display name. |
 | `POST /api/organizations/employees/:employeeId/deactivate` | `MANAGE_MEMBERS`, plus `MANAGE_ORGANIZATION_OWNERSHIP` for an OWNER target | Mark the membership inactive; do not delete the user or membership. |
+
+The Admin Employee Management UI uses the bounded list endpoint and includes organization-specific job title and department values in each returned row. Search and filters operate on the loaded set of at most 100 employees. The profile screen reads and updates organization-specific name, job title, department, phone, and employee number through the LMS-013 profile endpoint; email, role, and active status stay read-only in that editor.
 
 Member creation always defaults to MEMBER. Role mutation, email mutation, reactivation, organization switching, and delete are not exposed. A user can hold different roles and active states in different organizations.
 

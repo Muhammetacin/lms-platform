@@ -10,6 +10,7 @@ import {
 import {
   createPrismaEmployeeManagementStore,
 } from "../src/lib/employee-management-prisma-store.ts";
+import { createEmployeeManagementHandlers } from "../src/lib/employee-management-core.ts";
 import { createEmployeeProfileHandlers } from "../src/lib/employee-profile-core.ts";
 import {
   resolveTenantContext,
@@ -74,6 +75,18 @@ test("PostgreSQL enforces employee profile tenant scope, membership ownership, a
     readBody: async (request) => request.json(),
     logError: () => {},
   });
+  const makeManagementHandlers = (identity: AuthenticatedUser | null) => createEmployeeManagementHandlers({
+    async requireTenantContext() {
+      return resolveTenantContext(identity, undefined, membershipStore);
+    },
+    async requirePermission(organizationId, permission) {
+      return requireOrganizationPermission(identity, organizationId, permission, membershipStore);
+    },
+    store,
+    isTrustedRequest: () => true,
+    readBody: async (request) => request.json(),
+    logError: () => {},
+  });
   const request = (value: unknown) => new Request(
     "https://lms.example.test/api/organizations/employees/profile",
     {
@@ -124,6 +137,19 @@ test("PostgreSQL enforces employee profile tenant scope, membership ownership, a
     const ownerHandlersB = makeHandlers(asUser(users.ownerB));
     const adminHandlersA = makeHandlers(asUser(users.adminA));
     const memberHandlersA = makeHandlers(asUser(users.memberA));
+
+    await store.updateProfile(orgA, memberA.id, { jobTitle: "Instructor", department: "Learning" });
+    const employeeList = await makeManagementHandlers(asUser(users.ownerA)).GET();
+    assert.equal(employeeList.status, 200);
+    const employeeRows = (await employeeList.json() as { employees: Array<Record<string, unknown>> }).employees;
+    assert.deepEqual(
+      employeeRows.find(({ id }) => id === memberA.id) && {
+        jobTitle: employeeRows.find(({ id }) => id === memberA.id)?.jobTitle,
+        department: employeeRows.find(({ id }) => id === memberA.id)?.department,
+      },
+      { jobTitle: "Instructor", department: "Learning" },
+      "The bounded Admin employee list includes organization profile fields.",
+    );
 
     const ownerRead = await ownerHandlersA.GET(memberA.id);
     assert.equal(ownerRead.status, 200);

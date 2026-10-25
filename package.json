@@ -23,6 +23,7 @@
     "test:organization-settings": "node --experimental-strip-types --test tests/organization-settings.test.ts",
     "test:employee-management": "node --experimental-strip-types --test tests/employee-management.test.ts",
     "test:employee-profile": "node --experimental-strip-types --test tests/employee-profile.test.ts",
+    "test:employee-management-ui": "node --experimental-strip-types --test tests/employee-management-ui.test.ts",
     "test:employee-import": "node --experimental-strip-types --test tests/employee-import.test.ts",
     "test:employee-import:db": "node --conditions=react-server --experimental-strip-types --test tests/employee-import-postgres.test.ts",
     "test:employee-invitation": "node --experimental-strip-types --test tests/employee-invitation.test.ts",

@@ -29,15 +29,19 @@ export function createPrismaEmployeeManagementStore(
         select: {
           id: true,
           employeeName: true,
+          jobTitle: true,
+          department: true,
           active: true,
           role: true,
           user: { select: { email: true } },
         },
       });
-      return rows.map(({ id, employeeName, active, role, user }) => ({
+      return rows.map(({ id, employeeName, jobTitle, department, active, role, user }) => ({
         id,
         email: user.email,
         name: employeeName,
+        jobTitle,
+        department,
         active,
         role,
       }));
