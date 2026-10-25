@@ -206,7 +206,7 @@ test("responsive layouts, keyboard dialogs, list failures, and unavailable email
     await route.continue();
   });
   await page.reload();
-  await expect(page.getByRole("alert")).toContainText("Employee data is temporarily unavailable");
+  await expect(page.locator(".employee-error-panel")).toContainText("Employee data is temporarily unavailable");
   await expect(page.getByText("Invitation email delivery is not configured yet.")).toBeVisible();
   await page.getByRole("button", { name: "Add employee", exact: true }).click();
   const failedCreate = page.getByRole("dialog", { name: "Add employee" });
