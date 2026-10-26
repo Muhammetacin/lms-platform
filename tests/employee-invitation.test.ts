@@ -19,6 +19,9 @@ import {
   type StoredEmployeeInvitation,
 } from "../src/lib/employee-invitation-core.ts";
 import { verifyPassword } from "../src/lib/auth-core.ts";
+import { createBrevoEmailProvider } from "../src/lib/brevo-email-provider.ts";
+import { createEmployeeInvitationEmail } from "../src/lib/employee-invitation-email.ts";
+import { EmailDeliveryError } from "../src/lib/email-delivery-core.ts";
 
 const organizationId = "b20e9b55-2a9d-466f-88ec-531a1aef895a";
 const otherOrganizationId = "477a64cc-38a7-4b62-9cf5-1089859328f7";
@@ -248,6 +251,73 @@ test("existing credentials, inactive memberships, wrong roles, bad URLs, and del
   assert.deepEqual(failed, { status: "delivery_failed" });
   assert.equal(failingStore.invitations.size, 1);
   assert.equal([...failingStore.invitations.values()][0].consumedAt !== null, true);
+});
+
+test("mock Brevo acceptance sends the activation link while persisting only its token hash", async () => {
+  const store = new MemoryInvitationStore();
+  let serializedPayload: string | undefined;
+  const provider = createBrevoEmailProvider({
+    apiKey: "test-api-key",
+    senderEmail: "noreply@example.test",
+    senderName: "LMS Platform",
+  }, {
+    fetchImplementation: async (_input, init) => {
+      serializedPayload = String(init?.body);
+      return Response.json({ messageId: "mock-message-id" }, { status: 201 });
+    },
+  });
+  const delivery: EmployeeInvitationDelivery = {
+    available: true,
+    async send(email, activationUrl) {
+      await provider.send(createEmployeeInvitationEmail(email, activationUrl));
+    },
+  };
+  const events: Array<{ result: string; reason?: string }> = [];
+  const result = await createEmployeeInvitation(
+    organizationId,
+    membershipId,
+    store,
+    delivery,
+    "https://lms.example.test",
+    new Date("2026-10-26T12:00:00.000Z"),
+    undefined,
+    (deliveryResult, reason) => events.push(reason ? { result: deliveryResult, reason } : { result: deliveryResult }),
+  );
+
+  assert.deepEqual(result, { status: "created" });
+  assert.deepEqual(events, [{ result: "accepted" }]);
+  assert.ok(serializedPayload);
+  const payload = JSON.parse(serializedPayload) as Record<string, unknown>;
+  const to = payload.to as Array<{ email: string }>;
+  assert.deepEqual(to, [{ email: "employee@example.test" }]);
+  const html = String(payload.htmlContent);
+  const token = html.match(/#token=([A-Za-z0-9_-]{43})/)?.[1];
+  assert.ok(token);
+  assert.match(String(payload.textContent), new RegExp(token));
+  assert.equal(store.invitations.has(token), false);
+  assert.equal(store.invitations.has(hashInvitationToken(token)), true);
+  assert.equal(JSON.stringify(result).includes(token), false);
+});
+
+test("invitation failure logging receives only a safe category and never the token or error text", async () => {
+  const store = new MemoryInvitationStore();
+  const events: Array<{ result: string; reason?: string }> = [];
+  const result = await createEmployeeInvitation(
+    organizationId,
+    membershipId,
+    store,
+    {
+      available: true,
+      async send() { throw new EmailDeliveryError("provider_rejected"); },
+    },
+    "https://lms.example.test",
+    new Date("2026-10-26T12:00:00.000Z"),
+    undefined,
+    (deliveryResult, reason) => events.push({ result: deliveryResult, reason }),
+  );
+  assert.deepEqual(result, { status: "delivery_failed" });
+  assert.deepEqual(events, [{ result: "failed", reason: "provider_rejected" }]);
+  assert.equal([...store.invitations.values()][0].consumedAt !== null, true);
 });
 
 test("admin invitation endpoint returns a generic success without token or tenant data", async () => {

@@ -61,7 +61,7 @@ function InvitationDeliveryNotice() {
   return (
     <aside className="employee-invitation-notice" aria-label="Invitation email delivery">
       <span className="employee-notice-mark" aria-hidden="true">i</span>
-      <p><strong>Invitation email delivery is not configured yet.</strong> Employees can be managed here; email delivery depends on LMS-052.</p>
+      <p><strong>Activation invitations are sent from employee profiles.</strong> The provider confirms when it accepts a request; that does not confirm inbox delivery.</p>
     </aside>
   );
 }
@@ -166,7 +166,7 @@ export function EmployeeOverview() {
       setCreateEmail("");
       setCreateName("");
       reloadEmployees();
-      announceCourseBuilderToast({ title: "Employee added", message: "New employees have the MEMBER role. Invitation email delivery is not configured yet." });
+      announceCourseBuilderToast({ title: "Employee added", message: "New employees have the MEMBER role. Open the profile to send an activation invitation." });
     } catch {
       setCreateError("The employee could not be added. Check your connection and try again.");
     } finally {
@@ -370,7 +370,7 @@ export function EmployeeOverview() {
             <div className="form-field">
               <label htmlFor="new-employee-email">Email</label>
               <input id="new-employee-email" name="email" type="email" value={createEmail} onChange={(event) => setCreateEmail(event.currentTarget.value)} maxLength={254} required autoComplete="email" />
-              <p className="form-hint">Email and name are used to create the account. No invitation email will be sent.</p>
+              <p className="form-hint">Email and name create the employee account. Send an activation invitation from the employee profile when ready.</p>
             </div>
             <div className="form-actions">
               <button className="secondary-action" type="button" disabled={createPending} onClick={requestClose}>Cancel</button>
@@ -448,6 +448,9 @@ export function EmployeeProfilePage({ employeeId }: { employeeId: string }) {
   const [deactivatePending, setDeactivatePending] = useState(false);
   const deactivatePendingRef = useRef(false);
   const [deactivateError, setDeactivateError] = useState<string | null>(null);
+  const [invitationPending, setInvitationPending] = useState(false);
+  const invitationPendingRef = useRef(false);
+  const [invitationError, setInvitationError] = useState<string | null>(null);
 
   function reloadProfile() {
     setLoading(true);
@@ -486,6 +489,39 @@ export function EmployeeProfilePage({ employeeId }: { employeeId: string }) {
 
   const cleanDraft = profile ? profileDraftFrom(profile) : null;
   const dirty = Boolean(draft && cleanDraft && JSON.stringify(draft) !== JSON.stringify(cleanDraft));
+
+  async function sendInvitation() {
+    if (!profile || invitationPendingRef.current) return;
+    invitationPendingRef.current = true;
+    setInvitationPending(true);
+    setInvitationError(null);
+    try {
+      const response = await fetch(`${employeesEndpoint}/${encodeURIComponent(profile.id)}/invitation`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const body = await readResponseBody(response);
+      if (response.status === 401) {
+        redirectForSession(router);
+        return;
+      }
+      if (!response.ok || !isRecord(body) || body.success !== true) {
+        setInvitationError(employeeApiErrorMessage(response.status, body));
+        return;
+      }
+      announceCourseBuilderToast({
+        title: "Invitation email accepted",
+        message: "The provider accepted the email request. Actual delivery may take a short time.",
+      });
+    } catch {
+      setInvitationError("The invitation request could not be confirmed. Reload the profile before retrying.");
+    } finally {
+      invitationPendingRef.current = false;
+      setInvitationPending(false);
+    }
+  }
 
   async function submitProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -586,11 +622,13 @@ export function EmployeeProfilePage({ employeeId }: { employeeId: string }) {
           <p className="employee-profile-email">{profile.email}</p>
         </div>
         <div className="employee-profile-actions">
+          {profile.active && profile.role === "MEMBER" ? <button className="secondary-action" type="button" onClick={() => void sendInvitation()} disabled={invitationPending}>{invitationPending ? "Sending invitation…" : "Send activation invitation"}</button> : null}
           <button className="secondary-action" type="button" onClick={() => { setDraft(profileDraftFrom(profile)); setFieldErrors({}); setSaveError(null); setEditing(true); }}>Edit profile</button>
         </div>
       </header>
 
       <InvitationDeliveryNotice />
+      {invitationError ? <p className="error-message" role="alert">{invitationError}</p> : null}
 
       <section className="employee-profile-panel" aria-labelledby="employee-profile-details-heading">
         <div className="employee-panel-heading"><div><p className="admin-eyebrow">Organization details</p><h2 id="employee-profile-details-heading">Profile details</h2></div><span className={`employee-status-badge ${profile.active ? "is-active" : "is-inactive"}`}>{profile.active ? "Active" : "Inactive"}</span></div>
