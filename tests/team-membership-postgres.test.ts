@@ -114,6 +114,11 @@ test("PostgreSQL enforces TeamMembership tenant integrity, lifecycle, uniqueness
     const employeeB = await db.organizationMembership.findFirstOrThrow({ where: { userId: users.employeeB.id, organizationId: orgB }, select: { id: true } });
     const memberAId = await db.organizationMembership.findFirstOrThrow({ where: { userId: users.memberA.id, organizationId: orgA }, select: { id: true } });
 
+    // A persisted Team with no TeamMembership rows remains a valid, empty member list.
+    const emptyList = await ownerA.GET(teamA.id);
+    assert.equal(emptyList.status, 200);
+    assert.deepEqual(await emptyList.json(), { members: [] });
+
     // MEMBER keeps team reads, but only sees protected profile fields on their own membership.
     const privacyTeam = await teamStore.create(orgA, { name: "Membership privacy team", description: null });
     await db.organizationMembership.update({ where: { id: memberAId.id }, data: { jobTitle: "Member title", department: "Member department" } });

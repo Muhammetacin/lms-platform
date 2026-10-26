@@ -91,6 +91,26 @@ function readName(name: string | null, email: string): string {
   return name?.trim() || email;
 }
 
+function TeamIcon({ className }: { className: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="10" cy="7" r="4" />
+      <path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
 export function TeamOverview() {
   const [teams, setTeams] = useState<TeamListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,7 +272,7 @@ export function TeamOverview() {
 
       {!loading && !loadError && teams.length === 0 ? (
         <section className="admin-empty-state team-empty-state" aria-labelledby="empty-teams-title">
-          <div className="employee-empty-icon" aria-hidden="true">◇</div>
+          <div className="employee-empty-icon"><TeamIcon className="team-overview-icon" /></div>
           <h2 id="empty-teams-title">No teams yet</h2>
           <p>Create a team to start organizing employees across your organization.</p>
           <button className="primary-action" type="button" onClick={openCreate}>Create your first team</button>
@@ -280,7 +300,7 @@ export function TeamOverview() {
                 <li key={team.id}>
                   <article className="employee-card team-card">
                     <div className="team-card__identity">
-                      <span className="team-card__mark" aria-hidden="true">◇</span>
+                      <span className="team-card__mark"><TeamIcon className="team-card__icon" /></span>
                       <div className="employee-card__name">
                         <h3>{team.name}</h3>
                         <p>{team.description || "No description"}</p>

@@ -73,7 +73,8 @@ export function teamApiErrorMessage(status: number, body: unknown): string {
   if (code === "team_membership_conflict") return "This employee is already a member of this team.";
   if (code === "employee_not_found") return "Only active employees in your organization can be added. This employee may be inactive or unavailable.";
   if (code === "team_membership_not_found") return "This employee is no longer an active member of this team.";
-  if (code === "team_not_found" || status === 404) return "This team is no longer available in your organization.";
+  if (code === "team_not_found") return "This team is no longer available in your organization.";
+  if (status === 404) return "The requested resource could not be found. Refresh the page and try again.";
   if (status === 400) return "Check the team details and try again.";
   if (status >= 500) return "Team management is temporarily unavailable. Try again shortly.";
   return "The team change could not be completed. Review the details and try again.";

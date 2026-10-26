@@ -2821,8 +2821,20 @@ h1 {
   border-radius: 13px;
   background: #edf4eb;
   color: #315a3e;
-  font-size: 23px;
-  font-weight: 700;
+}
+
+.team-card__icon {
+  display: block;
+  width: 23px;
+  height: 23px;
+  flex: none;
+}
+
+.team-overview-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
 }
 
 .team-card__actions {

@@ -11,6 +11,59 @@ const employeesPath = "/api/organizations/employees";
 
 type ApiBody = Record<string, unknown>;
 
+test("persisted existing teams return distinct detail, empty membership, and employee responses", async ({ page, e2e }) => {
+  await login(page, e2e.users.ownerA);
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const teamName = `LMS-091 persisted ${suffix}`;
+  const createTeam = await apiRequest(page, teamsPath, "POST", { name: teamName, description: "Persisted team check" });
+  expect(createTeam.status).toBe(201);
+  const team = (createTeam.body as { team: { id: string; name: string } }).team;
+
+  // These are real same-origin route requests backed by the isolated PostgreSQL E2E database.
+  const [detail, members, employees] = await Promise.all([
+    apiRequest(page, teamsPath + "/" + team.id, "GET"),
+    apiRequest(page, teamsPath + "/" + team.id + "/members", "GET"),
+    apiRequest(page, employeesPath, "GET"),
+  ]);
+  expect(detail.status).toBe(200);
+  expect(detail.body).toMatchObject({ team: { id: team.id, name: teamName, description: "Persisted team check" } });
+  expect(members.status).toBe(200);
+  expect(members.body).toEqual({ members: [] });
+  expect(employees.status).toBe(200);
+  expect((employees.body as { employees: unknown[] }).employees).toBeInstanceOf(Array);
+
+  await page.goto("/admin/teams/" + team.id);
+  await expect(page.getByRole("heading", { name: teamName })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add employee" })).toBeEnabled();
+
+  const employee = await apiRequest(page, employeesPath, "POST", {
+    email: `lms091-persisted-${suffix}@example.test`,
+    name: `Persisted Employee ${suffix}`,
+  });
+  expect(employee.status).toBe(201);
+  const employeeId = (employee.body as { employee: { id: string } }).employee.id;
+  const added = await apiRequest(page, teamsPath + "/" + team.id + "/members", "POST", { employeeId });
+  expect(added.status).toBe(201);
+
+  const populated = await apiRequest(page, teamsPath + "/" + team.id + "/members", "GET");
+  expect(populated.status).toBe(200);
+  expect(populated.body).toMatchObject({ members: [{ id: employeeId, email: `lms091-persisted-${suffix}@example.test` }] });
+
+  await page.goto("/admin/teams/" + team.id);
+  await expect(page.getByRole("heading", { name: teamName })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add employee" })).toBeEnabled();
+  await expect(page.locator(".team-member-card")).toContainText(`lms091-persisted-${suffix}@example.test`);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: teamName })).toBeVisible();
+  await expect(page.locator(".team-member-card")).toContainText(`lms091-persisted-${suffix}@example.test`);
+
+  const removed = await apiRequest(page, teamsPath + "/" + team.id + "/members/" + employeeId, "DELETE", {});
+  expect(removed.status).toBe(200);
+  const emptyAgain = await apiRequest(page, teamsPath + "/" + team.id + "/members", "GET");
+  expect(emptyAgain.status).toBe(200);
+  expect(emptyAgain.body).toEqual({ members: [] });
+});
+
 test("team overview creates, validates, edits, searches, and discards unsaved team forms", async ({ page, e2e }) => {
   await login(page, e2e.users.ownerA);
   await page.goto("/admin");
@@ -324,6 +377,7 @@ test("foreign and invalid Team identifiers use safe not-found behavior", async (
   const missingDetail = await apiRequest(page, teamsPath + "/" + crypto.randomUUID(), "GET");
   expect(foreignDetail.status).toBe(404);
   expect(foreignDetail.body).toEqual(missingDetail.body);
+  expect(foreignDetail.body).toEqual({ error: "team_not_found" });
   expect((await apiRequest(page, teamsPath + "/not-a-uuid", "GET")).status).toBe(404);
   expect((await apiRequest(page, teamsPath + "/" + team.id + "/members", "GET")).status).toBe(404);
   expect((await apiRequest(page, teamsPath + "/" + team.id + "/members", "POST", { employeeId: employee.id })).status).toBe(404);

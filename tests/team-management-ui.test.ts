@@ -63,6 +63,10 @@ test("API errors stay actionable without exposing server details", () => {
   assert.match(teamApiErrorMessage(400, { error: "invalid_request" }), /Check the team details/);
   assert.match(teamApiErrorMessage(503, { error: "private_db", details: "password" }), /temporarily unavailable/);
   assert.doesNotMatch(teamApiErrorMessage(503, { error: "private_db", details: "password" }), /password|private_db/);
+  assert.match(teamApiErrorMessage(401, { error: "unauthenticated" }), /session has ended/);
+  assert.match(teamApiErrorMessage(403, { error: "forbidden" }), /permission/);
+  assert.match(teamApiErrorMessage(404, { error: "route_not_found" }), /resource could not be found/);
+  assert.match(teamApiErrorMessage(404, { error: "team_not_found" }), /team is no longer available/);
 });
 
 test("team pages reuse only the tenant-scoped Team, membership, and employee APIs", async () => {
