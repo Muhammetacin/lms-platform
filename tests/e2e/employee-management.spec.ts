@@ -79,7 +79,9 @@ test("activation invitation UI prevents duplicate submissions and distinguishes 
   expect(created.status()).toBe(201);
   const employeeCard = page.locator(".employee-card").filter({ hasText: email });
   await employeeCard.getByRole("link", { name: "View profile" }).click();
-  const inviteButton = page.getByRole("button", { name: "Send activation invitation" });
+  // The accessible name changes while the request is pending; keep the locator
+  // matched across that state so the disabled assertion observes the same button.
+  const inviteButton = page.getByRole("button", { name: /Send activation invitation|Sending invitation…/ });
   let calls = 0;
   let releaseFirstResponse: (() => void) | undefined;
   await page.route("**/api/organizations/employees/*/invitation", async (route) => {
