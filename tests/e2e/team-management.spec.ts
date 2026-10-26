@@ -62,6 +62,8 @@ test("persisted existing teams return distinct detail, empty membership, and emp
   const emptyAgain = await apiRequest(page, teamsPath + "/" + team.id + "/members", "GET");
   expect(emptyAgain.status).toBe(200);
   expect(emptyAgain.body).toEqual({ members: [] });
+  const deleted = await apiRequest(page, teamsPath + "/" + team.id, "DELETE", {});
+  expect(deleted.status).toBe(200);
 });
 
 test("team overview creates, validates, edits, searches, and discards unsaved team forms", async ({ page, e2e }) => {
