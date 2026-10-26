@@ -9,6 +9,7 @@ import {
 import type { TenantContext } from "./tenant-context-core.ts";
 import { TenantContextError } from "./tenant-context-core.ts";
 import { createHash, randomBytes } from "node:crypto";
+import { EmailDeliveryError, type EmailDeliveryFailureCode } from "./email-delivery-core.ts";
 
 export const EMPLOYEE_INVITATION_TTL_MS = 72 * 60 * 60 * 1000;
 const TOKEN_BYTES = 32;
@@ -61,6 +62,8 @@ export interface EmployeeInvitationDelivery {
   available: boolean;
   send(email: string, activationUrl: string): Promise<void>;
 }
+
+export type EmployeeInvitationDeliveryResult = "accepted" | "failed";
 
 export function createInvitationToken(): string {
   return randomBytes(TOKEN_BYTES).toString("base64url");
@@ -121,6 +124,7 @@ export async function createEmployeeInvitation(
   appUrl: string | undefined,
   now = new Date(),
   onCleanupFailure?: () => void,
+  onDeliveryResult?: (result: EmployeeInvitationDeliveryResult, reason?: EmailDeliveryFailureCode | "unknown") => void,
 ): Promise<InvitationCreationResult> {
   if (!delivery.available || !isEmployeeInvitationTarget(membershipId)) {
     return { status: "delivery_unavailable" };
@@ -151,15 +155,18 @@ export async function createEmployeeInvitation(
   activationUrl.hash = new URLSearchParams({ token: rawToken }).toString();
   try {
     await delivery.send(creation.email, activationUrl.toString());
-  } catch {
+  } catch (error) {
     try {
       await store.invalidateInvitation(creation.invitationId, now);
     } catch {
       onCleanupFailure?.();
     }
+    const reason = error instanceof EmailDeliveryError ? error.code : "unknown";
+    onDeliveryResult?.("failed", reason);
     return { status: "delivery_failed" };
   }
 
+  onDeliveryResult?.("accepted");
   return { status: "created" };
 }
 
@@ -212,6 +219,7 @@ type InvitationHandlerDependencies = {
   isTrustedRequest(request: Request): boolean;
   readBody(request: Request): Promise<unknown>;
   logError?(operation: "invite" | "validate" | "activate" | "cleanup"): void;
+  logDeliveryResult?(result: EmployeeInvitationDeliveryResult, reason?: EmailDeliveryFailureCode | "unknown"): void;
 };
 
 const privateJsonHeaders = { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
@@ -261,12 +269,14 @@ export function createEmployeeInvitationHandler(dependencies: InvitationHandlerD
         dependencies.appUrl,
         new Date(),
         () => dependencies.logError?.("cleanup"),
+        (result, reason) => dependencies.logDeliveryResult?.(result, reason),
       );
       if (result.status === "created") return json({ success: true }, 201);
       if (result.status === "not_found") return json({ error: "employee_not_found" }, 404);
       if (result.status === "inactive" || result.status === "wrong_role" || result.status === "existing_credential") {
         return json({ error: "employee_invitation_unavailable" }, 409);
       }
+      if (result.status === "delivery_failed") return json({ error: "invitation_delivery_failed" }, 503);
       return json({ error: "invitation_delivery_unavailable" }, 503);
     } catch (error) {
       return errorResponse(error, "invite", dependencies.logError);

@@ -73,6 +73,9 @@ test("API and CSV failures show actionable safe messages without leaking backend
   assert.equal(employeeApiErrorMessage(409, { error: "last_owner_required" }), "The last active owner cannot be deactivated.");
   assert.equal(employeeApiErrorMessage(409, { error: "employee_number_already_exists" }), "That employee number is already used in your organization.");
   assert.equal(employeeApiErrorMessage(503, { error: "private_sql", message: "database password" }), "Employee management is temporarily unavailable. Try again shortly.");
+  assert.equal(employeeApiErrorMessage(503, { error: "invitation_delivery_unavailable" }), "Invitation email is not configured. Contact your administrator before retrying.");
+  assert.equal(employeeApiErrorMessage(503, { error: "invitation_delivery_failed" }), "The invitation email could not be accepted by the provider. Try again shortly.");
+  assert.equal(employeeApiErrorMessage(409, { error: "employee_invitation_unavailable" }), "This employee cannot receive an activation invitation. The account may already be active.");
   assert.deepEqual(employeeImportErrorMessages({ errors: [
     { row: 1, field: "email", code: "missing_required_header" },
     { row: 3, field: "email", code: "duplicate_email", value: "private@example.test" },
@@ -88,7 +91,7 @@ test("API and CSV failures show actionable safe messages without leaking backend
   assert.doesNotMatch(JSON.stringify(employeeImportErrorMessages({ errors: [{ row: 2, field: "email", code: "duplicate_email", value: "private@example.test" }] })), /private@example\.test/);
 });
 
-test("employee UI calls only the existing tenant-scoped endpoints and never attempts delivery", async () => {
+test("employee UI sends invitations only from active employee profiles and never auto-invites on create", async () => {
   const source = await readFile(new URL("../src/components/employee-management.tsx", import.meta.url), "utf8");
   assert.match(source, /const employeesEndpoint = "\/api\/organizations\/employees"/);
   assert.match(source, /JSON\.stringify\(\{ email: createEmail, name: createName \}\)/);
@@ -97,6 +100,9 @@ test("employee UI calls only the existing tenant-scoped endpoints and never atte
   assert.match(source, /\/deactivate/);
   assert.match(source, /slice\(0, 100\)/);
   assert.match(source, /Search and filters apply to this loaded list/);
-  assert.match(source, /Invitation email delivery is not configured yet/);
-  assert.doesNotMatch(source, /\/invitation|activationToken|inviteToken|sendInvitation/);
+  assert.match(source, /\$\{employeesEndpoint\}\/\$\{encodeURIComponent\(profile\.id\)\}\/invitation/);
+  assert.match(source, /profile\.active && profile\.role === "MEMBER"/);
+  assert.match(source, /The provider accepted the email request/);
+  assert.match(source, /Open the profile to send an activation invitation/);
+  assert.doesNotMatch(source, /activationToken|inviteToken/);
 });
