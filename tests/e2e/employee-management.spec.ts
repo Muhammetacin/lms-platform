@@ -103,7 +103,7 @@ test("activation invitation UI prevents duplicate submissions and distinguishes 
   await expect(page.getByRole("status").filter({ hasText: "provider accepted the email request" })).toBeVisible();
 
   await inviteButton.click();
-  await expect(page.getByRole("alert")).toContainText("could not be accepted by the provider");
+  await expect(page.getByRole("alert").filter({ hasText: "could not be accepted by the provider" })).toBeVisible();
 });
 
 test("CSV import succeeds atomically and reports row validation failures", async ({ page, e2e }) => {
