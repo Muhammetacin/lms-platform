@@ -11,8 +11,11 @@ export type TeamMember = {
   department: string | null;
 };
 
+/** Internal list record used to preserve LMS-090 profile field visibility. */
+export type TeamMemberRecord = TeamMember & { userId: string };
+
 export interface TeamMembershipStore {
-  list(organizationId: string, teamId: string): Promise<TeamMember[] | null>;
+  list(organizationId: string, teamId: string): Promise<TeamMemberRecord[] | null>;
   add(organizationId: string, teamId: string, employeeId: string): Promise<TeamMember>;
   remove(organizationId: string, teamId: string, employeeId: string): Promise<boolean>;
 }
@@ -89,8 +92,12 @@ export function createTeamMembershipHandlers(dependencies: TeamMembershipDepende
         const tenant = await dependencies.requireTenantContext();
         await dependencies.requirePermission(tenant.organizationId, "VIEW_ORGANIZATION");
         if (!isTeamId(teamId)) return teamNotFound();
-        const members = await dependencies.store.list(tenant.organizationId, teamId);
-        if (members === null) return teamNotFound();
+        const records = await dependencies.store.list(tenant.organizationId, teamId);
+        if (records === null) return teamNotFound();
+        const members = records.map(({ userId, ...member }) => {
+          if (tenant.role !== "MEMBER" || userId === tenant.userId) return member;
+          return { id: member.id, email: member.email, employeeName: member.employeeName };
+        });
         return json({ members });
       } catch (error) {
         return errorResponse(error, "list", dependencies.logError);

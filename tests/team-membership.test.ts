@@ -25,7 +25,7 @@ const employeeA = "b5299aa9-9ee5-43b1-88fd-27661a3f1888";
 const employeeB = "9ed3bfae-a174-49e4-9645-3966c2c93043";
 const employeeInactive = "3a4f435b-3e5a-4f48-9a0c-cf7e1a2ad75b";
 
-type MemoryEmployee = TeamMember & { organizationId: string; active: boolean };
+type MemoryEmployee = TeamMember & { organizationId: string; active: boolean; userId: string };
 
 class MemoryStore implements TeamMembershipStore {
   readonly teams = new Map<string, string>();
@@ -41,7 +41,7 @@ class MemoryStore implements TeamMembershipStore {
       .map((link) => this.employees.get(link.employeeId))
       .filter((employee): employee is MemoryEmployee => employee !== undefined && employee.active)
       .sort((left, right) => (left.employeeName ?? "").localeCompare(right.employeeName ?? "") || left.id.localeCompare(right.id))
-      .map(toPublicEmployee);
+      .map((employee) => ({ ...toPublicEmployee(employee), userId: employee.userId }));
   }
 
   async add(organizationId: string, teamId: string, employeeId: string) {
@@ -127,6 +127,7 @@ function setup(role: "OWNER" | "ADMIN" | "MEMBER" = "OWNER") {
   store.teams.set(teamB, orgB);
   store.employees.set(employeeA, {
     id: employeeA,
+    userId: owner.id,
     organizationId: orgA,
     email: "employee-a@example.test",
     employeeName: "Alice A",
@@ -136,6 +137,7 @@ function setup(role: "OWNER" | "ADMIN" | "MEMBER" = "OWNER") {
   });
   store.employees.set(employeeB, {
     id: employeeB,
+    userId: "6aa6d920-65d1-4d2e-97c0-7b236f40d8ef",
     organizationId: orgB,
     email: "employee-b@example.test",
     employeeName: "Bob B",
@@ -145,12 +147,23 @@ function setup(role: "OWNER" | "ADMIN" | "MEMBER" = "OWNER") {
   });
   store.employees.set(employeeInactive, {
     id: employeeInactive,
+    userId: "4ba6d920-65d1-4d2e-97c0-7b236f40d8ef",
     organizationId: orgA,
     email: "inactive@example.test",
     employeeName: "Inactive Employee",
     jobTitle: null,
     department: null,
     active: false,
+  });
+  store.employees.set("7efc943b-32ac-4af9-8db7-8d5bfa9cc6aa", {
+    id: "7efc943b-32ac-4af9-8db7-8d5bfa9cc6aa",
+    userId: "4ba6d920-65d1-4d2e-97c0-7b236f40d8ef",
+    organizationId: orgA,
+    email: "private-employee@example.test",
+    employeeName: "Private Employee",
+    jobTitle: "Confidential title",
+    department: "Confidential department",
+    active: true,
   });
   return { identities, store, handlers: makeHandlers(store, owner, identities) };
 }
@@ -213,6 +226,26 @@ test("OWNER and ADMIN add active employees; inactive employees and duplicate add
     assert.equal((await handlers.POST(request("POST", { employeeId: employeeInactive }), teamA)).status, 404);
     assert.equal(store.links.length, 1);
   }
+});
+
+test("MEMBER reads team member identity but not another employee's protected profile fields", async () => {
+  const { store, handlers } = setup("MEMBER");
+  const otherEmployee = "7efc943b-32ac-4af9-8db7-8d5bfa9cc6aa";
+  store.links.push({ organizationId: orgA, teamId: teamA, employeeId: employeeA });
+  store.links.push({ organizationId: orgA, teamId: teamA, employeeId: otherEmployee });
+
+  const response = await handlers.GET(teamA);
+  assert.equal(response.status, 200);
+  const members = (await response.json() as { members: Array<Record<string, unknown>> }).members;
+  const ownMembership = members.find(({ id }) => id === employeeA)!;
+  assert.equal(ownMembership.jobTitle, "Teacher");
+  assert.equal(ownMembership.department, "Math");
+  const otherMembership = members.find(({ id }) => id === otherEmployee)!;
+  assert.equal(otherMembership.email, "private-employee@example.test");
+  assert.equal(otherMembership.employeeName, "Private Employee");
+  assert.equal(Object.hasOwn(otherMembership, "jobTitle"), false);
+  assert.equal(Object.hasOwn(otherMembership, "department"), false);
+  assert.equal(Object.hasOwn(otherMembership, "userId"), false);
 });
 
 test("tenant boundaries make foreign Teams and employees indistinguishable from missing targets", async () => {

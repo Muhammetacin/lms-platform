@@ -2769,3 +2769,352 @@ h1 {
     width: 100%;
   }
 }
+
+/* LMS-091 Team Management */
+.team-page-header {
+  align-items: flex-end;
+}
+
+.team-page-header > div {
+  min-width: 0;
+}
+
+.team-page-intro,
+.team-section-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.team-list-panel {
+  margin-top: 18px;
+}
+
+.team-filters {
+  grid-template-columns: minmax(220px, 1fr);
+}
+
+.team-filters .form-field {
+  max-width: 480px;
+}
+
+.team-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+}
+
+.team-card__identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 13px;
+}
+
+.team-card__mark {
+  display: grid;
+  width: 43px;
+  min-width: 43px;
+  height: 43px;
+  place-items: center;
+  border: 1px solid #cfdfd1;
+  border-radius: 13px;
+  background: #edf4eb;
+  color: #315a3e;
+}
+
+.team-card__icon {
+  display: block;
+  width: 23px;
+  height: 23px;
+  flex: none;
+}
+
+.team-overview-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+
+.team-card__actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.team-card__actions .secondary-action {
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.team-empty-state {
+  margin-top: 14px;
+  padding: 36px 20px;
+}
+
+.team-empty-state .primary-action {
+  margin-top: 8px;
+}
+
+.team-state {
+  margin: 18px 0 0;
+  padding: 18px;
+  border: 1px dashed #d0dbd1;
+  border-radius: 10px;
+  color: #56655b;
+  text-align: center;
+}
+
+.team-error-panel {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid #e5c4c4;
+  border-radius: 11px;
+  background: #fffafa;
+  color: #7d3030;
+}
+
+.team-error-panel h1,
+.team-error-panel h2 {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: 22px;
+}
+
+.team-error-panel p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.team-detail-page > .back-link {
+  margin-bottom: 12px;
+}
+
+.team-detail-header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 19px;
+  padding: clamp(20px, 4vw, 30px);
+  border: 1px solid #dce5dc;
+  border-radius: 15px;
+  background: rgb(255 255 253 / 94%);
+}
+
+.team-detail-heading {
+  min-width: 0;
+}
+
+.team-detail-heading .admin-eyebrow {
+  margin: 0 0 7px;
+}
+
+.team-detail-heading h1 {
+  margin: 0;
+  font-size: clamp(27px, 4vw, 38px);
+  overflow-wrap: anywhere;
+}
+
+.team-detail-heading > p:last-child {
+  margin: 9px 0 0;
+  color: #637168;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.team-members-panel .employee-panel-heading {
+  align-items: center;
+}
+
+.team-member-card {
+  grid-template-columns: minmax(190px, 1.1fr) minmax(0, 1fr) auto;
+}
+
+.team-member-meta {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.team-member-meta dt {
+  margin-bottom: 5px;
+  color: #718077;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team-member-meta dd {
+  min-width: 0;
+  margin: 0;
+  color: #28382e;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.team-member-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.team-form select,
+.team-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid #cad6cd;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.team-form select {
+  min-height: 43px;
+}
+
+.team-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.team-form select:focus-visible,
+.team-form textarea:focus-visible {
+  outline: 3px solid rgb(61 114 74 / 22%);
+  outline-offset: 2px;
+  border-color: #54805f;
+}
+
+.team-form-error {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #e5c4c4;
+  border-radius: 9px;
+  background: #fffafa;
+  color: #7d3030;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.team-picker-limit,
+.team-inline-warning {
+  margin: 0;
+  color: #59675e;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.team-inline-warning {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.team-confirmation {
+  display: grid;
+  gap: 15px;
+}
+
+.team-confirmation > p:first-child {
+  margin: 0;
+  color: #4e5f53;
+  line-height: 1.6;
+}
+
+.team-page :is(button, a, input, textarea, select):focus-visible,
+.team-detail-page :is(button, a, input, textarea, select):focus-visible {
+  outline: 3px solid rgb(61 114 74 / 24%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .team-card,
+  .team-member-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .team-card__identity,
+  .team-card__actions,
+  .team-member-card .employee-card__identity,
+  .team-member-meta,
+  .team-member-actions {
+    grid-column: 1;
+  }
+
+  .team-card__actions,
+  .team-member-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .team-page-header,
+  .team-detail-header,
+  .team-members-panel .employee-panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .team-page-header > .primary-action,
+  .team-detail-header > .secondary-action,
+  .team-members-panel .employee-panel-heading > .primary-action {
+    width: 100%;
+  }
+
+  .team-list-panel .employee-list-panel__heading {
+    gap: 10px;
+  }
+
+  .team-card__actions {
+    align-items: stretch;
+  }
+
+  .team-card__actions > *,
+  .team-member-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .team-inline-warning {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .team-member-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 11px 0;
+    border-top: 1px solid #e8eee8;
+    border-bottom: 1px solid #e8eee8;
+  }
+
+  .team-form .form-actions,
+  .team-confirmation .form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .team-form .form-actions > *,
+  .team-confirmation .form-actions > * {
+    width: 100%;
+  }
+}

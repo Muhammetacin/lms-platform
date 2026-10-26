@@ -11,32 +11,40 @@ import {
 export function createPrismaTeamMembershipStore(db: PrismaClient): TeamMembershipStore {
   return {
     async list(organizationId, teamId) {
-      return db.$transaction(async (transaction) => {
-        const team = await transaction.team.findFirst({
-          where: { id: teamId, organizationId },
-          select: { id: true },
-        });
-        if (!team) return null;
-
-        const rows = await transaction.organizationMembership.findMany({
-          where: {
-            organizationId,
-            active: true,
-            teamMemberships: { some: { organizationId, teamId } },
+      const team = await db.team.findFirst({
+        where: { id: teamId, organizationId },
+        select: {
+          memberships: {
+            where: {
+              organizationId,
+              membership: { is: { active: true } },
+            },
+            orderBy: [
+              { membership: { employeeName: "asc" } },
+              { membershipId: "asc" },
+            ],
+            take: 100,
+            select: {
+              membership: {
+                select: {
+                  id: true,
+                  userId: true,
+                  employeeName: true,
+                  jobTitle: true,
+                  department: true,
+                  user: { select: { email: true } },
+                },
+              },
+            },
           },
-          orderBy: [{ employeeName: "asc" }, { id: "asc" }],
-          take: 100,
-          select: {
-            id: true,
-            employeeName: true,
-            jobTitle: true,
-            department: true,
-            user: { select: { email: true } },
-          },
-        });
-
-        return rows.map(toTeamMember);
+        },
       });
+      if (!team) return null;
+
+      return team.memberships.map(({ membership }) => ({
+        ...toTeamMember(membership),
+        userId: membership.userId,
+      }));
     },
 
     async add(organizationId, teamId, employeeId) {
