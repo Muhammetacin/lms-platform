@@ -54,6 +54,7 @@ export function createBrevoEmailProvider(
             textContent: message.text,
           }),
           cache: "no-store",
+          redirect: "error",
           signal: controller.signal,
         });
         if (!response.ok) throw new EmailDeliveryError("provider_rejected");

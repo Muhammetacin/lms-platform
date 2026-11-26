@@ -134,7 +134,9 @@ export async function createEmployeeInvitation(
   try {
     if (!appUrl) return { status: "delivery_unavailable" };
     const configuredUrl = new URL(appUrl);
-    if (configuredUrl.protocol !== "https:" && configuredUrl.protocol !== "http:") {
+    const isLocalHttp = configuredUrl.protocol === "http:"
+      && ["localhost", "127.0.0.1", "[::1]"].includes(configuredUrl.hostname);
+    if (configuredUrl.protocol !== "https:" && !isLocalHttp) {
       return { status: "delivery_unavailable" };
     }
     activationUrl = new URL("/auth/activate", configuredUrl.origin);

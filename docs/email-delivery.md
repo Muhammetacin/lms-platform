@@ -11,7 +11,7 @@ Complete these steps with the person responsible for the LMS and its sender doma
 3. Verify the sending domain in Brevo. Publish the SPF and DKIM DNS records Brevo provides, and configure DMARC for the domain. Allow DNS changes to propagate and confirm the sender is verified in the Brevo console.
 4. Create a server-to-server API key with only the access needed for transactional email. Store it in the deployment's secret manager or in ignored `.env.local` during local development. Do not put it in source control, client-side variables, issue comments, or logs.
 5. Set `EMAIL_FROM_ADDRESS` to an address on the verified domain and `EMAIL_FROM_NAME` to the approved display name. The default display name is `LMS Platform`.
-6. Set `NEXT_PUBLIC_APP_URL` to the canonical application origin. Invitation links are built from this origin and put the bearer token in the URL fragment.
+6. Set `NEXT_PUBLIC_APP_URL` to the canonical HTTPS application origin. Invitation links carry the bearer token in the URL fragment. HTTP is permitted for local testing at `localhost`, `127.0.0.1`, and `[::1]`.
 
 ## Configuration
 

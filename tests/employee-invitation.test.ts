@@ -299,6 +299,33 @@ test("mock Brevo acceptance sends the activation link while persisting only its 
   assert.equal(JSON.stringify(result).includes(token), false);
 });
 
+test("activation invitations require HTTPS except on local loopback addresses", async () => {
+  const store = new MemoryInvitationStore();
+  const deliveredOrigins: string[] = [];
+  const delivery: EmployeeInvitationDelivery = {
+    available: true,
+    async send(_email, activationUrl) { deliveredOrigins.push(new URL(activationUrl).origin); },
+  };
+
+  for (const appUrl of ["http://lms.example.test", "http://localhost.example.test"]) {
+    assert.deepEqual(
+      await createEmployeeInvitation(organizationId, membershipId, store, delivery, appUrl),
+      { status: "delivery_unavailable" },
+    );
+  }
+  assert.equal(store.createCalls, 0);
+  assert.deepEqual(deliveredOrigins, []);
+
+  const localOrigins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000"];
+  for (const appUrl of localOrigins) {
+    assert.deepEqual(
+      await createEmployeeInvitation(organizationId, membershipId, store, delivery, appUrl),
+      { status: "created" },
+    );
+  }
+  assert.deepEqual(deliveredOrigins, localOrigins);
+});
+
 test("invitation failure logging receives only a safe category and never the token or error text", async () => {
   const store = new MemoryInvitationStore();
   const events: Array<{ result: string; reason?: string }> = [];
