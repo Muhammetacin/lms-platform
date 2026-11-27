@@ -161,6 +161,9 @@ jobs:
       - name: Course CRUD unit tests
         run: pnpm test:course
 
+      - name: Course assignment API unit tests
+        run: pnpm test:course-assignment
+
       - name: Course Module unit tests
         run: pnpm test:course-module
 
@@ -211,6 +214,9 @@ jobs:
 
       - name: PostgreSQL Course CRUD tests
         run: pnpm test:course:db
+
+      - name: PostgreSQL Course assignment and learner access tests
+        run: pnpm test:course-assignment:db
 
       - name: PostgreSQL Course Module tests
         run: pnpm test:course-module:db

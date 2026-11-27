@@ -1,0 +1,71 @@
+.assignment-course-title {
+  margin: 8px 0 24px;
+  color: #4e6055;
+  overflow-wrap: anywhere;
+}
+
+.assignment-panel {
+  margin-block: 20px;
+  padding: clamp(18px, 4vw, 30px);
+  border: 1px solid #dce5dc;
+  border-radius: 16px;
+  background: #fffffd;
+}
+
+.assignment-panel h2 {
+  margin: 0 0 14px;
+  font-size: 21px;
+}
+
+.assignment-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.assignment-search .form-field {
+  flex: 1 1 185px;
+  min-width: 0;
+}
+
+.assignment-search select {
+  max-width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #9daf9f;
+  border-radius: 8px;
+  background: #fffffd;
+  color: var(--ink);
+  font: inherit;
+}
+
+.assignment-search :is(button, input, select):focus-visible,
+.assignment-list button:focus-visible {
+  outline: 2px solid var(--green-dark);
+  outline-offset: 3px;
+}
+
+.assignment-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assignment-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 14px;
+  border-top: 1px solid #dce5dc;
+  overflow-wrap: anywhere;
+}
+
+.assignment-list p {
+  margin: 4px 0 0;
+  color: #4e6055;
+}

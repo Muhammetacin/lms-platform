@@ -2,29 +2,29 @@ import { createElement as h, type ReactNode } from "react";
 import type { CoursePreview, CoursePreviewLesson } from "../lib/course-preview-core.ts";
 import { parseLessonUrl } from "../lib/lesson-core.ts";
 
-function lessonContent(lesson: CoursePreviewLesson): ReactNode {
+function lessonContent(lesson: CoursePreviewLesson, dutch: boolean): ReactNode {
   if (lesson.type === "TEXT") {
     const text = lesson.content !== null && "text" in lesson.content
       ? lesson.content.text
       : null;
     return text === null || text.trim().length === 0
-      ? h("p", { className: "preview-placeholder" }, "Content not configured")
+      ? h("p", { className: "preview-placeholder" }, dutch ? "Geen lesinhoud beschikbaar" : "Content not configured")
       : h("p", { className: "preview-text" }, text);
   }
 
   if (lesson.type === "QUIZ") {
-    return h("p", { className: "preview-placeholder" }, "Quiz configuration is not available yet.");
+    return h("p", { className: "preview-placeholder" }, dutch ? "Deze toets is nog niet beschikbaar." : "Quiz configuration is not available yet.");
   }
 
   const url = lesson.content !== null && "url" in lesson.content
     ? lesson.content.url
     : null;
   if (url === null || url.trim().length === 0) {
-    return h("p", { className: "preview-placeholder" }, "Resource not configured");
+    return h("p", { className: "preview-placeholder" }, dutch ? "Geen bron beschikbaar" : "Resource not configured");
   }
   const parsed = parseLessonUrl(url);
   if (!parsed.valid || parsed.value === null) {
-    return h("p", { className: "preview-placeholder" }, "Resource unavailable");
+    return h("p", { className: "preview-placeholder" }, dutch ? "Bron niet beschikbaar" : "Resource unavailable");
   }
 
   const hostname = new URL(parsed.value).hostname;
@@ -36,7 +36,7 @@ function lessonContent(lesson: CoursePreviewLesson): ReactNode {
       rel: "noopener noreferrer",
       referrerPolicy: "no-referrer",
       className: "preview-resource-link",
-    }, `Open ${lesson.type.toLowerCase()} resource ↗`),
+    }, dutch ? "Open bron ↗" : `Open ${lesson.type.toLowerCase()} resource ↗`),
   );
 }
 
@@ -80,35 +80,52 @@ export function CoursePreviewView({ course }: { course: CoursePreview }) {
               ),
       ),
     ),
-    h("section", { className: "preview-content", "aria-labelledby": "preview-content-title" },
-      h("h2", { id: "preview-content-title" }, "Course contents"),
-      course.modules.length === 0
-        ? h("p", { className: "preview-placeholder preview-empty-course" }, "No modules have been added yet.")
-        : h("ol", { className: "preview-module-list" }, course.modules.map((courseModule, moduleIndex) =>
-            h("li", { key: courseModule.id },
-              h("section", { className: "preview-module", "aria-labelledby": `preview-module-${courseModule.id}` },
-                h("h3", { id: `preview-module-${courseModule.id}` },
-                  h("span", { className: "preview-index" }, `Module ${moduleIndex + 1}`),
-                  courseModule.title,
-                ),
-                courseModule.description === null ? null : h("p", { className: "preview-module-description" }, courseModule.description),
-                courseModule.lessons.length === 0
-                  ? h("p", { className: "preview-placeholder" }, "No lessons have been added to this module yet.")
-                  : h("ol", { className: "preview-lesson-list" }, courseModule.lessons.map((lesson, lessonIndex) =>
-                      h("li", { key: lesson.id },
-                        h("article", { className: "preview-lesson" },
-                          h("div", { className: "preview-lesson-heading" },
-                            h("h4", null, lesson.title),
-                            h("span", { className: "preview-type" }, lesson.type),
-                          ),
-                          h("p", { className: "preview-lesson-index" }, `Lesson ${lessonIndex + 1}`),
-                          lessonContent(lesson),
-                        ),
-                      ),
-                    )),
+    h(CourseContentView, { modules: course.modules }),
+  );
+}
+
+const learnerLessonTypes: Record<CoursePreviewLesson["type"], string> = {
+  TEXT: "Tekst",
+  VIDEO: "Video",
+  PDF: "PDF",
+  IMAGE: "Afbeelding",
+  LINK: "Link",
+  QUIZ: "Toets",
+};
+
+export function CourseContentView({
+  modules,
+  language = "en",
+}: { modules: CoursePreview["modules"]; language?: "en" | "nl" }) {
+  const dutch = language === "nl";
+  return h("section", { className: "preview-content", "aria-labelledby": "preview-content-title" },
+    h("h2", { id: "preview-content-title" }, dutch ? "Cursusinhoud" : "Course contents"),
+    modules.length === 0
+      ? h("p", { className: "preview-placeholder preview-empty-course" }, dutch ? "Deze cursus heeft nog geen modules." : "No modules have been added yet.")
+      : h("ol", { className: "preview-module-list" }, modules.map((courseModule, moduleIndex) =>
+          h("li", { key: courseModule.id },
+            h("section", { className: "preview-module", "aria-labelledby": `preview-module-${courseModule.id}` },
+              h("h3", { id: `preview-module-${courseModule.id}` },
+                h("span", { className: "preview-index" }, `Module ${moduleIndex + 1}`),
+                courseModule.title,
               ),
+              courseModule.description === null ? null : h("p", { className: "preview-module-description" }, courseModule.description),
+              courseModule.lessons.length === 0
+                ? h("p", { className: "preview-placeholder" }, dutch ? "Deze module heeft nog geen lessen." : "No lessons have been added to this module yet.")
+                : h("ol", { className: "preview-lesson-list" }, courseModule.lessons.map((lesson, lessonIndex) =>
+                    h("li", { key: lesson.id },
+                      h("article", { className: "preview-lesson" },
+                        h("div", { className: "preview-lesson-heading" },
+                          h("h4", null, lesson.title),
+                          h("span", { className: "preview-type" }, dutch ? learnerLessonTypes[lesson.type] : lesson.type),
+                        ),
+                        h("p", { className: "preview-lesson-index" }, `${dutch ? "Les" : "Lesson"} ${lessonIndex + 1}`),
+                        lessonContent(lesson, dutch),
+                      ),
+                    ),
+                  )),
             ),
-          )),
-    ),
+          ),
+        )),
   );
 }
