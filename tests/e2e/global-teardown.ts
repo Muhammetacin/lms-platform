@@ -10,7 +10,7 @@ export default async function globalTeardown() {
   try {
     const current = await db.query<{ current_database: string }>("SELECT current_database()");
     assertCurrentDatabase(current.rows[0]?.current_database ?? "");
-    await db.query('TRUNCATE TABLE "Organization", "User" CASCADE');
+    await db.query('TRUNCATE TABLE "Organization", "User", "LoginAttemptBucket" CASCADE');
   } finally {
     await db.end();
     if (process.env.LMS_E2E_FIXTURE_FILE) await unlink(process.env.LMS_E2E_FIXTURE_FILE).catch(() => undefined);

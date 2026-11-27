@@ -15,7 +15,7 @@ export function loginRateLimitKeys(headers: Headers, email: string, config: {
   }
   const key = (scope: string, value: string) => {
     const digest = secret ? createHmac("sha256", secret) : createHash("sha256");
-    return digest.update(scope + "\\0" + value).digest("hex");
+    return digest.update(scope + "\0" + value).digest("hex");
   };
   let source: string | undefined;
   if (trustedHeader) {
