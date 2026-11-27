@@ -99,6 +99,7 @@ model OrganizationMembership {
   teamMemberships TeamMembership[]
   courseAssignments CourseMemberAssignment[]
   quizAttempts QuizAttempt[]
+  lessonCompletions LessonCompletion[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -197,6 +198,7 @@ model Lesson {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   module       CourseModule @relation(fields: [moduleId, organizationId], references: [id, organizationId], onDelete: Cascade)
   quiz         Quiz?
+  completions  LessonCompletion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -204,6 +206,18 @@ model Lesson {
   @@unique([id, organizationId])
   @@unique([moduleId, position])
   @@index([organizationId, moduleId, position])
+}
+
+model LessonCompletion {
+  organizationId String @db.Uuid
+  lessonId       String @db.Uuid
+  membershipId   String @db.Uuid
+  completedAt    DateTime @default(now())
+  lesson         Lesson                 @relation(fields: [lessonId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  membership     OrganizationMembership @relation(fields: [membershipId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@id([lessonId, membershipId])
+  @@index([organizationId, membershipId])
 }
 
 model TeamMembership {
