@@ -146,7 +146,7 @@ test("PostgreSQL Course Preview enforces hierarchy, permissions, tenant scope, a
         { url: "https://links.example.test/guide" },
         null,
       ]);
-      assert.doesNotMatch(JSON.stringify(body), /organizationId|courseId|moduleId|textContent|contentUrl|createdAt|updatedAt/);
+      assert.doesNotMatch(JSON.stringify(body), /organizationId|courseId|moduleId|textContent|contentUrl|createdAt|updatedAt|catalogListed/);
     }
     assert.equal((await db.course.findUniqueOrThrow({ where: { id: draft.id } })).status, "DRAFT");
 
@@ -243,6 +243,7 @@ test("PostgreSQL Course Preview enforces hierarchy, permissions, tenant scope, a
         description: null,
         status: "DRAFT",
         publishedAt: null,
+        catalogListed: false,
         createdAt: snapshotCourse.createdAt,
         updatedAt: snapshotCourse.updatedAt,
         modules: [{
