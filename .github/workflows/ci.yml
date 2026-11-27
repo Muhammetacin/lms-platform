@@ -66,6 +66,23 @@ jobs:
       - name: Run Playwright browser acceptance suite
         run: pnpm test:e2e
 
+      - name: Build the production smoke test candidate
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_APP_URL: https://127.0.0.1:3100
+
+      - name: Verify production sessions and database recovery
+        env:
+          E2E_BASE_URL: https://127.0.0.1:3100
+          E2E_PRODUCTION: "1"
+          E2E_POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          export E2E_TLS_DIRECTORY="$(mktemp -d)"
+          trap 'rm -rf "$E2E_TLS_DIRECTORY"' EXIT
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=127.0.0.1 -addext subjectAltName=IP:127.0.0.1 \
+            -keyout "$E2E_TLS_DIRECTORY/key.pem" -out "$E2E_TLS_DIRECTORY/cert.pem"
+          pnpm exec playwright test
+
       - name: Upload Playwright report and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -74,6 +91,8 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            playwright-production-report/
+            production-test-results/
           if-no-files-found: ignore
           retention-days: 14
 

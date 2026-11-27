@@ -6,9 +6,17 @@ dotenv.config({ path: ".env.e2e.local" });
 validateE2EEnvironment(process.env);
 
 const baseURL = process.env.E2E_BASE_URL!;
+const production = process.env.E2E_PRODUCTION === "1";
+const reportDirectory = production ? "playwright-production-report" : "playwright-report";
+const serverEnv = {
+  DATABASE_URL: process.env.E2E_DATABASE_URL!,
+  NEXT_PUBLIC_APP_URL: baseURL,
+};
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: production ? [] : "**/production/**",
+  testMatch: production ? "**/production/*.spec.ts" : undefined,
   fullyParallel: false,
   workers: 1,
   timeout: 45_000,
@@ -16,29 +24,43 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI
-    ? [["html", { outputFolder: "playwright-report", open: "never" }], ["line"]]
-    : [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
-  outputDir: "test-results",
+    ? [["html", { outputFolder: reportDirectory, open: "never" }], ["line"]]
+    : [["list"], ["html", { outputFolder: reportDirectory, open: "never" }]],
+  outputDir: production ? "production-test-results" : "test-results",
   globalSetup: "./tests/e2e/global-setup.ts",
   globalTeardown: "./tests/e2e/global-teardown.ts",
   use: {
     ...devices["Desktop Chrome"],
     baseURL,
+    ignoreHTTPSErrors: production,
     browserName: "chromium",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",
     actionTimeout: 10_000,
   },
-  webServer: {
+  webServer: production ? [
+    {
+      command: "pnpm start --hostname 127.0.0.1 --port 3101",
+      port: 3101,
+      env: {
+        ...serverEnv,
+        NODE_ENV: "production",
+        BREVO_API_KEY: "",
+        LOGIN_RATE_LIMIT_SECRET: "production-e2e-fixture-secret-not-for-real-deployments",
+        LOGIN_TRUSTED_CLIENT_IP_HEADER: "x-lms-test-client-ip",
+      },
+    },
+    {
+      command: "node tests/e2e/support/production-proxy.mjs",
+      url: baseURL,
+      ignoreHTTPSErrors: true,
+    },
+  ] : {
     command: "pnpm dev --hostname 127.0.0.1 --port 3100",
     url: baseURL,
     reuseExistingServer: false,
     timeout: 180_000,
-    env: {
-      DATABASE_URL: process.env.E2E_DATABASE_URL!,
-      NEXT_PUBLIC_APP_URL: baseURL,
-      NODE_ENV: "development",
-    },
+    env: { ...serverEnv, NODE_ENV: "development" },
   },
 });
