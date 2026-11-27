@@ -18,7 +18,6 @@ import {
   type AuthorizationStore,
 } from "../src/lib/authorization-core.ts";
 import {
-  homeDestination,
   isAdminRole,
   resolveAdminPortalAccess,
   type AdminPortalProfile,
@@ -29,6 +28,7 @@ import {
   loginErrorMessage,
 } from "../src/lib/login-form-core.ts";
 import { TenantContextError } from "../src/lib/tenant-context-core.ts";
+import { resolvePortalDestination } from "../src/lib/portal-access.ts";
 import type { Course } from "../src/lib/course-core.ts";
 
 const organizationId = "dc14fd7e-dd80-4c69-8b61-b1816c6627c6";
@@ -87,7 +87,7 @@ test("login submits JSON to the existing endpoint and maps errors without accoun
   assert.equal(loginErrorMessage("unexpected"), "Sign-in failed. Please try again.");
 
   const source = await readFile(new URL("../src/app/login/login-form.tsx", import.meta.url), "utf8");
-  assert.match(source, /router\.replace\("\/admin"\)/);
+  assert.match(source, /router\.replace\("\/"\)/);
   assert.match(source, /router\.refresh\(\)/);
   assert.doesNotMatch(source, /localStorage|sessionStorage|console\.(log|error)/);
 });
@@ -168,7 +168,7 @@ test("admin shell shows the current user, organization, role, and accessible nav
   assert.equal((markup.match(/<h1\b/g) ?? []).length, 1);
 });
 
-test("dashboard renders organization-scoped counts and root routing has no marketing default", () => {
+test("dashboard renders organization-scoped counts", () => {
   const markup = renderToStaticMarkup(createElement(AdminDashboardView, {
     profile,
     counts: { total: 7, draft: 4, published: 3 },
@@ -178,8 +178,25 @@ test("dashboard renders organization-scoped counts and root routing has no marke
   assert.match(markup, />7</);
   assert.match(markup, />4</);
   assert.match(markup, />3</);
-  assert.equal(homeDestination(false), "/login");
-  assert.equal(homeDestination(true), "/admin");
+});
+
+test("portal routing derives the destination from the active organization role", async () => {
+  assert.equal(await resolvePortalDestination(async () => null), "/login");
+  for (const role of ["OWNER", "ADMIN", "MEMBER"] as const) {
+    const destination = await resolvePortalDestination(async () => ({ userId, organizationId, role }));
+    assert.equal(destination, role === "MEMBER" ? "/learn" : "/admin");
+  }
+});
+
+test("portal routing denies a missing active membership and fails closed on store errors", async () => {
+  const forbidden = await resolvePortalDestination(async () => {
+    throw new TenantContextError("no_organization_membership");
+  });
+  const unavailable = await resolvePortalDestination(async () => {
+    throw new Error("Private store details");
+  });
+  assert.equal(forbidden, "forbidden");
+  assert.equal(unavailable, "unavailable");
 });
 
 test("Course rows include status, dates, preview links, and no mutation controls", () => {

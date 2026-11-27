@@ -76,7 +76,3 @@ export async function resolveAdminPortalAccess(
 export function isAdminRole(role: OrganizationRole): boolean {
   return role === "OWNER" || role === "ADMIN";
 }
-
-export function homeDestination(isAuthenticated: boolean): "/login" | "/admin" {
-  return isAuthenticated ? "/admin" : "/login";
-}

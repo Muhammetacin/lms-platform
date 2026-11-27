@@ -40,7 +40,7 @@ export function LoginForm() {
         return;
       }
 
-      router.replace("/admin");
+      router.replace("/");
       router.refresh();
     } catch {
       setErrorMessage(loginErrorMessage(null));
