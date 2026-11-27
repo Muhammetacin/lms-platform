@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 import dotenv from "dotenv";
 import { validateE2EEnvironment } from "./tests/e2e/support/database-url.ts";
@@ -8,6 +10,7 @@ validateE2EEnvironment(process.env);
 const baseURL = process.env.E2E_BASE_URL!;
 const production = process.env.E2E_PRODUCTION === "1";
 const reportDirectory = production ? "playwright-production-report" : "playwright-report";
+const brevoFixture = pathToFileURL(resolve("tests/e2e/support/brevo-fixture.mjs")).href;
 const serverEnv = {
   DATABASE_URL: process.env.E2E_DATABASE_URL!,
   NEXT_PUBLIC_APP_URL: baseURL,
@@ -46,7 +49,9 @@ export default defineConfig({
       env: {
         ...serverEnv,
         NODE_ENV: "production",
-        BREVO_API_KEY: "",
+        BREVO_API_KEY: "ci-brevo-fixture",
+        EMAIL_FROM_ADDRESS: "invitations@example.test",
+        NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=${brevoFixture}`.trim(),
         LOGIN_RATE_LIMIT_SECRET: "production-e2e-fixture-secret-not-for-real-deployments",
         LOGIN_TRUSTED_CLIENT_IP_HEADER: "x-lms-test-client-ip",
       },
