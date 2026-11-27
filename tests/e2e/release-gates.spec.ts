@@ -28,7 +28,7 @@ test("the login form reports throttling and authenticated team writes produce au
     await page.getByRole("button", { name: "Sign in" }).click();
     expect((await response).status()).toBe(429);
     expect((await response).headers()["retry-after"]).toBe("300");
-    await expect(page.getByRole("alert")).toContainText("Too many sign-in attempts");
+    await expect(page.getByRole("alert").filter({ hasText: "Too many sign-in attempts" })).toBeVisible();
 
     await login(page, e2e.users.adminA);
     const created = await apiRequest(page, "/api/organizations/teams", "POST", { name: `Audit ${crypto.randomUUID()}` });
