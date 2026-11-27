@@ -19,6 +19,8 @@ The public release and pilot require CEO acceptance. A source merge authorizes i
 
 [LMS-115](../tickets/LMS-115.md) runs a focused production smoke test after the development browser suite. It starts the built app behind loopback HTTPS, checks the production session cookie and logout, verifies learner and cross-organization access, and records an assignment and lesson completion. The job dumps the isolated test database and restores it into a newly created database. Counts and fingerprints confirm that nine populated tables survive the restore, including courses, progress, audit events and migration history. The temporary restore is dropped and the dump stays in the job.
 
+[LMS-116](../tickets/LMS-116.md) runs the complete invitation-to-reporting workflow on the production build. A fixture intercepts the server's Brevo request in the CI process. The browser opens the captured link, creates a password, checks that the link is single-use, and signs in as the assigned employee. After the employee completes a lesson and quiz, the administrator's report shows their completion and score. Captured mail stays in a temporary runner directory and is removed when the step exits.
+
 The CI proxy, TLS certificate, database and accounts are fixtures. Staging acceptance still verifies the chosen provider's real ingress, backup retention, recovery time, monitoring and mailbox delivery.
 
 ## Stage and rehearse

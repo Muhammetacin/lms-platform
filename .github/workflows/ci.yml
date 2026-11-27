@@ -71,7 +71,7 @@ jobs:
         env:
           NEXT_PUBLIC_APP_URL: https://127.0.0.1:3100
 
-      - name: Verify production sessions and database recovery
+      - name: Verify production sessions, database recovery and invitation flow
         env:
           E2E_BASE_URL: https://127.0.0.1:3100
           E2E_PRODUCTION: "1"
@@ -79,6 +79,8 @@ jobs:
         run: |
           export E2E_TLS_DIRECTORY="$(mktemp -d)"
           trap 'rm -rf "$E2E_TLS_DIRECTORY"' EXIT
+          export E2E_MAIL_DIRECTORY="$E2E_TLS_DIRECTORY/mail"
+          mkdir -m 700 "$E2E_MAIL_DIRECTORY"
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=127.0.0.1 -addext subjectAltName=IP:127.0.0.1 \
             -keyout "$E2E_TLS_DIRECTORY/key.pem" -out "$E2E_TLS_DIRECTORY/cert.pem"
           pnpm exec playwright test
