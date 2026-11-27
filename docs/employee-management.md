@@ -39,7 +39,7 @@ The `EmployeeInvitation` row points to exactly one global user, organization, an
 
 `POST /api/auth/invitations/validate` and `POST /api/auth/invitations/activate` are separate same-origin JSON endpoints and do not require a logged-in session. The client cannot choose a tenant. Activation inserts a `PasswordCredential` using LMS-007's existing scrypt helper and policy while consuming the invitation in one serializable transaction. Existing credentials are never replaced; LMS-014 does not implement password reset or session creation. Successful activation is followed by ordinary LMS-007 login.
 
-LMS-052 email delivery is not yet implemented in this repository. A narrow delivery interface exists, and the production adapter reports unavailable; invitation creation returns a generic 503 without storing a token until an actual provider is connected. The raw token is handed only to that delivery interface and never returned by the admin API. There is no parallel mail framework or fake sender. LMS-058 audit logging is also not yet available; invitation events depend on its shared service.
+The [LMS-052 invitation adapter](email-delivery.md) uses Brevo when configured. Missing provider configuration returns a generic 503 without creating a token. The raw token goes only to the delivery provider and never appears in the admin API. [LMS-058 audit events](decisions/ADR-058-audit-events.md) record invitation creation and successful activation without storing the token or recipient address.
 
 ## Validation and failure behavior
 
