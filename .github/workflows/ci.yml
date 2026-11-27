@@ -164,6 +164,9 @@ jobs:
       - name: Course assignment API unit tests
         run: pnpm test:course-assignment
 
+      - name: Quiz unit tests
+        run: pnpm test:quiz
+
       - name: Course Module unit tests
         run: pnpm test:course-module
 

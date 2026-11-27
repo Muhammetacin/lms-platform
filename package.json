@@ -33,6 +33,7 @@
     "test:team:db": "node --conditions=react-server --experimental-strip-types --test tests/team-postgres.test.ts",
     "test:course": "node --experimental-strip-types --test tests/course.test.ts",
     "test:course-assignment": "node --experimental-strip-types --test tests/course-assignment.test.ts",
+    "test:quiz": "node --experimental-strip-types --test tests/quiz.test.ts",
     "test:course-assignment:db": "node --conditions=react-server --experimental-strip-types --test tests/course-assignment-postgres.test.ts",
     "test:course:db": "node --conditions=react-server --experimental-strip-types --test tests/course-postgres.test.ts",
     "test:course-module": "node --experimental-strip-types --test tests/course-module.test.ts",
