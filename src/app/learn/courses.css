@@ -1,0 +1,44 @@
+.learner-course-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 14px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learner-course-list li {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #dce5dc;
+  border-radius: 16px;
+  background: #fffffd;
+  overflow-wrap: anywhere;
+}
+
+.learner-course-list h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.learner-course-list a {
+  color: var(--green-dark);
+  text-underline-offset: 4px;
+}
+
+.learner-course-list a:focus-visible {
+  outline: 2px solid var(--green-dark);
+  outline-offset: 4px;
+}
+
+.learner-course-heading {
+  margin: 16px 0 24px;
+  overflow-wrap: anywhere;
+}
+
+.learner-course-list p,
+.learner-course-heading p {
+  margin: 10px 0 0;
+  color: #4e6055;
+  line-height: 1.65;
+}
