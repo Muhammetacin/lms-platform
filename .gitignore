@@ -21,6 +21,8 @@
 # Playwright output
 /playwright-report/
 /test-results/
+/playwright-production-report/
+/production-test-results/
 
 # Logs and package manager state
 *.log

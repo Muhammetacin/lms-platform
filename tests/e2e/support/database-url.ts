@@ -46,6 +46,12 @@ export function validateE2EEnvironment(env: NodeJS.ProcessEnv): void {
   } catch {
     throw new Error("E2E_BASE_URL must be a valid local HTTP URL.");
   }
+  if (env.E2E_PRODUCTION === "1") {
+    if (env.CI !== "true" || baseURL !== "https://127.0.0.1:3100") {
+      throw new Error("Production smoke tests require the CI loopback HTTPS proxy.");
+    }
+    return;
+  }
   if (app.protocol !== "http:" || !LOOPBACK_HOSTS.has(app.hostname)) {
     throw new Error("E2E_BASE_URL must use HTTP on a loopback host.");
   }

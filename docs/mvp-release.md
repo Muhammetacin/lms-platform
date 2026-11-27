@@ -15,6 +15,12 @@ The public release and pilot require CEO acceptance. A source merge authorizes i
 | Monitoring and support | Named operational owner, notification route, support contact, incident response coverage and tested alerts. |
 | Pilot | Named test organization, approved participant list, one sample course, rollback owner and explicit CEO go decision. |
 
+## Production verification in CI
+
+[LMS-115](../tickets/LMS-115.md) runs a focused production smoke test after the development browser suite. It starts the built app behind loopback HTTPS, checks the production session cookie and logout, verifies learner and cross-organization access, and records an assignment and lesson completion. The job dumps the isolated test database and restores it into a newly created database. Counts and fingerprints confirm that nine populated tables survive the restore, including courses, progress, audit events and migration history. The temporary restore is dropped and the dump stays in the job.
+
+The CI proxy, TLS certificate, database and accounts are fixtures. Staging acceptance still verifies the chosen provider's real ingress, backup retention, recovery time, monitoring and mailbox delivery.
+
 ## Stage and rehearse
 
 1. Provision restricted staging with an isolated PostgreSQL database and the production-mode app behind trusted ingress. Enforce HTTPS at the public origin and set `NEXT_PUBLIC_APP_URL` to that origin. Apply [the login rate-limit configuration](decisions/ADR-060-login-rate-limiting.md). Keep production and staging secrets, databases and email settings separate.
