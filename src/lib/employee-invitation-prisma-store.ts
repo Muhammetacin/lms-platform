@@ -1,3 +1,4 @@
+import { recordAuditEvent } from "./audit-event.ts";
 import { Prisma } from "../generated/prisma/client.ts";
 import type { PrismaClient } from "../generated/prisma/client.ts";
 import type {
@@ -47,7 +48,7 @@ function toStoredInvitation(
 /** Production persistence for the LMS-014 invitation lifecycle. */
 export function createPrismaEmployeeInvitationStore(db: PrismaClient): EmployeeInvitationStore {
   return {
-    async createInvitation(organizationId, membershipId, tokenHash, expiresAt, now): Promise<InvitationCreation> {
+    async createInvitation(organizationId, membershipId, tokenHash, expiresAt, now, actorUserId): Promise<InvitationCreation> {
       return db.$transaction(async (transaction) => {
         const membership = await transaction.organizationMembership.findFirst({
           where: { id: membershipId, organizationId },
@@ -89,6 +90,7 @@ export function createPrismaEmployeeInvitationStore(db: PrismaClient): EmployeeI
           },
           select: { id: true },
         });
+        await recordAuditEvent(transaction, organizationId, actorUserId, "INVITATION_CREATED", membershipId, invitation.id);
         return {
           status: "created",
           invitationId: invitation.id,
@@ -166,6 +168,10 @@ export function createPrismaEmployeeInvitationStore(db: PrismaClient): EmployeeI
           await transaction.passwordCredential.create({
             data: { userId: invitation.userId, passwordHash },
           });
+          await recordAuditEvent(
+            transaction, invitation.organizationId, invitation.userId, "INVITATION_ACTIVATED",
+            invitation.membershipId, invitation.id,
+          );
           return "valid";
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       } catch (error) {

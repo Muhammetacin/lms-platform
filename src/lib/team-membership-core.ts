@@ -16,8 +16,8 @@ export type TeamMemberRecord = TeamMember & { userId: string };
 
 export interface TeamMembershipStore {
   list(organizationId: string, teamId: string): Promise<TeamMemberRecord[] | null>;
-  add(organizationId: string, teamId: string, employeeId: string): Promise<TeamMember>;
-  remove(organizationId: string, teamId: string, employeeId: string): Promise<boolean>;
+  add(organizationId: string, teamId: string, employeeId: string, actorUserId?: string): Promise<TeamMember>;
+  remove(organizationId: string, teamId: string, employeeId: string, actorUserId?: string): Promise<boolean>;
 }
 
 export class TeamMembershipConflictError extends Error {
@@ -112,7 +112,7 @@ export function createTeamMembershipHandlers(dependencies: TeamMembershipDepende
         if (!isTeamId(teamId)) return teamNotFound();
         const input = parseTeamMemberAdd(await dependencies.readBody(request));
         if (!input) return invalidRequest();
-        const member = await dependencies.store.add(tenant.organizationId, teamId, input.employeeId);
+        const member = await dependencies.store.add(tenant.organizationId, teamId, input.employeeId, tenant.userId);
         return json({ member }, 201);
       } catch (error) {
         return errorResponse(error, "add", dependencies.logError);
@@ -125,7 +125,7 @@ export function createTeamMembershipHandlers(dependencies: TeamMembershipDepende
         const tenant = await dependencies.requireTenantContext();
         await dependencies.requirePermission(tenant.organizationId, "MANAGE_TEAMS");
         if (!isTeamId(teamId) || !isEmployeeMembershipId(employeeId)) return membershipNotFound();
-        if (!await dependencies.store.remove(tenant.organizationId, teamId, employeeId)) {
+        if (!await dependencies.store.remove(tenant.organizationId, teamId, employeeId, tenant.userId)) {
           return membershipNotFound();
         }
         return json({ removed: true });

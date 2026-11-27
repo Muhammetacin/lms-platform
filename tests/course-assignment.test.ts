@@ -7,6 +7,7 @@ import {
 } from "../src/lib/course-assignment-core.ts";
 
 const organizationId = "dc14fd7e-dd80-4c69-8b61-b1816c6627c6";
+const actorUserId = "ea243c29-211f-4964-8e4a-299c9d8557fb";
 const courseId = "4eb2c0f2-46ba-46d6-bd8e-4a5646ff0584";
 const target = { type: "member", targetId: "d0ec3185-0aeb-4ef6-a309-39fadab2d374" } as const;
 const entry = { ...target, name: "Test member", active: true };
@@ -22,7 +23,7 @@ function fixture(options: { deny?: boolean; status?: "PUBLISHED" | "DRAFT" | nul
     async revoke(...args) { calls.push(["revoke", ...args]); },
   };
   const handlers = createCourseAssignmentHandlers({
-    async requireTenantContext() { return { organizationId, role: "ADMIN", userId: target.targetId }; },
+    async requireTenantContext() { return { organizationId, role: "ADMIN", userId: actorUserId }; },
     async requirePermission(...args) {
       calls.push(["permission", ...args]);
       if (options.deny) throw new AuthorizationError("forbidden");
@@ -75,9 +76,9 @@ test("assignment writes validate the target and return safe responses", async ()
   assert.equal((await handlers.PUT(mutation("PUT", { ...target, organizationId: "other" }), courseId)).status, 400);
   assert.equal(calls.some(([operation]) => operation === "grant"), false);
   assert.deepEqual(await (await handlers.PUT(mutation("PUT"), courseId)).json(), { success: true });
-  assert.deepEqual(calls.at(-1), ["grant", organizationId, courseId, target]);
+  assert.deepEqual(calls.at(-1), ["grant", organizationId, courseId, target, actorUserId]);
   assert.deepEqual(await (await handlers.DELETE(mutation("DELETE"), courseId)).json(), { success: true });
-  assert.deepEqual(calls.at(-1), ["revoke", organizationId, courseId, target]);
+  assert.deepEqual(calls.at(-1), ["revoke", organizationId, courseId, target, actorUserId]);
 
   const denied = await fixture({ grant: false }).handlers.PUT(mutation("PUT"), courseId);
   assert.equal(denied.status, 404);

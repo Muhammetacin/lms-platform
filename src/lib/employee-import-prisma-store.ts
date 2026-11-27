@@ -1,3 +1,4 @@
+import { recordAuditEvent } from "./audit-event.ts";
 import { Prisma } from "../generated/prisma/client.ts";
 import type { PrismaClient } from "../generated/prisma/client.ts";
 import {
@@ -11,7 +12,7 @@ import {
 /** Production create-only import store. It never updates a User or membership. */
 export function createPrismaEmployeeImportStore(db: PrismaClient): EmployeeImportStore {
   return {
-    async import(organizationId, rows) {
+    async import(organizationId, rows, actorUserId) {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
           await db.$transaction(async (transaction) => {
@@ -51,6 +52,7 @@ export function createPrismaEmployeeImportStore(db: PrismaClient): EmployeeImpor
                 employeeNumber: row.employeeNumber,
               })),
             });
+            await recordAuditEvent(transaction, organizationId, actorUserId, "EMPLOYEES_IMPORTED", organizationId);
           }, {
             isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
             maxWait: 30_000,

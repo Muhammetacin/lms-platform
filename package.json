@@ -34,6 +34,7 @@
     "test:course": "node --experimental-strip-types --test tests/course.test.ts",
     "test:course-assignment": "node --experimental-strip-types --test tests/course-assignment.test.ts",
     "test:quiz": "node --experimental-strip-types --test tests/quiz.test.ts",
+    "test:release-gates:db": "node --conditions=react-server --experimental-strip-types --test tests/release-gates-postgres.test.ts",
     "test:reporting:db": "node --conditions=react-server --experimental-strip-types --test tests/reporting-postgres.test.ts",
     "test:learning-progress:db": "node --conditions=react-server --experimental-strip-types --test tests/learning-progress-postgres.test.ts",
     "test:quiz:db": "node --conditions=react-server --experimental-strip-types --test tests/quiz-postgres.test.ts",

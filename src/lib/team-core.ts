@@ -16,9 +16,9 @@ export type TeamUpdate = { name?: string; description?: string | null };
 export interface TeamStore {
   list(organizationId: string): Promise<Team[]>;
   get(organizationId: string, teamId: string): Promise<Team | null>;
-  create(organizationId: string, input: TeamCreate): Promise<Team>;
-  update(organizationId: string, teamId: string, input: TeamUpdate): Promise<Team | null>;
-  delete(organizationId: string, teamId: string): Promise<boolean>;
+  create(organizationId: string, input: TeamCreate, actorUserId?: string): Promise<Team>;
+  update(organizationId: string, teamId: string, input: TeamUpdate, actorUserId?: string): Promise<Team | null>;
+  delete(organizationId: string, teamId: string, actorUserId?: string): Promise<boolean>;
 }
 
 export class TeamNameConflictError extends Error {
@@ -136,7 +136,7 @@ export function createTeamHandlers(dependencies: TeamDependencies) {
         await dependencies.requirePermission(tenant.organizationId, "MANAGE_TEAMS");
         const input = parseTeamCreate(await dependencies.readBody(request));
         if (!input) return invalidRequest();
-        return json({ team: await dependencies.store.create(tenant.organizationId, input) }, 201);
+        return json({ team: await dependencies.store.create(tenant.organizationId, input, tenant.userId) }, 201);
       } catch (error) {
         return errorResponse(error, "create", dependencies.logError);
       }
@@ -163,7 +163,7 @@ export function createTeamHandlers(dependencies: TeamDependencies) {
         if (!isTeamId(teamId)) return teamNotFound();
         const input = parseTeamUpdate(await dependencies.readBody(request));
         if (!input) return invalidRequest();
-        const team = await dependencies.store.update(tenant.organizationId, teamId, input);
+        const team = await dependencies.store.update(tenant.organizationId, teamId, input, tenant.userId);
         if (!team) return teamNotFound();
         return json({ team });
       } catch (error) {
@@ -177,7 +177,7 @@ export function createTeamHandlers(dependencies: TeamDependencies) {
         const tenant = await dependencies.requireTenantContext();
         await dependencies.requirePermission(tenant.organizationId, "MANAGE_TEAMS");
         if (!isTeamId(teamId)) return teamNotFound();
-        if (!await dependencies.store.delete(tenant.organizationId, teamId)) return teamNotFound();
+        if (!await dependencies.store.delete(tenant.organizationId, teamId, tenant.userId)) return teamNotFound();
         return json({ deleted: true });
       } catch (error) {
         return errorResponse(error, "delete", dependencies.logError);

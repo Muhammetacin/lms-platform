@@ -227,6 +227,9 @@ jobs:
       - name: PostgreSQL learning progress tests
         run: pnpm test:learning-progress:db
 
+      - name: PostgreSQL MVP release gate tests
+        run: pnpm test:release-gates:db
+
       - name: PostgreSQL course reporting tests
         run: pnpm test:reporting:db
 

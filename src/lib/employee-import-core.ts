@@ -45,7 +45,7 @@ export type EmployeeImportRow = {
 };
 
 export interface EmployeeImportStore {
-  import(organizationId: string, rows: EmployeeImportRow[]): Promise<number>;
+  import(organizationId: string, rows: EmployeeImportRow[], actorUserId?: string): Promise<number>;
 }
 
 export class EmployeeImportConflictError extends Error {
@@ -342,7 +342,7 @@ export function createEmployeeImportHandler(dependencies: EmployeeImportDependen
       const parsed = parseEmployeeImportCsv(upload.fileText);
       if (parsed.errors.length > 0) return invalidCsv(parsed.errors);
 
-      const imported = await dependencies.store.import(tenant.organizationId, parsed.rows);
+      const imported = await dependencies.store.import(tenant.organizationId, parsed.rows, tenant.userId);
       return json({ imported });
     } catch (error) {
       return errorResponse(error, dependencies.logError);

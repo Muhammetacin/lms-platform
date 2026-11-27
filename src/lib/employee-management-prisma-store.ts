@@ -1,3 +1,4 @@
+import { recordAuditEvent } from "./audit-event.ts";
 import { Prisma } from "../generated/prisma/client.ts";
 import type { PrismaClient } from "../generated/prisma/client.ts";
 import {
@@ -81,7 +82,7 @@ export function createPrismaEmployeeManagementStore(
       return row ? toEmployeeProfile(row) : null;
     },
 
-    async create(organizationId, email, name) {
+    async create(organizationId, email, name, actorUserId) {
       try {
         return await db.$transaction(async (transaction) => {
           const user = await transaction.user.upsert({
@@ -100,6 +101,7 @@ export function createPrismaEmployeeManagementStore(
               user: { select: { email: true } },
             },
           });
+          await recordAuditEvent(transaction, organizationId, actorUserId, "EMPLOYEE_CREATED", membership.id);
           return toEmployee(membership);
         });
       } catch (error) {
@@ -115,13 +117,14 @@ export function createPrismaEmployeeManagementStore(
       }
     },
 
-    async updateName(organizationId, employeeId, name) {
+    async updateName(organizationId, employeeId, name, actorUserId) {
       return db.$transaction(async (transaction) => {
         const updated = await transaction.organizationMembership.updateMany({
           where: { id: employeeId, organizationId },
           data: { employeeName: name },
         });
         if (updated.count !== 1) return null;
+        await recordAuditEvent(transaction, organizationId, actorUserId, "EMPLOYEE_UPDATED", employeeId);
         const row = await transaction.organizationMembership.findFirst({
           where: { id: employeeId, organizationId },
           select: {
@@ -136,7 +139,7 @@ export function createPrismaEmployeeManagementStore(
       });
     },
 
-    async updateProfile(organizationId, employeeId, update: EmployeeProfileUpdate) {
+    async updateProfile(organizationId, employeeId, update: EmployeeProfileUpdate, actorUserId) {
       const data: {
         employeeName?: string;
         jobTitle?: string | null;
@@ -157,6 +160,7 @@ export function createPrismaEmployeeManagementStore(
             data,
           });
           if (updated.count !== 1) return null;
+          await recordAuditEvent(transaction, organizationId, actorUserId, "EMPLOYEE_UPDATED", employeeId);
           const row = await transaction.organizationMembership.findFirst({
             where: { id: employeeId, organizationId },
             select: {
@@ -179,7 +183,7 @@ export function createPrismaEmployeeManagementStore(
       }
     },
 
-    async deactivate(organizationId, employeeId) {
+    async deactivate(organizationId, employeeId, actorUserId) {
       return db.$transaction(async (transaction) => {
         const where = { id: employeeId, organizationId };
         const target = await transaction.organizationMembership.findFirst({
@@ -193,10 +197,11 @@ export function createPrismaEmployeeManagementStore(
           });
           if (activeOwners <= 1) throw new LastOwnerError();
         }
-        await transaction.organizationMembership.updateMany({
+        const deactivated = await transaction.organizationMembership.updateMany({
           where: { ...where, active: true },
           data: { active: false },
         });
+        if (deactivated.count) await recordAuditEvent(transaction, organizationId, actorUserId, "EMPLOYEE_DEACTIVATED", employeeId);
         const row = await transaction.organizationMembership.findFirst({
           where,
           select: {

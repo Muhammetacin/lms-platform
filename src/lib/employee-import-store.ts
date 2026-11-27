@@ -8,7 +8,7 @@ const storeForRequest = async () => {
 };
 
 export const employeeImportStore: EmployeeImportStore = {
-  async import(organizationId, rows) {
-    return (await storeForRequest()).import(organizationId, rows);
+  async import(organizationId, rows, actorUserId) {
+    return (await storeForRequest()).import(organizationId, rows, actorUserId);
   },
 };

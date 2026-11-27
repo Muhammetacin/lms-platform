@@ -36,7 +36,7 @@ export default async function globalSetup() {
   try {
     const current = await db.query<{ current_database: string }>("SELECT current_database()");
     assertCurrentDatabase(current.rows[0]?.current_database ?? "");
-    await db.query('TRUNCATE TABLE "Organization", "User" CASCADE');
+    await db.query('TRUNCATE TABLE "Organization", "User", "LoginAttemptBucket" CASCADE');
 
     const seedUsers = await Promise.all(users.map(async (entry) => ({
       ...entry,
@@ -76,7 +76,7 @@ export default async function globalSetup() {
     try {
       const current = await db.query<{ current_database: string }>("SELECT current_database()");
       assertCurrentDatabase(current.rows[0]?.current_database ?? "");
-      await db.query('TRUNCATE TABLE "Organization", "User" CASCADE');
+      await db.query('TRUNCATE TABLE "Organization", "User", "LoginAttemptBucket" CASCADE');
     } catch {
       // Preserve the original setup failure; the database guard still prevents cleanup elsewhere.
     }

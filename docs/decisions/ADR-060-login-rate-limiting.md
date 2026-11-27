@@ -1,0 +1,9 @@
+# ADR-060 — Shared login limits
+
+PostgreSQL atomically reserves login attempts before credential lookup and password verification. All instances use the same database and key secret. The account bucket allows ten outstanding or failed attempts in a five-minute fixed window. A successful login releases its reservation in the same window. A failed verification keeps it. Source buckets allow 150 attempts per five-minute window, including successful attempts. Window boundaries use PostgreSQL time. A fixed window can allow bursts across adjacent windows and someone targeting a known account can temporarily delay its login. Use ingress abuse protection in addition to the application limiter.
+
+The application uses the normalized login email, including for nonexistent accounts. Production stores HMAC-SHA-256 keys with a shared server-only random secret of at least 32 bytes. Raw addresses and emails are not written to this table or its logs. Development uses the same database algorithm and can omit the source key and secret. Expired windows are pruned in bounded batches during login traffic. Operations should also schedule pruning of windows older than one day. Run this job with the least-privilege role necessary for that table.
+
+Production requires LOGIN_TRUSTED_CLIENT_IP_HEADER. The ingress must overwrite that single-IP header, normalize the address consistently, and block direct access to the app origin. Never pass through a client-controlled forwarding chain. Missing or malformed trusted identity, missing production configuration or unavailable storage returns 503 before password verification. Limited requests return 429 with a conservative five-minute Retry-After. Existing sessions keep their normal behavior.
+
+See [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#login-throttling).

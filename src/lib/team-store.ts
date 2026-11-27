@@ -14,13 +14,13 @@ export const teamStore: TeamStore = {
   async get(organizationId, teamId) {
     return (await storeForRequest()).get(organizationId, teamId);
   },
-  async create(organizationId, input) {
-    return (await storeForRequest()).create(organizationId, input);
+  async create(organizationId, input, actorUserId) {
+    return (await storeForRequest()).create(organizationId, input, actorUserId);
   },
-  async update(organizationId, teamId, input) {
-    return (await storeForRequest()).update(organizationId, teamId, input);
+  async update(organizationId, teamId, input, actorUserId) {
+    return (await storeForRequest()).update(organizationId, teamId, input, actorUserId);
   },
-  async delete(organizationId, teamId) {
-    return (await storeForRequest()).delete(organizationId, teamId);
+  async delete(organizationId, teamId, actorUserId) {
+    return (await storeForRequest()).delete(organizationId, teamId, actorUserId);
   },
 };

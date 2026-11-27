@@ -52,6 +52,7 @@ export interface EmployeeInvitationStore {
     tokenHash: string,
     expiresAt: Date,
     now: Date,
+    actorUserId?: string,
   ): Promise<InvitationCreation>;
   invalidateInvitation(invitationId: string, now: Date): Promise<void>;
   findInvitation(tokenHash: string): Promise<StoredEmployeeInvitation | null>;
@@ -125,6 +126,7 @@ export async function createEmployeeInvitation(
   now = new Date(),
   onCleanupFailure?: () => void,
   onDeliveryResult?: (result: EmployeeInvitationDeliveryResult, reason?: EmailDeliveryFailureCode | "unknown") => void,
+  actorUserId?: string,
 ): Promise<InvitationCreationResult> {
   if (!delivery.available || !isEmployeeInvitationTarget(membershipId)) {
     return { status: "delivery_unavailable" };
@@ -151,6 +153,7 @@ export async function createEmployeeInvitation(
     hashInvitationToken(rawToken),
     new Date(now.getTime() + EMPLOYEE_INVITATION_TTL_MS),
     now,
+    actorUserId,
   );
   if (creation.status !== "created") return creation;
 
@@ -277,6 +280,7 @@ export function createEmployeeInvitationHandler(dependencies: InvitationHandlerD
         new Date(),
         () => (dependencies.logError ?? logInvitationError)("cleanup"),
         (result, reason) => dependencies.logDeliveryResult?.(result, reason),
+        tenant.userId,
       );
       if (result.status === "created") return json({ success: true }, 201);
       if (result.status === "not_found") return json({ error: "employee_not_found" }, 404);

@@ -11,10 +11,10 @@ export const teamMembershipStore: TeamMembershipStore = {
   async list(organizationId, teamId) {
     return (await storeForRequest()).list(organizationId, teamId);
   },
-  async add(organizationId, teamId, employeeId) {
-    return (await storeForRequest()).add(organizationId, teamId, employeeId);
+  async add(organizationId, teamId, employeeId, actorUserId) {
+    return (await storeForRequest()).add(organizationId, teamId, employeeId, actorUserId);
   },
-  async remove(organizationId, teamId, employeeId) {
-    return (await storeForRequest()).remove(organizationId, teamId, employeeId);
+  async remove(organizationId, teamId, employeeId, actorUserId) {
+    return (await storeForRequest()).remove(organizationId, teamId, employeeId, actorUserId);
   },
 };

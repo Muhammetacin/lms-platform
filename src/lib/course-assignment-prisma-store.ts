@@ -1,3 +1,4 @@
+import { recordAuditEvent } from "./audit-event.ts";
 import { Prisma, type PrismaClient } from "../generated/prisma/client.ts";
 import type { CourseAssignmentEntry, CourseAssignmentStore } from "./course-assignment-core.ts";
 
@@ -80,7 +81,7 @@ export function createPrismaCourseAssignmentStore(db: PrismaClient): CourseAssig
       return members.map(memberEntry);
     },
 
-    async grant(organizationId, courseId, { type, targetId }) {
+    async grant(organizationId, courseId, { type, targetId }, actorUserId) {
       try {
         return await db.$transaction(async (transaction) => {
           if (type === "member") {
@@ -89,20 +90,26 @@ export function createPrismaCourseAssignmentStore(db: PrismaClient): CourseAssig
               select: { id: true },
             });
             if (!member) return false;
-            await transaction.courseMemberAssignment.createMany({
+            const granted = await transaction.courseMemberAssignment.createMany({
               data: { organizationId, courseId, membershipId: member.id },
               skipDuplicates: true,
             });
+            if (granted.count) {
+              await recordAuditEvent(transaction, organizationId, actorUserId, "COURSE_MEMBER_GRANTED", courseId, targetId);
+            }
           } else {
             const team = await transaction.team.findUnique({
               where: { id_organizationId: { id: targetId, organizationId } },
               select: { id: true },
             });
             if (!team) return false;
-            await transaction.courseTeamAssignment.createMany({
+            const granted = await transaction.courseTeamAssignment.createMany({
               data: { organizationId, courseId, teamId: team.id },
               skipDuplicates: true,
             });
+            if (granted.count) {
+              await recordAuditEvent(transaction, organizationId, actorUserId, "COURSE_TEAM_GRANTED", courseId, targetId);
+            }
           }
           return true;
         });
@@ -112,12 +119,17 @@ export function createPrismaCourseAssignmentStore(db: PrismaClient): CourseAssig
       }
     },
 
-    async revoke(organizationId, courseId, { type, targetId }) {
-      if (type === "member") {
-        await db.courseMemberAssignment.deleteMany({ where: { organizationId, courseId, membershipId: targetId } });
-      } else {
-        await db.courseTeamAssignment.deleteMany({ where: { organizationId, courseId, teamId: targetId } });
-      }
+    async revoke(organizationId, courseId, { type, targetId }, actorUserId) {
+      await db.$transaction(async (transaction) => {
+        const where = { organizationId, courseId };
+        const removed = type === "member"
+          ? await transaction.courseMemberAssignment.deleteMany({ where: { ...where, membershipId: targetId } })
+          : await transaction.courseTeamAssignment.deleteMany({ where: { ...where, teamId: targetId } });
+        if (removed.count) {
+          const action = type === "member" ? "COURSE_MEMBER_REVOKED" : "COURSE_TEAM_REVOKED";
+          await recordAuditEvent(transaction, organizationId, actorUserId, action, courseId, targetId);
+        }
+      });
     },
   };
 }
