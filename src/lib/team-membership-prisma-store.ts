@@ -1,3 +1,4 @@
+import { recordAuditEvent } from "./audit-event.ts";
 import { Prisma } from "../generated/prisma/client.ts";
 import type { PrismaClient } from "../generated/prisma/client.ts";
 import {
@@ -47,7 +48,7 @@ export function createPrismaTeamMembershipStore(db: PrismaClient): TeamMembershi
       }));
     },
 
-    async add(organizationId, teamId, employeeId) {
+    async add(organizationId, teamId, employeeId, actorUserId) {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
           return await db.$transaction(async (transaction) => {
@@ -79,6 +80,7 @@ export function createPrismaTeamMembershipStore(db: PrismaClient): TeamMembershi
               data: { organizationId, teamId, membershipId: employeeId },
               select: { id: true },
             });
+            await recordAuditEvent(transaction, organizationId, actorUserId, "TEAM_MEMBER_ADDED", teamId, employeeId);
             return toTeamMember(membership);
           }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
         } catch (error) {
@@ -99,11 +101,16 @@ export function createPrismaTeamMembershipStore(db: PrismaClient): TeamMembershi
       throw new Error("Team membership transaction retry limit exceeded.");
     },
 
-    async remove(organizationId, teamId, employeeId) {
-      const result = await db.teamMembership.deleteMany({
-        where: { organizationId, teamId, membershipId: employeeId },
+    async remove(organizationId, teamId, employeeId, actorUserId) {
+      return db.$transaction(async (transaction) => {
+        const result = await transaction.teamMembership.deleteMany({
+          where: { organizationId, teamId, membershipId: employeeId },
+        });
+        if (result.count) {
+          await recordAuditEvent(transaction, organizationId, actorUserId, "TEAM_MEMBER_REMOVED", teamId, employeeId);
+        }
+        return result.count === 1;
       });
-      return result.count === 1;
     },
   };
 }

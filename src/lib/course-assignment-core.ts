@@ -14,8 +14,8 @@ export interface CourseAssignmentStore {
   courseStatus(organizationId: string, courseId: string): Promise<"DRAFT" | "PUBLISHED" | null>;
   list(organizationId: string, courseId: string): Promise<CourseAssignmentEntry[]>;
   search(organizationId: string, type: CourseAssignmentType, query: string): Promise<CourseAssignmentEntry[]>;
-  grant(organizationId: string, courseId: string, target: CourseAssignmentTarget): Promise<boolean>;
-  revoke(organizationId: string, courseId: string, target: CourseAssignmentTarget): Promise<void>;
+  grant(organizationId: string, courseId: string, target: CourseAssignmentTarget, actorUserId?: string): Promise<boolean>;
+  revoke(organizationId: string, courseId: string, target: CourseAssignmentTarget, actorUserId?: string): Promise<void>;
 }
 
 type Dependencies = {
@@ -51,7 +51,7 @@ export function createCourseAssignmentHandlers(dependencies: Dependencies) {
     }
 
     try {
-      const { organizationId } = await dependencies.requireTenantContext();
+      const { organizationId, userId } = await dependencies.requireTenantContext();
       await dependencies.requirePermission(organizationId, "ASSIGN_TRAINING");
       if (!isCourseId(courseId)) return json({ error: "course_not_found" }, 404);
       const store = await dependencies.getStore();
@@ -75,11 +75,11 @@ export function createCourseAssignmentHandlers(dependencies: Dependencies) {
       const target = parseTarget(await dependencies.readBody(request));
       if (!target) return json({ error: "invalid_request" }, 400);
       if (operation === "grant") {
-        if (!(await store.grant(organizationId, courseId, target))) {
+        if (!(await store.grant(organizationId, courseId, target, userId))) {
           return json({ error: "assignment_target_not_found" }, 404);
         }
       } else {
-        await store.revoke(organizationId, courseId, target);
+        await store.revoke(organizationId, courseId, target, userId);
       }
       return json({ success: true });
     } catch (error) {

@@ -18,16 +18,16 @@ export const employeeManagementStore: EmployeeStore & EmployeeProfileStore = {
   async getProfile(organizationId, employeeId) {
     return (await storeForRequest()).getProfile(organizationId, employeeId);
   },
-  async create(organizationId, email, name) {
-    return (await storeForRequest()).create(organizationId, email, name);
+  async create(organizationId, email, name, actorUserId) {
+    return (await storeForRequest()).create(organizationId, email, name, actorUserId);
   },
-  async updateName(organizationId, employeeId, name) {
-    return (await storeForRequest()).updateName(organizationId, employeeId, name);
+  async updateName(organizationId, employeeId, name, actorUserId) {
+    return (await storeForRequest()).updateName(organizationId, employeeId, name, actorUserId);
   },
-  async updateProfile(organizationId, employeeId, update) {
-    return (await storeForRequest()).updateProfile(organizationId, employeeId, update);
+  async updateProfile(organizationId, employeeId, update, actorUserId) {
+    return (await storeForRequest()).updateProfile(organizationId, employeeId, update, actorUserId);
   },
-  async deactivate(organizationId, employeeId) {
-    return (await storeForRequest()).deactivate(organizationId, employeeId);
+  async deactivate(organizationId, employeeId, actorUserId) {
+    return (await storeForRequest()).deactivate(organizationId, employeeId, actorUserId);
   },
 };

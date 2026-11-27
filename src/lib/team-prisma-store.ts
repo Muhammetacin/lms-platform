@@ -1,3 +1,4 @@
+import { recordAuditEvent } from "./audit-event.ts";
 import type { PrismaClient } from "../generated/prisma/client.ts";
 import { TeamNameConflictError, type TeamCreate, type TeamStore, type TeamUpdate } from "./team-core.ts";
 
@@ -20,11 +21,15 @@ export function createPrismaTeamStore(db: PrismaClient): TeamStore {
       });
     },
 
-    async create(organizationId, input: TeamCreate) {
+    async create(organizationId, input: TeamCreate, actorUserId) {
       try {
-        return await db.team.create({
-          data: { organizationId, name: input.name, description: input.description },
-          select: { id: true, name: true, description: true, createdAt: true, updatedAt: true },
+        return await db.$transaction(async (transaction) => {
+          const team = await transaction.team.create({
+            data: { organizationId, name: input.name, description: input.description },
+            select: { id: true, name: true, description: true, createdAt: true, updatedAt: true },
+          });
+          await recordAuditEvent(transaction, organizationId, actorUserId, "TEAM_CREATED", team.id);
+          return team;
         });
       } catch (error) {
         if (isTeamUniqueConstraintViolation(error)) throw new TeamNameConflictError();
@@ -32,7 +37,7 @@ export function createPrismaTeamStore(db: PrismaClient): TeamStore {
       }
     },
 
-    async update(organizationId, teamId, input: TeamUpdate) {
+    async update(organizationId, teamId, input: TeamUpdate, actorUserId) {
       const data: { name?: string; description?: string | null } = {};
       if (input.name !== undefined) data.name = input.name;
       if (input.description !== undefined) data.description = input.description;
@@ -44,6 +49,7 @@ export function createPrismaTeamStore(db: PrismaClient): TeamStore {
             data,
           });
           if (updated.count !== 1) return null;
+          await recordAuditEvent(transaction, organizationId, actorUserId, "TEAM_UPDATED", teamId);
           return transaction.team.findFirst({
             where: { id: teamId, organizationId },
             select: { id: true, name: true, description: true, createdAt: true, updatedAt: true },
@@ -55,9 +61,12 @@ export function createPrismaTeamStore(db: PrismaClient): TeamStore {
       }
     },
 
-    async delete(organizationId, teamId) {
-      const deleted = await db.team.deleteMany({ where: { id: teamId, organizationId } });
-      return deleted.count === 1;
+    async delete(organizationId, teamId, actorUserId) {
+      return db.$transaction(async (transaction) => {
+        const deleted = await transaction.team.deleteMany({ where: { id: teamId, organizationId } });
+        if (deleted.count) await recordAuditEvent(transaction, organizationId, actorUserId, "TEAM_DELETED", teamId);
+        return deleted.count === 1;
+      });
     },
   };
 }

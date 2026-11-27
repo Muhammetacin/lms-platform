@@ -31,6 +31,7 @@ export interface EmployeeProfileStore {
     organizationId: string,
     employeeId: string,
     update: EmployeeProfileUpdate,
+    actorUserId?: string,
   ): Promise<EmployeeProfileRecord | null>;
 }
 
@@ -198,6 +199,7 @@ export function createEmployeeProfileHandlers(dependencies: EmployeeProfileDepen
           tenant.organizationId,
           employeeId,
           update,
+          tenant.userId,
         );
         if (!updated) return invalidEmployeeResponse();
         return json({ profile: publicProfile(updated) });

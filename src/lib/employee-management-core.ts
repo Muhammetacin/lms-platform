@@ -40,15 +40,18 @@ export interface EmployeeStore {
     organizationId: string,
     email: string,
     name: string,
+    actorUserId?: string,
   ): Promise<Employee>;
   updateName(
     organizationId: string,
     employeeId: string,
     name: string,
+    actorUserId?: string,
   ): Promise<Employee | null>;
   deactivate(
     organizationId: string,
     employeeId: string,
+    actorUserId?: string,
   ): Promise<Employee | null>;
 }
 
@@ -162,7 +165,7 @@ export function createEmployeeManagementHandlers(dependencies: EmployeeManagemen
         await dependencies.requirePermission(tenant.organizationId, "MANAGE_MEMBERS");
         const employee = parseEmployeeCreate(await dependencies.readBody(request));
         if (!employee) return json({ error: "invalid_request" }, 400);
-        return json({ employee: await dependencies.store.create(tenant.organizationId, employee.email, employee.name) }, 201);
+        return json({ employee: await dependencies.store.create(tenant.organizationId, employee.email, employee.name, tenant.userId) }, 201);
       } catch (error) {
         return errorResponse(error, "create", dependencies.logError);
       }
@@ -189,7 +192,7 @@ export function createEmployeeManagementHandlers(dependencies: EmployeeManagemen
         if (!isEmployeeId(employeeId)) return json({ error: "employee_not_found" }, 404);
         const update = parseEmployeeUpdate(await dependencies.readBody(request));
         if (!update) return json({ error: "invalid_request" }, 400);
-        const employee = await dependencies.store.updateName(tenant.organizationId, employeeId, update.name);
+        const employee = await dependencies.store.updateName(tenant.organizationId, employeeId, update.name, tenant.userId);
         if (!employee) return json({ error: "employee_not_found" }, 404);
         return json({ employee });
       } catch (error) {
@@ -208,7 +211,7 @@ export function createEmployeeManagementHandlers(dependencies: EmployeeManagemen
         if (existing.role === "OWNER") {
           await dependencies.requirePermission(tenant.organizationId, "MANAGE_ORGANIZATION_OWNERSHIP");
         }
-        const employee = await dependencies.store.deactivate(tenant.organizationId, employeeId);
+        const employee = await dependencies.store.deactivate(tenant.organizationId, employeeId, tenant.userId);
         if (!employee) return json({ error: "employee_not_found" }, 404);
         return json({ employee });
       } catch (error) {
