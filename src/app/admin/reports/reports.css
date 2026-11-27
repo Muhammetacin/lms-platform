@@ -1,0 +1,153 @@
+.reports-page h1 {
+  margin: 12px 0 0;
+}
+
+.reports-context {
+  margin: 8px 0 20px;
+  color: #4e6055;
+  overflow-wrap: anywhere;
+}
+
+.report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+  margin: 0 0 24px;
+  padding: 16px;
+  border: 1px solid #dce5dc;
+  border-radius: 12px;
+  background: #fffffd;
+}
+
+.report-filters > label {
+  flex: 1 1 145px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid #cbd8ce;
+  border-radius: 10px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+
+.report-filter-actions,
+.report-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.report-filter-actions button,
+.report-filter-actions a {
+  min-height: 48px;
+}
+
+.report-table {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dce5dc;
+  border-radius: 12px;
+  background: #fffffd;
+}
+
+.report-table:focus-visible,
+.report-filters input:focus-visible,
+.report-filters select:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+.report-table table {
+  width: 100%;
+  min-width: 540px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.report-table thead {
+  background: #eef4ee;
+}
+
+.report-table th,
+.report-table td {
+  padding: 12px 14px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.report-table tbody tr + tr {
+  border-top: 1px solid #dce5dc;
+}
+
+.reports-page a:not(.secondary-action) {
+  color: var(--green-dark);
+}
+
+.report-empty {
+  padding: 18px;
+  border: 1px dashed #cbd8ce;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+
+.report-pagination {
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.reports-page > h1 + .report-filters {
+  margin-top: 16px;
+}
+
+.report-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0 0 20px;
+}
+
+.report-metrics div {
+  flex: 1 1 180px;
+  padding: 12px 14px;
+  border: 1px solid #dce5dc;
+  border-radius: 12px;
+  background: #fffffd;
+}
+
+.report-metrics dt {
+  color: #4e6055;
+  font-size: 14px;
+}
+
+.report-metrics dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.report-member-email {
+  display: block;
+  color: #4e6055;
+  font-weight: normal;
+}
+
+.report-quiz-scores {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-quiz-scores li + li {
+  margin-top: 6px;
+}
