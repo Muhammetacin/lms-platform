@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from "../generated/prisma/client.ts";
-import { activeLearnerMembership, assignedCourseWhere, type LearnerIdentity } from "./learner-course-prisma-store.ts";
+import { accessibleCourseWhere, activeLearnerMembership, type LearnerIdentity } from "./learner-course-prisma-store.ts";
 import { scoreQuiz, validQuizAddress, type LearnerQuizStore } from "./learner-quiz-core.ts";
 import { sameQuizSelections } from "./quiz-core.ts";
 import type { QuizAddress } from "./quiz-author-core.ts";
@@ -11,7 +11,7 @@ function availableQuiz(identity: LearnerIdentity, address: QuizAddress): Prisma.
     questions: { some: {} },
     lesson: {
       type: "QUIZ",
-      module: { course: { id: address.courseId, AND: assignedCourseWhere(identity) } },
+      module: { course: { id: address.courseId, AND: accessibleCourseWhere(identity) } },
     },
   };
 }

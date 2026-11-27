@@ -473,6 +473,7 @@ test("initial builder data is loaded after trusted tenant and MANAGE_COURSES aut
             description: null,
             status: "DRAFT",
             publishedAt: null,
+            catalogListed: false,
             createdAt: now,
             updatedAt: now,
             modules: [],

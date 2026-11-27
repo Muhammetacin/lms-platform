@@ -108,6 +108,10 @@ This work proceeds alongside engineering and does not change the feature priorit
 
 The Learner Portal may begin with its authenticated shell, navigation, and no-assignment interface before Course Assignments is implemented. Access to an individual or Team's assigned courses remains gated on P5 Course Assignments and its authorization rules; a portal interface alone grants no course access.
 
+## V2 functional development
+
+De uitbreiding voor zelfgestuurd leren is opgenomen in [V2 — Zelfgestuurd leren en certificering](v2-learning-epic.md). Dit is een aparte epic met LMS-117 tot en met LMS-121.
+
 ## Post-MVP frontend review
 
 | Epic | Current status | Dependencies | Next action | Acceptance criteria |

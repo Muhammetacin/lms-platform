@@ -73,6 +73,7 @@ export function readAssignedCourseProgress(db: PrismaClient, organizationId: str
       OR: [
         { courseAssignments: { some: assignment } },
         { teamMemberships: { some: { team: { courseAssignments: { some: assignment } } } } },
+        { courseEnrollments: { some: assignment } },
       ],
     };
     const totalMembers = await transaction.organizationMembership.count({ where });

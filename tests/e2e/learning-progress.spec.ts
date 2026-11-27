@@ -18,7 +18,7 @@ test("learner completion and quiz attempts update the administrator's progress v
   expect((await apiRequest(page, `${courseApi}/publish`, "POST", {})).status).toBe(200);
   await page.goto(adminPath);
   await page.getByRole("link", { name: "Leervoortgang" }).click();
-  await expect(page.getByText("Er zijn geen actieve medewerkers aan deze cursus toegewezen.")).toBeVisible();
+  await expect(page.getByText("Er zijn geen actieve medewerkers met toegang tot deze cursus.")).toBeVisible();
 
   const { employees } = (await apiRequest(page, "/api/organizations/employees", "GET")).body as {
     employees: Array<{ id: string; email: string }>;

@@ -28,6 +28,7 @@ export type CoursePreviewRecord = {
   description: string | null;
   status: CourseStatus;
   publishedAt: Date | null;
+  catalogListed: boolean;
   createdAt: Date;
   updatedAt: Date;
   modules: CoursePreviewModuleRecord[];

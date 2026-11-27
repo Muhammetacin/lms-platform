@@ -41,11 +41,13 @@ export function CourseManagementDetailView({
   form,
   deleteControl,
   builder,
+  catalogControl,
 }: {
   course: Course;
   form?: ReactNode;
   deleteControl?: ReactNode;
   builder?: ReactNode;
+  catalogControl?: ReactNode;
 }) {
   const publishedAt = course.publishedAt?.toISOString() ?? null;
   return h("div", { className: "admin-page course-detail-page" },
@@ -96,6 +98,7 @@ export function CourseManagementDetailView({
       ),
       form,
     ),
+    catalogControl,
     builder,
     h("section", { className: "danger-zone", "aria-labelledby": "danger-zone-heading" },
       h("div", null,

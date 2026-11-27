@@ -34,7 +34,7 @@ export default async function CourseReportPage({ params, searchParams }: {
       <h1>{result.course.title}</h1>
       <ReportFilters path={path} filters={filters} detail />
       <dl className="report-metrics">
-        <div><dt>Toegewezen medewerkers</dt><dd>{result.assigned}</dd></div>
+        <div><dt>Medewerkers met toegang</dt><dd>{result.assigned}</dd></div>
         <div><dt>Medewerkers met minstens één quizinzending</dt><dd>{result.quizParticipants}</dd></div>
       </dl>
       {result.members.length ? (
@@ -71,7 +71,7 @@ export default async function CourseReportPage({ params, searchParams }: {
       ) : (
         <p className="report-empty">
           {filters.page > 1 ? <>Geen medewerkers op deze pagina. <Link href={reportHref(path, filters)}>Naar de eerste pagina</Link></>
-            : "Geen toegewezen medewerkers voor deze filters."}
+            : "Geen medewerkers met toegang voor deze filters."}
         </p>
       )}
       <ReportPagination path={path} filters={filters} hasNext={result.hasNext} />

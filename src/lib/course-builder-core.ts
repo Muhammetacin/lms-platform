@@ -18,7 +18,7 @@ export type CourseBuilderData = {
 };
 
 export type CourseBuilderResult =
-  | { kind: "ok"; course: Course; builder: CourseBuilderData }
+  | { kind: "ok"; course: Course; builder: CourseBuilderData; catalogListed: boolean }
   | { kind: "not_found" };
 
 export type CourseBuilderDependencies = {
@@ -42,6 +42,7 @@ export async function loadManagedCourseBuilder(
   const preview = toCoursePreview(record);
   return {
     kind: "ok",
+    catalogListed: record.catalogListed,
     course: {
       id: record.id,
       title: record.title,

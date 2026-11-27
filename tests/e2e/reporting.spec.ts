@@ -70,7 +70,7 @@ test("administrators filter course reports and see the latest quiz score for cur
     await expect(learner).toBeVisible();
     expect((await apiRequest(page, `${courseApi}/assignments`, "DELETE", direct)).status).toBe(200);
     await page.reload();
-    await expect(page.getByText("Geen toegewezen medewerkers voor deze filters.")).toBeVisible();
+    await expect(page.getByText("Geen medewerkers met toegang voor deze filters.")).toBeVisible();
 
     expect((await apiRequest(viewer, "/api/auth/logout", "POST", {})).status).toBe(200);
     await login(viewer, e2e.users.ownerB);
