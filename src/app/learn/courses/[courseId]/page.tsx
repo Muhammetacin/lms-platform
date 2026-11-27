@@ -35,7 +35,7 @@ export default async function AssignedCoursePage({ params }: { params: Promise<{
         <h1>{course.title}</h1>
         {course.description ? <p>{course.description}</p> : null}
       </header>
-      <CourseContentView modules={course.modules} language="nl" />
+      <CourseContentView modules={course.modules} language="nl" quizCourseId={course.id} />
     </LearnerShell>
   );
 }

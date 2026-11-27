@@ -2,7 +2,7 @@ import { createElement as h, type ReactNode } from "react";
 import type { CoursePreview, CoursePreviewLesson } from "../lib/course-preview-core.ts";
 import { parseLessonUrl } from "../lib/lesson-core.ts";
 
-function lessonContent(lesson: CoursePreviewLesson, dutch: boolean): ReactNode {
+function lessonContent(lesson: CoursePreviewLesson, dutch: boolean, quizCourseId?: string): ReactNode {
   if (lesson.type === "TEXT") {
     const text = lesson.content !== null && "text" in lesson.content
       ? lesson.content.text
@@ -13,6 +13,13 @@ function lessonContent(lesson: CoursePreviewLesson, dutch: boolean): ReactNode {
   }
 
   if (lesson.type === "QUIZ") {
+    if (lesson.quizConfigured && quizCourseId) {
+      return h("a", {
+        className: "preview-resource-link",
+        href: `/learn/courses/${encodeURIComponent(quizCourseId)}/quizzes/${encodeURIComponent(lesson.id)}`,
+      }, "Quiz maken");
+    }
+    if (lesson.quizConfigured) return h("p", { className: "preview-placeholder" }, "Quiz configured.");
     return h("p", { className: "preview-placeholder" }, dutch ? "Deze toets is nog niet beschikbaar." : "Quiz configuration is not available yet.");
   }
 
@@ -96,7 +103,8 @@ const learnerLessonTypes: Record<CoursePreviewLesson["type"], string> = {
 export function CourseContentView({
   modules,
   language = "en",
-}: { modules: CoursePreview["modules"]; language?: "en" | "nl" }) {
+  quizCourseId,
+}: { modules: CoursePreview["modules"]; language?: "en" | "nl"; quizCourseId?: string }) {
   const dutch = language === "nl";
   return h("section", { className: "preview-content", "aria-labelledby": "preview-content-title" },
     h("h2", { id: "preview-content-title" }, dutch ? "Cursusinhoud" : "Course contents"),
@@ -120,7 +128,7 @@ export function CourseContentView({
                           h("span", { className: "preview-type" }, dutch ? learnerLessonTypes[lesson.type] : lesson.type),
                         ),
                         h("p", { className: "preview-lesson-index" }, `${dutch ? "Les" : "Lesson"} ${lessonIndex + 1}`),
-                        lessonContent(lesson, dutch),
+                        lessonContent(lesson, dutch, quizCourseId),
                       ),
                     ),
                   )),

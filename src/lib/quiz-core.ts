@@ -7,6 +7,10 @@ export type QuizQuestion = { prompt: string; options: string[] };
 export type AuthorQuizQuestion = QuizQuestion & { correctIndex: number };
 export type QuizResult = { score: number; totalQuestions: number };
 
+export function sameQuizSelections(first: number[], second: number[]): boolean {
+  return first.length === second.length && first.every((answer, index) => answer === second[index]);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -3,6 +3,7 @@ import test from "node:test";
 import { AuthorizationError } from "../src/lib/authorization-core.ts";
 import { createQuizAuthorHandlers, loadAuthorQuiz, type QuizAuthorStore } from "../src/lib/quiz-author-core.ts";
 import { parseQuizDefinition } from "../src/lib/quiz-core.ts";
+import { createLearnerQuizHandler, parseQuizSubmission, scoreQuiz } from "../src/lib/learner-quiz-core.ts";
 
 const organizationId = "dc14fd7e-dd80-4c69-8b61-b1816c6627c6";
 const userId = "2b2dfe4b-2712-4f08-bb54-51c1f0df1d47";
@@ -64,4 +65,54 @@ test("author operations use trusted tenant and course permission before reading 
   allowed = false;
   assert.equal((await handlers.PUT(request({ questions }), address)).status, 403);
   assert.deepEqual(calls.at(-1), ["permission", organizationId, "MANAGE_COURSES"]);
+});
+
+test("learner submissions accept only the request key and bounded selections", () => {
+  const valid = { submissionId: userId, selections: [1] };
+  assert.deepEqual(parseQuizSubmission(valid), valid);
+  for (const invalid of [
+    { ...valid, selections: [] },
+    { ...valid, selections: ["1"] },
+    { ...valid, selections: [6] },
+    { ...valid, selections: [0.5] },
+    { ...valid, submissionId: "invalid" },
+    { ...valid, userId },
+    { ...valid, score: 1 },
+  ]) assert.equal(parseQuizSubmission(invalid), null);
+  assert.deepEqual(scoreQuiz(questions, [1]), { score: 1, totalQuestions: 1 });
+  assert.deepEqual(scoreQuiz(questions, [0]), { score: 0, totalQuestions: 1 });
+  assert.equal(scoreQuiz(questions, []), null);
+  assert.equal(scoreQuiz(questions, [2]), null);
+});
+
+test("learner submission routes scope writes to the active member", async () => {
+  let role: "ADMIN" | "MEMBER" = "ADMIN";
+  let saved = false;
+  const submission = { submissionId: userId, selections: [1] };
+  const post = createLearnerQuizHandler({
+    async requireTenantContext() { return { organizationId, userId, role }; },
+    async getStore() {
+      return {
+        async get() { return null; },
+        async submit(identity, quizAddress, input) {
+          assert.equal(identity.organizationId, organizationId);
+          assert.equal(identity.userId, userId);
+          assert.deepEqual(quizAddress, address);
+          assert.deepEqual(input, submission);
+          saved = true;
+          return { kind: "scored", result: { score: 1, totalQuestions: 1 } };
+        },
+      };
+    },
+    isTrustedRequest: () => true,
+    readBody: (request) => request.json(),
+  });
+  const request = () => new Request("https://example.test/attempts", { method: "POST", body: JSON.stringify(submission) });
+  assert.equal((await post(request(), address)).status, 403);
+  assert.equal(saved, false);
+  role = "MEMBER";
+  const response = await post(request(), address);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await response.json(), { result: { score: 1, totalQuestions: 1 } });
+  assert.equal(saved, true);
 });
