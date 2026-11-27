@@ -105,3 +105,49 @@
   align-items: center;
   margin-top: 16px;
 }
+
+.reports-page > h1 + .report-filters {
+  margin-top: 16px;
+}
+
+.report-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0 0 20px;
+}
+
+.report-metrics div {
+  flex: 1 1 180px;
+  padding: 12px 14px;
+  border: 1px solid #dce5dc;
+  border-radius: 12px;
+  background: #fffffd;
+}
+
+.report-metrics dt {
+  color: #4e6055;
+  font-size: 14px;
+}
+
+.report-metrics dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.report-member-email {
+  display: block;
+  color: #4e6055;
+  font-weight: normal;
+}
+
+.report-quiz-scores {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-quiz-scores li + li {
+  margin-top: 6px;
+}
