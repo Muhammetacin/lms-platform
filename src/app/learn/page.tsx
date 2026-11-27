@@ -32,7 +32,7 @@ export default async function LearnerPage() {
     <LearnerShell home>
       <h1>Mijn cursussen</h1>
       {courses.length ? (
-        <ul className="learner-course-list" aria-label="Toegewezen cursussen">
+        <ul className="learner-course-list" aria-label="Mijn cursussen">
           {courses.map((course) => (
             <li key={course.id}>
               <h2><Link href={`/learn/courses/${course.id}`} prefetch={false}>{course.title}</Link></h2>
@@ -44,7 +44,7 @@ export default async function LearnerPage() {
       ) : (
         <section className="learner-empty" aria-labelledby="learner-empty-title">
           <h2 id="learner-empty-title">Je hebt nog geen cursussen</h2>
-          <p>Zodra een cursus aan je is toegewezen, verschijnt die hier.</p>
+          <p>Kies een cursus in de <Link href="/learn/catalog">catalogus</Link> om te beginnen.</p>
         </section>
       )}
     </LearnerShell>

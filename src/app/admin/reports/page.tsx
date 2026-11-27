@@ -28,7 +28,7 @@ export default async function ReportsPage({
   return (
     <div className="admin-page reports-page" lang="nl">
       <h1>Rapportage</h1>
-      <p className="reports-context">Voortgang van actief toegewezen medewerkers per gepubliceerde cursus.</p>
+      <p className="reports-context">Voortgang van medewerkers met toegang tot een gepubliceerde cursus.</p>
       <ReportFilters path={path} filters={filters} />
       {result.rows.length ? (
         <div className="report-table" role="region" aria-label="Cursusrapporten" tabIndex={0}>
@@ -36,7 +36,7 @@ export default async function ReportsPage({
             <thead>
               <tr>
                 <th scope="col">Cursus</th>
-                <th scope="col">Toegewezen</th>
+                <th scope="col">Medewerkers met toegang</th>
                 <th scope="col">Nog niet gestart</th>
                 <th scope="col">Bezig</th>
                 <th scope="col">Afgerond</th>

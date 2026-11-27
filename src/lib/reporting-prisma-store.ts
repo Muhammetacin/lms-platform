@@ -63,6 +63,11 @@ function reportProgress(organizationId: string, filters: ReportFilters, courseId
       JOIN "TeamMembership" tm
         ON tm."teamId" = assigned."teamId" AND tm."organizationId" = assigned."organizationId"
       WHERE assigned."organizationId" = ${org}
+      UNION
+      SELECT enrollment."courseId", enrollment."membershipId"
+      FROM "CourseEnrollment" enrollment
+      JOIN published_courses course ON course.id = enrollment."courseId"
+      WHERE enrollment."organizationId" = ${org}
     ),
     assignees AS (
       SELECT paths."courseId", paths."membershipId"

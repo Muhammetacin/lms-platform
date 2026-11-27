@@ -99,6 +99,7 @@ model OrganizationMembership {
   invitations    EmployeeInvitation[]
   teamMemberships TeamMembership[]
   courseAssignments CourseMemberAssignment[]
+  courseEnrollments CourseEnrollment[]
   quizAttempts QuizAttempt[]
   lessonCompletions LessonCompletion[]
   createdAt      DateTime         @default(now())
@@ -153,11 +154,13 @@ model Course {
   description    String?
   status         CourseStatus @default(DRAFT)
   publishedAt    DateTime?
+  catalogListed  Boolean      @default(false)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   modules      CourseModule[]
   memberAssignments CourseMemberAssignment[]
   teamAssignments CourseTeamAssignment[]
+  enrollments CourseEnrollment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -263,6 +266,18 @@ model CourseTeamAssignment {
 
   @@id([courseId, teamId])
   @@index([organizationId, teamId])
+}
+
+model CourseEnrollment {
+  courseId       String @db.Uuid
+  membershipId   String @db.Uuid
+  organizationId String @db.Uuid
+  createdAt      DateTime @default(now())
+  course         Course @relation(fields: [courseId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  membership     OrganizationMembership @relation(fields: [membershipId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@id([courseId, membershipId])
+  @@index([organizationId, membershipId])
 }
 
 model Quiz {

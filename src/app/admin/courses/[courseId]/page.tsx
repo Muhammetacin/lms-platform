@@ -7,6 +7,7 @@ import { CourseDeleteControl } from "@/components/course-delete-control";
 import { CourseForm } from "@/components/course-form";
 import { CourseManagementDetailView } from "@/components/course-management-view";
 import { CourseBuilder } from "@/components/course-builder";
+import { CourseCatalogControl } from "@/components/course-catalog-control";
 import { builderPageAccessMessage } from "@/lib/course-builder-core";
 import { getManagedCourseBuilder } from "@/lib/course-builder-server";
 
@@ -41,6 +42,7 @@ export default async function CourseManagementPage({ params }: CoursePageProps) 
         />
       }
       builder={<CourseBuilder builder={result.builder} />}
+      catalogControl={course.status === "PUBLISHED" ? <CourseCatalogControl courseId={course.id} initialListing={result.catalogListed} /> : null}
       deleteControl={<CourseDeleteControl courseId={course.id} allowDelete={course.status === "DRAFT"} />}
     />
   );

@@ -6,7 +6,7 @@ import { readLessonActivity } from "./learning-progress-prisma-store.ts";
 
 export type LearnerIdentity = { organizationId: string; userId: string };
 
-export function assignedCourseWhere({ organizationId, userId }: LearnerIdentity): Prisma.CourseWhereInput {
+export function accessibleCourseWhere({ organizationId, userId }: LearnerIdentity): Prisma.CourseWhereInput {
   const member = { organizationId, userId, active: true, role: "MEMBER" } as const;
   return {
     organizationId,
@@ -14,6 +14,7 @@ export function assignedCourseWhere({ organizationId, userId }: LearnerIdentity)
     OR: [
       { memberAssignments: { some: { membership: { is: member } } } },
       { teamAssignments: { some: { team: { memberships: { some: { membership: { is: member } } } } } } },
+      { enrollments: { some: { membership: { is: member } } } },
     ],
   };
 }
@@ -32,7 +33,7 @@ export function createPrismaLearnerCourseStore(db: PrismaClient) {
         const member = await activeLearnerMembership(transaction, identity);
         if (!member) return [];
         const courses = await transaction.course.findMany({
-          where: assignedCourseWhere(identity),
+          where: accessibleCourseWhere(identity),
           select: { id: true, title: true, description: true },
           orderBy: [{ title: "asc" }, { id: "asc" }],
         });
@@ -53,7 +54,7 @@ export function createPrismaLearnerCourseStore(db: PrismaClient) {
         const member = await activeLearnerMembership(transaction, identity);
         if (!member) return null;
         const record = await readCoursePreviewRecord(
-          transaction, identity.organizationId, courseId, assignedCourseWhere(identity),
+          transaction, identity.organizationId, courseId, accessibleCourseWhere(identity),
         );
         if (!record) return null;
         const activity = await readLessonActivity(transaction, identity.organizationId, [courseId], [member.id]);
@@ -73,7 +74,7 @@ export function createPrismaLearnerCourseStore(db: PrismaClient) {
             id: lessonId,
             organizationId: identity.organizationId,
             type: { not: "QUIZ" },
-            module: { course: { id: courseId, AND: assignedCourseWhere(identity) } },
+            module: { course: { id: courseId, AND: accessibleCourseWhere(identity) } },
           },
           select: { id: true },
         });

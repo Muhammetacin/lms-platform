@@ -15,6 +15,7 @@ export async function readCoursePreviewRecord(
       description: true,
       status: true,
       publishedAt: true,
+      catalogListed: true,
       createdAt: true,
       updatedAt: true,
     },

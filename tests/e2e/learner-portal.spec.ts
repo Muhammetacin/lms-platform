@@ -72,6 +72,8 @@ test("the learner home fits a narrow screen and supports keyboard sign-out", asy
   await expect(homeLink).toHaveAttribute("aria-current", "page");
   await homeLink.focus();
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Catalogus", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(logout).toBeFocused();
   await expect(logout).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Enter");

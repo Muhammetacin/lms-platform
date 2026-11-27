@@ -36,10 +36,10 @@ export default async function CourseProgressPage({
       <Link className="back-link" href={`/admin/courses/${course.id}`}>← Terug naar cursus</Link>
       <h1>Leervoortgang</h1>
       <p>{course.title}</p>
-      {members.length === 0 ? <p>Er zijn geen actieve medewerkers aan deze cursus toegewezen.</p> : (
+      {members.length === 0 ? <p>Er zijn geen actieve medewerkers met toegang tot deze cursus.</p> : (
         <>
           <div className="course-progress-table">
-            <table aria-label="Voortgang per toegewezen medewerker">
+            <table aria-label="Voortgang per medewerker">
               <thead>
                 <tr><th scope="col">Medewerker</th><th scope="col">Status</th><th scope="col">Lessen</th></tr>
               </thead>
