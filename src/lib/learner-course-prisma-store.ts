@@ -3,9 +3,9 @@ import { isCourseId } from "./course-core.ts";
 import { toCoursePreview } from "./course-preview-core.ts";
 import { readCoursePreviewRecord } from "./course-preview-prisma-store.ts";
 
-type LearnerIdentity = { organizationId: string; userId: string };
+export type LearnerIdentity = { organizationId: string; userId: string };
 
-function assignedCourseWhere({ organizationId, userId }: LearnerIdentity): Prisma.CourseWhereInput {
+export function assignedCourseWhere({ organizationId, userId }: LearnerIdentity): Prisma.CourseWhereInput {
   const member = { organizationId, userId, active: true, role: "MEMBER" } as const;
   return {
     organizationId,

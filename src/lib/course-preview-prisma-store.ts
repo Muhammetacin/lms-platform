@@ -40,6 +40,7 @@ export async function readCoursePreviewRecord(
           position: true,
           textContent: true,
           contentUrl: true,
+          quiz: { select: { _count: { select: { questions: true } } } },
         },
       });
   const lessonsByModule = new Map<string, typeof lessons>();
@@ -60,6 +61,7 @@ export async function readCoursePreviewRecord(
         position: lesson.position,
         textContent: lesson.textContent,
         contentUrl: lesson.contentUrl,
+        ...(lesson.type === "QUIZ" ? { quizConfigured: Boolean(lesson.quiz?._count.questions) } : {}),
       })),
     })),
   };

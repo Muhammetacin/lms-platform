@@ -1,0 +1,84 @@
+.quiz-page > h1 {
+  margin-bottom: 20px;
+}
+
+.quiz-form,
+.quiz-readonly {
+  display: grid;
+  gap: 20px;
+  max-width: 770px;
+  margin: 0;
+  padding: 0;
+}
+
+.quiz-readonly {
+  list-style: none;
+}
+
+.quiz-card {
+  min-width: 0;
+  margin: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid #dce5dc;
+  border-radius: 14px;
+  background: #fffffd;
+  overflow-wrap: anywhere;
+}
+
+.quiz-card legend {
+  padding-inline: 6px;
+  font-weight: 700;
+}
+
+.quiz-card h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.quiz-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 14px;
+  margin-top: 14px;
+}
+
+.quiz-option .form-field {
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.quiz-radio {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.quiz-radio input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--green-dark);
+}
+
+.quiz-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quiz-card .quiz-actions {
+  margin-top: 18px;
+}
+
+.quiz-notice:empty {
+  margin: 0;
+}
+
+.quiz-form :is(button, input):focus-visible {
+  outline: 2px solid var(--green-dark);
+  outline-offset: 3px;
+}

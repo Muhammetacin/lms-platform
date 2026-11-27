@@ -75,6 +75,7 @@ model Organization {
   teamMemberships TeamMembership[]
   courseMemberAssignments CourseMemberAssignment[]
   courseTeamAssignments CourseTeamAssignment[]
+  quizzes Quiz[]
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
 
@@ -97,6 +98,7 @@ model OrganizationMembership {
   invitations    EmployeeInvitation[]
   teamMemberships TeamMembership[]
   courseAssignments CourseMemberAssignment[]
+  quizAttempts QuizAttempt[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -194,6 +196,7 @@ model Lesson {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   module       CourseModule @relation(fields: [moduleId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  quiz         Quiz?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -245,4 +248,49 @@ model CourseTeamAssignment {
 
   @@id([courseId, teamId])
   @@index([organizationId, teamId])
+}
+
+model Quiz {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  lessonId       String @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lesson         Lesson       @relation(fields: [lessonId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  questions      QuizQuestion[]
+  attempts       QuizAttempt[]
+
+  @@unique([id, organizationId])
+  @@unique([lessonId, organizationId])
+  @@index([organizationId])
+}
+
+model QuizQuestion {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  quizId         String @db.Uuid
+  position       Int
+  prompt         String
+  options        String[]
+  correctIndex   Int
+  quiz           Quiz @relation(fields: [quizId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@unique([quizId, position])
+}
+
+model QuizAttempt {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  quizId         String @db.Uuid
+  membershipId   String @db.Uuid
+  submissionId   String @db.Uuid
+  selections     Int[]
+  score          Int
+  totalQuestions Int
+  createdAt      DateTime @default(now())
+  quiz           Quiz                   @relation(fields: [quizId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  membership     OrganizationMembership @relation(fields: [membershipId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@unique([quizId, membershipId, submissionId])
+  @@index([quizId, membershipId, createdAt])
+  @@index([organizationId, membershipId])
 }

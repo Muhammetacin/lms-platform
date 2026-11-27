@@ -1,6 +1,7 @@
-import type { Prisma, PrismaClient } from "../generated/prisma/client.ts";
+import type { PrismaClient } from "../generated/prisma/client.ts";
 import type { Course } from "./course-core.ts";
 import type { CoursePublishingIssue, CoursePublishingStore } from "./course-publishing-core.ts";
+import { lockCourseStructure } from "./course-structure-lock.ts";
 import { parseLessonTextContent, parseLessonUrl } from "./lesson-core.ts";
 
 const courseResponseFields = {
@@ -13,7 +14,6 @@ const courseResponseFields = {
   updatedAt: true,
 } as const;
 
-type Transaction = Prisma.TransactionClient;
 type LessonForPublication = {
   id: string;
   moduleId: string;
@@ -21,24 +21,10 @@ type LessonForPublication = {
   type: "TEXT" | "VIDEO" | "PDF" | "IMAGE" | "LINK" | "QUIZ";
   textContent: string | null;
   contentUrl: string | null;
+  quiz: { _count: { questions: number } } | null;
 };
 type ModuleForPublication = { id: string; position: number };
 const MAX_ISSUES = 100;
-
-async function lockCourse(
-  transaction: Transaction,
-  organizationId: string,
-  courseId: string,
-): Promise<{ status: "DRAFT" | "PUBLISHED"; publishedAt: Date | null } | null> {
-  const rows = await transaction.$queryRaw<{ status: "DRAFT" | "PUBLISHED"; publishedAt: Date | null }[]>`
-    SELECT "status", "publishedAt"
-    FROM "Course"
-    WHERE "id" = ${courseId}::uuid
-      AND "organizationId" = ${organizationId}::uuid
-    FOR UPDATE
-  `;
-  return rows[0] ?? null;
-}
 
 function publicationIssues(
   modules: ModuleForPublication[],
@@ -76,7 +62,9 @@ function publicationIssues(
       }
 
       if (lesson.type === "QUIZ") {
-        add({ code: "quiz_not_configured", moduleId: courseModule.id, lessonId: lesson.id });
+        if (!lesson.quiz?._count.questions) {
+          add({ code: "quiz_not_configured", moduleId: courseModule.id, lessonId: lesson.id });
+        }
       } else if (lesson.type === "TEXT") {
         const parsed = parseLessonTextContent(lesson.textContent);
         if (!parsed.valid || parsed.value === null) {
@@ -105,7 +93,7 @@ export function createPrismaCoursePublishingStore(db: PrismaClient): CoursePubli
   return {
     async publish(organizationId, courseId) {
       return db.$transaction(async (transaction) => {
-        const lockedCourse = await lockCourse(transaction, organizationId, courseId);
+        const lockedCourse = await lockCourseStructure(transaction, organizationId, courseId);
         if (lockedCourse === null) return { kind: "not_found" } as const;
 
         if (lockedCourse.status === "PUBLISHED") {
@@ -127,7 +115,10 @@ export function createPrismaCoursePublishingStore(db: PrismaClient): CoursePubli
           : await transaction.lesson.findMany({
               where: { organizationId, moduleId: { in: modules.map(({ id }) => id) } },
               orderBy: [{ position: "asc" }, { id: "asc" }],
-              select: { id: true, moduleId: true, position: true, type: true, textContent: true, contentUrl: true },
+              select: {
+                id: true, moduleId: true, position: true, type: true, textContent: true, contentUrl: true,
+                quiz: { select: { _count: { select: { questions: true } } } },
+              },
             });
         const completeness = publicationIssues(modules, lessons);
         if (completeness.issues.length > 0) {

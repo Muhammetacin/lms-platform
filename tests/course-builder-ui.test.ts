@@ -334,16 +334,18 @@ test("URL editor accepts only HTTPS without credentials and sends only url", () 
   assert.doesNotMatch(publishedResource, /<iframe\b|<video\b|<img\b|<embed\b|<object\b/i);
 });
 
-test("QUIZ shows the future boundary with no fake editor", () => {
+test("QUIZ links to its editor and shows the configuration state", () => {
   const quiz = builder.modules[1]!.lessons[0]!;
   const markup = render(h(LessonContentEditorView, {
     lessonId: quiz.id,
     type: "QUIZ",
     editable: true,
     configured: false,
+    quizHref: `/admin/courses/one/quizzes/${quiz.id}`,
   }));
   assert.match(markup, /Quiz not configured/);
-  assert.match(markup, /Quiz configuration is not available yet\. Quiz Builder will be added in the Quiz epic\./);
+  assert.match(markup, /href="\/admin\/courses\/one\/quizzes\//);
+  assert.match(markup, /Quiz bewerken/);
   assert.doesNotMatch(markup, /<textarea|<input|<select/);
 });
 
@@ -410,7 +412,7 @@ test("publish control asks for confirmation and maps safe local titles and trunc
   assert.deepEqual(mapped.messages, [
     "Add at least one lesson to “Getting started”.",
     "Add content to “Welcome”.",
-    "Configure or remove quiz lesson “Knowledge check”. Quiz configuration is not available yet.",
+    "Configure or remove quiz lesson “Knowledge check”. Add at least one question in Quiz Builder.",
     "The course still contains content that prevents publishing.",
   ]);
   assert.equal(mapped.truncated, true);

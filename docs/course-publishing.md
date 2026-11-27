@@ -19,7 +19,7 @@ Every response sets `Cache-Control: no-store`. A complete Course returns `200 { 
 - Every Module has at least one Lesson; otherwise `module_requires_lesson` includes `moduleId`.
 - Lesson positions are contiguous from 1 within each Module; invalid rows report `lesson_order_invalid` with `moduleId` and `lessonId`.
 - TEXT Lessons require valid non-blank text under `parseLessonTextContent()`; VIDEO, PDF, IMAGE, and LINK require valid non-blank HTTPS URLs under `parseLessonUrl()`. Invalid or missing content reports `lesson_content_missing` with resource IDs and Lesson type.
-- QUIZ Lessons report `quiz_not_configured` until a later ticket adds the Quiz model.
+- QUIZ Lessons require at least one saved question. Unconfigured lessons report `quiz_not_configured`. Publishing locks the quiz definition along with the lesson structure.
 
 Publishing never repairs ordering or writes content. URL validation checks syntax only; the server does not fetch, resolve, or probe external resources. LMS-024 owns preview and rendering.
 

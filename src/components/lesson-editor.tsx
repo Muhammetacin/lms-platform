@@ -57,7 +57,7 @@ export function LessonEditor({
     const typeChange = await saveLessonWithTypeChangeConfirmation({
       currentType: lesson.type,
       nextType: validatedType.value,
-      hasConfiguredContent: lessonHasConfiguredContent(lesson.type, lesson.content),
+      hasConfiguredContent: Boolean(lesson.quizConfigured) || lessonHasConfiguredContent(lesson.type, lesson.content),
       confirmedType: confirmedType ?? null,
       save: () => mutation.run(lessonPath, updateLessonRequest({ title: validatedTitle.value, type: validatedType.value })),
     });

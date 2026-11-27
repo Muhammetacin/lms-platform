@@ -13,7 +13,7 @@ Preview does not change Course lifecycle, content, ordering, or structure. It do
 
 Both use the shared preview read model and tenant-scoped Prisma store. Course, Module, and Lesson reads are scoped to `requireTenantContext().organizationId`. Malformed, missing, and foreign Course IDs share the same 404 behavior. Every API response, including authorization and error responses, sets `Cache-Control: no-store`. The page is dynamically rendered with Next.js 16's supported `dynamic = "force-dynamic"` and `revalidate = 0` route configuration, so user-specific Course data is not statically generated or shared through the page cache.
 
-The read model exposes only Course `{ id, title, description, status, publishedAt, modules }`, Module `{ id, title, description, position, lessons }`, and Lesson `{ id, title, type, position, content }`. TEXT content is `{ text }`, VIDEO/PDF/IMAGE/LINK content is `{ url }`, and QUIZ content is `null`. Raw tenant keys, parent keys, timestamps unrelated to publication, and raw content columns are excluded. Module and Lesson ordering is `position ASC, id ASC`; reads do not repair gaps.
+The read model exposes Course `{ id, title, description, status, publishedAt, modules }`, Module `{ id, title, description, position, lessons }`, and Lesson `{ id, title, type, position, content }`. TEXT content is `{ text }` and VIDEO/PDF/IMAGE/LINK content is `{ url }`. QUIZ content is `null` and the lesson includes the `quizConfigured` flag. Module and Lesson ordering is `position ASC, id ASC`.
 
 The Prisma store uses one interactive PostgreSQL transaction at `REPEATABLE READ`, with three bounded, tenant-scoped queries for Course, Modules, and Lessons. This gives the complete hierarchy one MVCC snapshot without taking a write lock. It avoids N+1 Lesson reads.
 
@@ -23,7 +23,7 @@ TEXT is rendered as ordinary escaped React text with preserved whitespace and li
 
 VIDEO, PDF, IMAGE, and LINK content appears as a resource card with a type label, parsed hostname, and explicit external link. The page does not embed the resource, render it as an image/video, fetch it on the server, or request metadata. Links are generated only from `parseLessonUrl()` accepted HTTPS values and use `target="_blank"`, `rel="noopener noreferrer"`, and `referrerPolicy="no-referrer"`. Invalid historical URLs are shown as **Resource unavailable** without a link. No URL scheme other than HTTPS can become clickable.
 
-QUIZ Lessons display **Quiz configuration is not available yet.** Empty text/URL values, empty Modules, and empty draft Courses display authoring-oriented placeholders without pretending to offer learner behavior.
+QUIZ Lessons display their configuration status. Empty text or URL values, empty Modules, and empty draft Courses display authoring placeholders.
 
 ## Accessibility and verification
 

@@ -217,6 +217,9 @@ export function createPrismaLessonStore(db: PrismaClient): LessonStore {
           data,
         });
         if (updated.count !== 1) return result<LessonRecord>("lesson_not_found");
+        if (existing.type === "QUIZ" && input.type !== undefined && input.type !== "QUIZ") {
+          await transaction.quiz.deleteMany({ where: { lessonId, organizationId } });
+        }
         const lesson = await getRecord(transaction, organizationId, moduleId, lessonId);
         return lesson ? { kind: "ok", value: lesson } : result<LessonRecord>("lesson_not_found");
       });
