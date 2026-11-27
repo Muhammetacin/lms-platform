@@ -221,6 +221,9 @@ jobs:
       - name: PostgreSQL Course assignment and learner access tests
         run: pnpm test:course-assignment:db
 
+      - name: PostgreSQL Quiz and attempt tests
+        run: pnpm test:quiz:db
+
       - name: PostgreSQL Course Module tests
         run: pnpm test:course-module:db
 

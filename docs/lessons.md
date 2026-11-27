@@ -22,7 +22,7 @@ PostgreSQL enforces `(moduleId, organizationId) → CourseModule(id, organizatio
 | `contentUrl` | Nullable PostgreSQL `TEXT`; used only by `VIDEO`, `PDF`, `IMAGE`, and `LINK` Lessons |
 | `createdAt`, `updatedAt` | Required timestamps; position-only changes preserve both |
 
-The stable `Lesson_type_content_consistency_check` constraint allows draft content to be null while preventing content fields that do not match `type`. `TEXT` forbids a URL, `VIDEO`/`PDF`/`IMAGE`/`LINK` forbid text, and `QUIZ` forbids both fields. No generic JSON content field, upload ID, or Quiz relation is used.
+The stable `Lesson_type_content_consistency_check` constraint allows draft content to be null while preventing content fields that do not match `type`. `TEXT` forbids a URL, `VIDEO`/`PDF`/`IMAGE`/`LINK` forbid text, and `QUIZ` stores questions in the separate Quiz relation.
 
 `LessonType` contains `TEXT`, `VIDEO`, `PDF`, `IMAGE`, `LINK`, and `QUIZ`. Create requires an explicit exact enum value and accepts no initial content. A type change clears both content fields in the same Course-locked transaction. A same-type update preserves existing content.
 
@@ -30,7 +30,7 @@ The stable `Lesson_type_content_consistency_check` constraint allows draft conte
 
 `VIDEO`, `PDF`, `IMAGE`, and `LINK` use an absolute HTTPS URL, limited to 2,048 characters, with a hostname and without URL credentials. Blank values become `null`. The server does not fetch URLs, resolve metadata, upload files, or serve remote assets. Secure managed storage is a separate future enhancement.
 
-`QUIZ` remains creatable as a Lesson type but has no Quiz model or content in LMS-022. Its detail response has `content: null`; content updates return `409 quiz_content_not_available`. Quiz content starts with a future Quiz ticket.
+`QUIZ` has `content: null` in the Lesson API. Configure its questions and answer key in the [Quiz Builder](../tickets/LMS-025.md). The generic Lesson content endpoint returns `409 quiz_content_not_available` for this type.
 
 ## API
 
@@ -56,7 +56,7 @@ Lesson positions are one-based, unique within a Module, and contiguous after Bui
 
 Every mutation first locks the tenant-scoped parent Course with `SELECT "status" FROM "Course" WHERE "id" = ? AND "organizationId" = ? FOR UPDATE`. The lock remains held throughout the transaction. This is the same serialization boundary as LMS-020 CourseModule mutations and LMS-023 publishing. Concurrent Lesson creates, moves, deletes, Module changes, and publishing serialize on that row. A malformed or foreign Module is checked only after the Course scope is established.
 
-Published Courses remain readable through Lesson list and detail. Create, metadata update, content update, move, and delete return `409 published_course_structure_locked`. Publishing requires at least one Module and Lesson per Module, contiguous ordering, valid non-blank TEXT or HTTPS URL content, and blocks all QUIZ Lessons until a Quiz model exists. Draft Lessons may have empty content; publishing does not fetch URLs.
+Published Courses remain readable through Lesson list and detail. Create, metadata update, content update, move, and delete return `409 published_course_structure_locked`. Publishing requires at least one Module and Lesson per Module, contiguous ordering, valid non-blank TEXT or HTTPS URL content, and saved questions for each QUIZ lesson. Draft Lessons may have empty content.
 
 ## Cascades and regression coverage
 
@@ -66,12 +66,12 @@ Deleting a Lesson's Module deletes its Lessons. Deleting a Course cascades throu
 
 LMS-022 adds no learner page, preview, rich editor, publish endpoint, Quiz model, storage bucket, upload flow, asset proxy, or audit subsystem. LMS-024 owns safe content rendering and preview; LMS-023 owns publishing and completeness validation.
 
-LMS-024 renders TEXT Lesson source as escaped React text with preserved line breaks. VIDEO/PDF/IMAGE/LINK are never fetched or embedded during preview; a resource card provides an explicit link only when `parseLessonUrl()` accepts the stored HTTPS value. QUIZ renders a placeholder until LMS-025 provides Quiz configuration. See [Course Preview](course-preview.md).
+LMS-024 renders TEXT Lesson source as escaped React text with preserved line breaks. VIDEO/PDF/IMAGE/LINK use an explicit resource link when `parseLessonUrl()` accepts the HTTPS value. The preview shows quiz configuration status. Assigned learners open the quiz in the Learner Portal. See [Course Preview](course-preview.md).
 
 ## Course Builder UI (LMS-086)
 
 The protected `/admin/courses/:courseId` page edits Lessons inside their existing Modules. DRAFT Lessons can be created with one of the exact `TEXT`, `VIDEO`, `PDF`, `IMAGE`, `LINK`, or `QUIZ` enum values; title and type edits use `PATCH`, content uses the existing `PUT .../:lessonId/content`, and deletion and ordering use the existing `DELETE` and `POST .../:lessonId/move` routes. Move up/down buttons send the backend position, and server data is refreshed after each successful mutation.
 
-TEXT uses a multiline plain-text editor with the backend's 100,000 Unicode code-point limit. URL lesson types use HTTPS-only inputs, limited to 2,048 code points with no credentials. The UI makes no resource requests; published summaries show a parsed hostname and an explicit safe external link. Type changes that would clear configured content require confirmation. QUIZ remains a placeholder until the Quiz epic.
+TEXT uses a multiline plain-text editor with the backend's 100,000 Unicode code-point limit. URL lesson types use HTTPS-only inputs, limited to 2,048 code points with no credentials. Published summaries show a parsed hostname and an explicit safe external link. Type changes that clear configured content require confirmation. QUIZ lessons link to the authoring form or the published read-only view.
 
 Published Lessons remain visible with their type, content status, and safe summaries, while all structural and content controls are removed. LMS-023 still decides whether the Course can be published and returns the machine-readable issue codes rendered by the Builder. No Lesson model or API changes are introduced by LMS-086.
