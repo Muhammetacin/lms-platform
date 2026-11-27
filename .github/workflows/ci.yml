@@ -227,6 +227,9 @@ jobs:
       - name: PostgreSQL learning progress tests
         run: pnpm test:learning-progress:db
 
+      - name: PostgreSQL course reporting tests
+        run: pnpm test:reporting:db
+
       - name: PostgreSQL Course Module tests
         run: pnpm test:course-module:db
 
