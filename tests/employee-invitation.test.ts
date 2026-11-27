@@ -19,6 +19,9 @@ import {
   type StoredEmployeeInvitation,
 } from "../src/lib/employee-invitation-core.ts";
 import { verifyPassword } from "../src/lib/auth-core.ts";
+import { createBrevoEmailProvider } from "../src/lib/brevo-email-provider.ts";
+import { createEmployeeInvitationEmail } from "../src/lib/employee-invitation-email.ts";
+import { EmailDeliveryError } from "../src/lib/email-delivery-core.ts";
 
 const organizationId = "b20e9b55-2a9d-466f-88ec-531a1aef895a";
 const otherOrganizationId = "477a64cc-38a7-4b62-9cf5-1089859328f7";
@@ -250,6 +253,99 @@ test("existing credentials, inactive memberships, wrong roles, bad URLs, and del
   assert.equal([...failingStore.invitations.values()][0].consumedAt !== null, true);
 });
 
+test("mock Brevo acceptance sends the activation link while persisting only its token hash", async () => {
+  const store = new MemoryInvitationStore();
+  let serializedPayload: string | undefined;
+  const provider = createBrevoEmailProvider({
+    apiKey: "test-api-key",
+    senderEmail: "noreply@example.test",
+    senderName: "LMS Platform",
+  }, {
+    fetchImplementation: async (_input, init) => {
+      serializedPayload = String(init?.body);
+      return Response.json({ messageId: "mock-message-id" }, { status: 201 });
+    },
+  });
+  const delivery: EmployeeInvitationDelivery = {
+    available: true,
+    async send(email, activationUrl) {
+      await provider.send(createEmployeeInvitationEmail(email, activationUrl));
+    },
+  };
+  const events: Array<{ result: string; reason?: string }> = [];
+  const result = await createEmployeeInvitation(
+    organizationId,
+    membershipId,
+    store,
+    delivery,
+    "https://lms.example.test",
+    new Date("2026-10-26T12:00:00.000Z"),
+    undefined,
+    (deliveryResult, reason) => events.push(reason ? { result: deliveryResult, reason } : { result: deliveryResult }),
+  );
+
+  assert.deepEqual(result, { status: "created" });
+  assert.deepEqual(events, [{ result: "accepted" }]);
+  assert.ok(serializedPayload);
+  const payload = JSON.parse(serializedPayload) as Record<string, unknown>;
+  assert.deepEqual(payload.to, [{ email: "employee@example.test", contactPixelTrackingConsent: false }]);
+  const html = String(payload.htmlContent);
+  const token = html.match(/#token=([A-Za-z0-9_-]{43})/)?.[1];
+  assert.ok(token);
+  assert.match(String(payload.textContent), new RegExp(token));
+  assert.equal(store.invitations.has(token), false);
+  assert.equal(store.invitations.has(hashInvitationToken(token)), true);
+  assert.equal(JSON.stringify(result).includes(token), false);
+});
+
+test("activation invitations require HTTPS except on local loopback addresses", async () => {
+  const store = new MemoryInvitationStore();
+  const deliveredOrigins: string[] = [];
+  const delivery: EmployeeInvitationDelivery = {
+    available: true,
+    async send(_email, activationUrl) { deliveredOrigins.push(new URL(activationUrl).origin); },
+  };
+
+  for (const appUrl of ["http://lms.example.test", "http://localhost.example.test"]) {
+    assert.deepEqual(
+      await createEmployeeInvitation(organizationId, membershipId, store, delivery, appUrl),
+      { status: "delivery_unavailable" },
+    );
+  }
+  assert.equal(store.createCalls, 0);
+  assert.deepEqual(deliveredOrigins, []);
+
+  const localOrigins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000"];
+  for (const appUrl of localOrigins) {
+    assert.deepEqual(
+      await createEmployeeInvitation(organizationId, membershipId, store, delivery, appUrl),
+      { status: "created" },
+    );
+  }
+  assert.deepEqual(deliveredOrigins, localOrigins);
+});
+
+test("invitation failure logging receives only a safe category and never the token or error text", async () => {
+  const store = new MemoryInvitationStore();
+  const events: Array<{ result: string; reason?: string }> = [];
+  const result = await createEmployeeInvitation(
+    organizationId,
+    membershipId,
+    store,
+    {
+      available: true,
+      async send() { throw new EmailDeliveryError("provider_rejected"); },
+    },
+    "https://lms.example.test",
+    new Date("2026-10-26T12:00:00.000Z"),
+    undefined,
+    (deliveryResult, reason) => events.push({ result: deliveryResult, reason }),
+  );
+  assert.deepEqual(result, { status: "delivery_failed" });
+  assert.deepEqual(events, [{ result: "failed", reason: "provider_rejected" }]);
+  assert.equal([...store.invitations.values()][0].consumedAt !== null, true);
+});
+
 test("admin invitation endpoint returns a generic success without token or tenant data", async () => {
   const store = new MemoryInvitationStore();
   const delivered: string[] = [];
@@ -275,4 +371,32 @@ test("admin invitation endpoint returns a generic success without token or tenan
   assert.equal(JSON.stringify(body).includes(organizationId), false);
   assert.equal(store.invitations.has(delivered[0]), false);
   assert.equal(store.invitations.has(hashInvitationToken(delivered[0])), true);
+});
+
+test("the invitation endpoint logs a failed invalidation with only the operation", async (t) => {
+  const store = new MemoryInvitationStore();
+  t.mock.method(store, "invalidateInvitation", async () => { throw new Error("private store error"); });
+  const log = t.mock.method(console, "error", () => {});
+  const handler = createEmployeeInvitationHandler({
+    requireTenantContext: async () => ({ userId, organizationId, role: "OWNER" }),
+    requirePermission: async () => undefined,
+    store,
+    delivery: {
+      available: true,
+      async send() { throw new EmailDeliveryError("timeout"); },
+    },
+    appUrl: "https://lms.example.test",
+    isTrustedRequest: () => true,
+    readBody: async (request) => request.json(),
+  });
+
+  const response = await handler(new Request("https://lms.example.test/api/organizations/employees", {
+    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+  }), membershipId);
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: "invitation_delivery_failed" });
+  assert.deepEqual(log.mock.calls.map((call) => call.arguments), [
+    ["Employee invitation request could not be completed.", { operation: "cleanup" }],
+  ]);
 });

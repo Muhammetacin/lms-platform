@@ -13,6 +13,16 @@ const POST_INVITATION = createEmployeeInvitationHandler({
   appUrl: process.env.NEXT_PUBLIC_APP_URL,
   isTrustedRequest: isTrustedAuthRequest,
   readBody: readJsonBody,
+  logDeliveryResult: (result, reason) => {
+    if (result === "accepted") {
+      console.info("Employee invitation email accepted by provider.", { operation: "invite" });
+    } else {
+      console.error("Employee invitation email was not accepted by provider.", {
+        operation: "invite",
+        reason,
+      });
+    }
+  },
 });
 
 type Context = { params: Promise<{ employeeId: string }> };

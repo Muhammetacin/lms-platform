@@ -24,7 +24,7 @@ test("employee navigation, create, profile edit, reload persistence, and duplica
   await page.getByRole("navigation", { name: "Administration" }).getByRole("link", { name: "Employees" }).click();
   await expect(page).toHaveURL(/\/admin\/employees$/);
   await expect(page.getByRole("heading", { name: "Employees", exact: true })).toBeVisible();
-  await expect(page.getByText("Invitation email delivery is not configured yet.")).toBeVisible();
+  await expect(page.getByText("Activation invitations are sent from employee profiles.")).toBeVisible();
   await expect(page.getByRole("button", { name: /invitation/i })).toHaveCount(0);
 
   const suffix = crypto.randomUUID().slice(0, 8);
@@ -39,8 +39,8 @@ test("employee navigation, create, profile edit, reload persistence, and duplica
   await employeeCard.getByRole("link", { name: "View profile" }).click();
   await expect(page).toHaveURL(/\/admin\/employees\/[0-9a-f-]+$/i);
   await expect(page.getByRole("heading", { name: employeeName, exact: true })).toBeVisible();
-  await expect(page.getByText("Invitation email delivery is not configured yet.")).toBeVisible();
-  await expect(page.getByRole("button", { name: /invitation/i })).toHaveCount(0);
+  await expect(page.getByText("Activation invitations are sent from employee profiles.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send activation invitation" })).toBeVisible();
 
   await page.getByRole("button", { name: "Edit profile" }).click();
   const editDialog = page.getByRole("dialog", { name: "Edit employee profile" });
@@ -68,6 +68,42 @@ test("employee navigation, create, profile edit, reload persistence, and duplica
   await duplicateDialog.getByRole("button", { name: "Add employee", exact: true }).click();
   await expect(duplicateDialog.getByRole("alert")).toContainText("already exists in your organization");
   await expect(page.getByRole("status").filter({ hasText: "Employee added" })).toHaveCount(0);
+});
+
+test("activation invitation UI prevents duplicate submissions and distinguishes accepted from failed requests", async ({ page, e2e }) => {
+  await login(page, e2e.users.ownerA);
+  await page.goto("/admin/employees");
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const email = `lms052-${suffix}@example.test`;
+  const created = await createEmployeeThroughUI(page, `LMS-052 ${suffix}`, email);
+  expect(created.status()).toBe(201);
+  const employeeCard = page.locator(".employee-card").filter({ hasText: email });
+  await employeeCard.getByRole("link", { name: "View profile" }).click();
+  // The accessible name changes while the request is pending; keep the locator
+  // matched across that state so the disabled assertion observes the same button.
+  const inviteButton = page.getByRole("button", { name: /Send activation invitation|Sending invitation…/ });
+  let calls = 0;
+  let releaseFirstResponse: (() => void) | undefined;
+  await page.route("**/api/organizations/employees/*/invitation", async (route) => {
+    calls += 1;
+    if (calls === 1) {
+      await new Promise<void>((resolve) => { releaseFirstResponse = resolve; });
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true }) });
+      return;
+    }
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "invitation_delivery_failed" }) });
+  });
+
+  await inviteButton.click();
+  await expect(inviteButton).toBeDisabled();
+  await inviteButton.click({ force: true });
+  expect(calls).toBe(1);
+  releaseFirstResponse?.();
+  await expect(page.getByRole("status").filter({ hasText: "Invitation email accepted" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "provider accepted the email request" })).toBeVisible();
+
+  await inviteButton.click();
+  await expect(page.getByRole("alert").filter({ hasText: "could not be accepted by the provider" })).toBeVisible();
 });
 
 test("CSV import succeeds atomically and reports row validation failures", async ({ page, e2e }) => {
@@ -314,7 +350,7 @@ test("responsive layouts, keyboard dialogs, list failures, and unavailable email
   });
   await page.reload();
   await expect(page.locator(".employee-error-panel")).toContainText("Employee data is temporarily unavailable");
-  await expect(page.getByText("Invitation email delivery is not configured yet.")).toBeVisible();
+  await expect(page.getByText("Activation invitations are sent from employee profiles.")).toBeVisible();
   await page.getByRole("button", { name: "Add employee", exact: true }).click();
   const failedCreate = page.getByRole("dialog", { name: "Add employee" });
   await failedCreate.getByLabel("Employee name").fill("Failure case");

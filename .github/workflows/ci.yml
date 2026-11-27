@@ -152,6 +152,9 @@ jobs:
       - name: Employee invitation tests
         run: pnpm test:employee-invitation
 
+      - name: Transactional email provider tests
+        run: pnpm test:email-delivery
+
       - name: Team tests
         run: pnpm test:team
 

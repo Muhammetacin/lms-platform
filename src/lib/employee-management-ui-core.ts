@@ -18,6 +18,9 @@ export function employeeApiErrorMessage(status: number, body: unknown): string {
   if (status === 401) return "Your session has ended. Sign in again to continue.";
   if (status === 403) return "You no longer have permission to manage employees.";
   if (status === 404) return "This employee is no longer available in your organization.";
+  if (code === "employee_invitation_unavailable") return "This employee cannot receive an activation invitation. The account may already be active.";
+  if (code === "invitation_delivery_unavailable") return "Invitation email is not configured. Contact your administrator before retrying.";
+  if (code === "invitation_delivery_failed") return "The invitation email could not be accepted by the provider. Try again shortly.";
   if (code === "employee_already_exists") return "An employee with this email already exists in your organization.";
   if (code === "employee_number_already_exists") return "That employee number is already used in your organization.";
   if (code === "last_owner_required") return "The last active owner cannot be deactivated.";

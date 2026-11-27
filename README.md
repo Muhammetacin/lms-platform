@@ -26,6 +26,8 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with the bootstrap email and password. Keep real credentials in ignored environment files; never commit them. See [database setup](./docs/database.md), [the browser smoke flow](./docs/local-admin-smoke-test.md), [Course Epic local acceptance](./docs/course-epic-local-acceptance.md), and the [central MVP backlog](./docs/mvp-backlog.md).
 
+Transactional invitation email setup and safe local testing are documented in [Email Delivery Setup](./docs/email-delivery.md). Brevo credentials and a verified sender domain are required for live sends; automated tests use a mock provider.
+
 ## Commands
 
 | Command | Purpose |
