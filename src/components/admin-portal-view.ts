@@ -58,14 +58,18 @@ export function AdminNavigationView({ pathname }: { pathname: string }) {
 export function LogoutButtonView({
   pending = false,
   errorMessage = null,
+  label = "Sign out",
+  pendingLabel = "Signing out…",
   onClick,
 }: {
   pending?: boolean;
   errorMessage?: string | null;
+  label?: string;
+  pendingLabel?: string;
   onClick?(): void;
 }) {
   return h("div", { className: "admin-logout" },
-    h("button", { type: "button", onClick, disabled: pending }, pending ? "Signing out…" : "Sign out"),
+    h("button", { type: "button", onClick, disabled: pending }, pending ? pendingLabel : label),
     errorMessage ? h("p", { className: "admin-logout-error", role: "alert" }, errorMessage) : null,
   );
 }
