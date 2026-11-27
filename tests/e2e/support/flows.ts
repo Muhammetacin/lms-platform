@@ -3,12 +3,12 @@ import type { E2EUser } from "./fixtures.ts";
 import { lessonTypeLabels } from "../../../src/lib/course-builder-ui-core.ts";
 import type { LessonTypeValue } from "../../../src/lib/lesson-core.ts";
 
-export async function login(page: Page, user: E2EUser) {
+export async function login(page: Page, user: E2EUser, destination = user.role === "MEMBER" ? "/learn" : "/admin") {
   await page.goto("/login");
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/admin");
+  await page.waitForURL((url) => url.pathname === destination);
 }
 
 export async function createCourse(page: Page, title: string, description = "E2E course description") {

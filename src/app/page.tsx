@@ -1,16 +1,15 @@
 import { redirect } from "next/navigation";
-import { homeDestination } from "@/lib/admin-portal-core";
-import { getAuthenticatedUser } from "@/lib/auth-server";
+import { PortalAccessNotice } from "@/components/portal-access-notice";
+import { resolvePortalDestination } from "@/lib/portal-access";
+import { getTenantContext } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function Home() {
-  let authenticated = false;
-  try {
-    authenticated = (await getAuthenticatedUser()) !== null;
-  } catch {
-    // Fail toward sign-in; the existing auth API reports service availability safely.
+  const destination = await resolvePortalDestination(getTenantContext);
+  if (destination === "forbidden" || destination === "unavailable") {
+    return <PortalAccessNotice reason={destination} />;
   }
-  redirect(homeDestination(authenticated));
+  redirect(destination);
 }

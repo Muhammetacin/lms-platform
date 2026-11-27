@@ -13,6 +13,6 @@ export default async function LoginPage() {
     // Keep the page usable so the existing API can return its safe unavailable response.
   }
 
-  if (authenticated) redirect("/admin");
+  if (authenticated) redirect("/");
   return <LoginForm />;
 }
