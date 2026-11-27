@@ -308,3 +308,12 @@ model QuizAttempt {
   @@index([quizId, membershipId, createdAt])
   @@index([organizationId, membershipId])
 }
+
+model LoginAttemptBucket {
+  key       String   @db.Char(64)
+  windowEnd DateTime @db.Timestamptz(3)
+  attempts  Int
+
+  @@id([key, windowEnd])
+  @@index([windowEnd])
+}

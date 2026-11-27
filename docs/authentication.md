@@ -37,7 +37,7 @@ The session cookie is `HttpOnly`, `SameSite=Lax`, scoped to `/`, and has an expl
 
 Both mutation routes require `Content-Type: application/json` and an exact `Origin` match to `NEXT_PUBLIC_APP_URL`. The login route accepts a bounded request body. Together with `SameSite=Lax`, the origin and content-type checks prevent cross-site browser forms and untrusted origins from using the cookie-authenticated endpoints. Future cookie-authenticated mutation endpoints must apply the same checks (or a reviewed stronger mechanism); this is not a global CSRF middleware.
 
-Brute-force login attempts are a known threat. No shared rate-limit service or trusted client-IP interface exists in this repository. A process-local counter would reset on restart and fail across multiple instances, so LMS-007 does not claim rate limiting. Add a shared limiter with deployment-aware identity/trusted-proxy handling under LMS-060 before exposing this endpoint to a public production deployment. Scrypt raises the cost of guessing but is not a substitute for rate limiting.
+Login uses the shared PostgreSQL limiter in [LMS-060](../tickets/LMS-060.md). Production requires a shared secret and a single trusted client address supplied by an ingress that overwrites the configured header. Use the deployment checks in [ADR-060](decisions/ADR-060-login-rate-limiting.md) before public exposure.
 
 ## Configuration and migration
 
