@@ -27,6 +27,7 @@ export function AdminNavigationView({ pathname }: { pathname: string }) {
   const dashboardActive = pathname === "/admin" || pathname === "/admin/";
   const coursesActive = pathname === "/admin/courses" || pathname.startsWith("/admin/courses/");
   const employeesActive = pathname === "/admin/employees" || pathname.startsWith("/admin/employees/");
+  const reportsActive = pathname === "/admin/reports" || pathname.startsWith("/admin/reports/");
   const teamsActive = pathname === "/admin/teams" || pathname.startsWith("/admin/teams/");
 
   return h("nav", { className: "admin-nav", "aria-label": "Administration" },
@@ -51,6 +52,11 @@ export function AdminNavigationView({ pathname }: { pathname: string }) {
         className: teamsActive ? "admin-nav-link is-active" : "admin-nav-link",
         "aria-current": teamsActive ? "page" : undefined,
       }, "Teams")),
+      h("li", null, h("a", {
+        href: "/admin/reports",
+        className: reportsActive ? "admin-nav-link is-active" : "admin-nav-link",
+        "aria-current": reportsActive ? "page" : undefined,
+      }, "Rapportage")),
     ),
   );
 }
