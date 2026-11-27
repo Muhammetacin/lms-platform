@@ -5,13 +5,7 @@ import { join } from "node:path";
 import { Pool } from "pg";
 import { hashPassword } from "../../src/lib/auth-core.ts";
 import { assertCurrentDatabase, validateE2EDatabaseUrl } from "./support/database-url.ts";
-
-type FixtureUser = { email: string; password: string; role: "OWNER" | "ADMIN" | "MEMBER" };
-type Fixtures = {
-  organizationA: { id: string; name: string };
-  organizationB: { id: string; name: string };
-  users: { ownerA: FixtureUser; adminA: FixtureUser; memberA: FixtureUser; ownerB: FixtureUser };
-};
+import type { E2EData } from "./support/fixtures.ts";
 
 export default async function globalSetup() {
   const databaseUrl = process.env.E2E_DATABASE_URL;
@@ -20,7 +14,7 @@ export default async function globalSetup() {
   const db = new Pool({ connectionString: databaseUrl, max: 1 });
   const runId = randomUUID();
   const password = `Lms087-${randomUUID()}-pass`;
-  const fixtures: Fixtures = {
+  const fixtures: E2EData = {
     organizationA: { id: randomUUID(), name: `LMS E2E Organization A ${runId.slice(0, 8)}` },
     organizationB: { id: randomUUID(), name: `LMS E2E Organization B ${runId.slice(0, 8)}` },
     users: {
@@ -28,38 +22,45 @@ export default async function globalSetup() {
       adminA: { email: `admin-a-${runId}@example.test`, password, role: "ADMIN" },
       memberA: { email: `member-a-${runId}@example.test`, password, role: "MEMBER" },
       ownerB: { email: `owner-b-${runId}@example.test`, password, role: "OWNER" },
+      inactiveMember: { email: `inactive-member-${runId}@example.test`, password, role: "MEMBER" },
     },
   };
-  const fixtureIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
-  const users = [fixtures.users.ownerA, fixtures.users.adminA, fixtures.users.memberA, fixtures.users.ownerB];
-  const orgIdFor = [fixtures.organizationA.id, fixtures.organizationA.id, fixtures.organizationA.id, fixtures.organizationB.id];
+  const users = [
+    { user: fixtures.users.ownerA, organizationId: fixtures.organizationA.id, active: true },
+    { user: fixtures.users.adminA, organizationId: fixtures.organizationA.id, active: true },
+    { user: fixtures.users.memberA, organizationId: fixtures.organizationA.id, active: true },
+    { user: fixtures.users.ownerB, organizationId: fixtures.organizationB.id, active: true },
+    { user: fixtures.users.inactiveMember, organizationId: fixtures.organizationA.id, active: false },
+  ];
 
   try {
     const current = await db.query<{ current_database: string }>("SELECT current_database()");
     assertCurrentDatabase(current.rows[0]?.current_database ?? "");
     await db.query('TRUNCATE TABLE "Organization", "User" CASCADE');
 
-    const hashes = await Promise.all(users.map((user) => hashPassword(user.password)));
+    const seedUsers = await Promise.all(users.map(async (entry) => ({
+      ...entry,
+      passwordHash: await hashPassword(entry.user.password),
+    })));
     await db.query("BEGIN");
     try {
       await db.query(
         'INSERT INTO "Organization" ("id", "name", "slug", "createdAt", "updatedAt") VALUES ($1, $2, $3, NOW(), NOW()), ($4, $5, $6, NOW(), NOW())',
         [fixtures.organizationA.id, fixtures.organizationA.name, `lms-e2e-a-${runId}`, fixtures.organizationB.id, fixtures.organizationB.name, `lms-e2e-b-${runId}`],
       );
-      for (let index = 0; index < users.length; index += 1) {
-        const userId = fixtureIds[index]!;
-        const user = users[index]!;
+      for (const { user, organizationId, active, passwordHash } of seedUsers) {
+        const userId = randomUUID();
         await db.query(
           'INSERT INTO "User" ("id", "email", "name", "createdAt", "updatedAt") VALUES ($1, $2, $3, NOW(), NOW())',
           [userId, user.email, user.role],
         );
         await db.query(
           'INSERT INTO "PasswordCredential" ("id", "userId", "passwordHash", "createdAt", "updatedAt") VALUES ($1, $2, $3, NOW(), NOW())',
-          [randomUUID(), userId, hashes[index]],
+          [randomUUID(), userId, passwordHash],
         );
         await db.query(
-          'INSERT INTO "OrganizationMembership" ("id", "userId", "organizationId", "role", "active", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, TRUE, NOW(), NOW())',
-          [randomUUID(), userId, orgIdFor[index], user.role],
+          'INSERT INTO "OrganizationMembership" ("id", "userId", "organizationId", "role", "active", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
+          [randomUUID(), userId, organizationId, user.role, active],
         );
       }
       await db.query("COMMIT");

@@ -5,7 +5,7 @@ export type E2EUser = { email: string; password: string; role: "OWNER" | "ADMIN"
 export type E2EData = {
   organizationA: { id: string; name: string };
   organizationB: { id: string; name: string };
-  users: { ownerA: E2EUser; adminA: E2EUser; memberA: E2EUser; ownerB: E2EUser };
+  users: { ownerA: E2EUser; adminA: E2EUser; memberA: E2EUser; ownerB: E2EUser; inactiveMember: E2EUser };
 };
 
 let cached: E2EData | undefined;
