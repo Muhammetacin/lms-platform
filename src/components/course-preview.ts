@@ -104,7 +104,13 @@ export function CourseContentView({
   modules,
   language = "en",
   quizCourseId,
-}: { modules: CoursePreview["modules"]; language?: "en" | "nl"; quizCourseId?: string }) {
+  renderLessonProgress,
+}: {
+  modules: CoursePreview["modules"];
+  language?: "en" | "nl";
+  quizCourseId?: string;
+  renderLessonProgress?: (lesson: CoursePreviewLesson) => ReactNode;
+}) {
   const dutch = language === "nl";
   return h("section", { className: "preview-content", "aria-labelledby": "preview-content-title" },
     h("h2", { id: "preview-content-title" }, dutch ? "Cursusinhoud" : "Course contents"),
@@ -129,6 +135,7 @@ export function CourseContentView({
                         ),
                         h("p", { className: "preview-lesson-index" }, `${dutch ? "Les" : "Lesson"} ${lessonIndex + 1}`),
                         lessonContent(lesson, dutch, quizCourseId),
+                        renderLessonProgress?.(lesson),
                       ),
                     ),
                   )),

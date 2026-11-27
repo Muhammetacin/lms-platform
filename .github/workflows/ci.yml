@@ -224,6 +224,9 @@ jobs:
       - name: PostgreSQL Quiz and attempt tests
         run: pnpm test:quiz:db
 
+      - name: PostgreSQL learning progress tests
+        run: pnpm test:learning-progress:db
+
       - name: PostgreSQL Course Module tests
         run: pnpm test:course-module:db
 

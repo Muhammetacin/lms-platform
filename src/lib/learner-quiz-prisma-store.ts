@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from "../generated/prisma/client.ts";
-import { assignedCourseWhere, type LearnerIdentity } from "./learner-course-prisma-store.ts";
+import { activeLearnerMembership, assignedCourseWhere, type LearnerIdentity } from "./learner-course-prisma-store.ts";
 import { scoreQuiz, validQuizAddress, type LearnerQuizStore } from "./learner-quiz-core.ts";
 import { sameQuizSelections } from "./quiz-core.ts";
 import type { QuizAddress } from "./quiz-author-core.ts";
@@ -16,19 +16,12 @@ function availableQuiz(identity: LearnerIdentity, address: QuizAddress): Prisma.
   };
 }
 
-function activeMembership(transaction: Prisma.TransactionClient, { organizationId, userId }: LearnerIdentity) {
-  return transaction.organizationMembership.findUnique({
-    where: { userId_organizationId: { organizationId, userId }, active: true, role: "MEMBER" },
-    select: { id: true },
-  });
-}
-
 export function createPrismaLearnerQuizStore(db: PrismaClient): LearnerQuizStore {
   return {
     async get(identity, address) {
       if (!validQuizAddress(address)) return null;
       return db.$transaction(async (transaction) => {
-        const member = await activeMembership(transaction, identity);
+        const member = await activeLearnerMembership(transaction, identity);
         if (!member) return null;
         const quiz = await transaction.quiz.findFirst({
           where: availableQuiz(identity, address),
@@ -53,7 +46,7 @@ export function createPrismaLearnerQuizStore(db: PrismaClient): LearnerQuizStore
     async submit(identity, address, submission) {
       if (!validQuizAddress(address)) return { kind: "missing" };
       return db.$transaction(async (transaction) => {
-        const member = await activeMembership(transaction, identity);
+        const member = await activeLearnerMembership(transaction, identity);
         if (!member) return { kind: "missing" };
         const quiz = await transaction.quiz.findFirst({
           where: availableQuiz(identity, address),

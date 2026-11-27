@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CourseContentView } from "@/components/course-preview";
+import { LearnerCourseProgress } from "@/components/learner-course-progress";
+import { LearnerLessonProgress } from "@/components/learner-lesson-progress";
 import { LearnerShell } from "@/components/learner-shell";
 import { PortalAccessNotice } from "@/components/portal-access-notice";
-import type { CoursePreview } from "@/lib/course-preview-core";
-import { getLearnerCourseStore } from "@/lib/learner-course-server";
+import { getLearnerCourseStore, type LearnerCourseStore } from "@/lib/learner-course-server";
 import { resolvePortalAccess } from "@/lib/portal-access";
 import { getTenantContext } from "@/lib/tenant-context";
 import "../../courses.css";
@@ -19,7 +20,7 @@ export default async function AssignedCoursePage({ params }: { params: Promise<{
   }
   if (destination !== "/learn") redirect(destination);
 
-  let course: CoursePreview | null;
+  let course: Awaited<ReturnType<LearnerCourseStore["get"]>>;
   try {
     const { courseId } = await params;
     course = await (await getLearnerCourseStore()).get(access.tenant, courseId);
@@ -30,12 +31,24 @@ export default async function AssignedCoursePage({ params }: { params: Promise<{
 
   return (
     <LearnerShell>
-      <Link className="back-link" href="/learn">← Mijn cursussen</Link>
+      <Link className="back-link" href="/learn" prefetch={false}>← Mijn cursussen</Link>
       <header className="learner-course-heading">
         <h1>{course.title}</h1>
         {course.description ? <p>{course.description}</p> : null}
+        <LearnerCourseProgress progress={course.progress} />
       </header>
-      <CourseContentView modules={course.modules} language="nl" quizCourseId={course.id} />
+      <CourseContentView
+        modules={course.modules}
+        language="nl"
+        quizCourseId={course.id}
+        renderLessonProgress={(lesson) => {
+          const completed = course.completedLessons.has(lesson.id);
+          if (lesson.type === "QUIZ") {
+            return completed ? <p className="learner-lesson-completed">Les afgerond</p> : null;
+          }
+          return <LearnerLessonProgress courseId={course.id} lessonId={lesson.id} completed={completed} />;
+        }}
+      />
     </LearnerShell>
   );
 }

@@ -42,3 +42,30 @@
   color: #4e6055;
   line-height: 1.65;
 }
+
+.learner-course-progress {
+  margin-top: 16px;
+}
+
+.learner-course-progress progress {
+  display: block;
+  width: min(100%, 260px);
+  height: 10px;
+  margin-top: 6px;
+  accent-color: var(--green-dark);
+}
+
+.learner-lesson-action,
+.learner-lesson-completed {
+  margin: 12px 0 0;
+}
+
+.learner-lesson-completed {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.learner-lesson-action [role="alert"] {
+  color: #9b2929;
+  margin-bottom: 0;
+}

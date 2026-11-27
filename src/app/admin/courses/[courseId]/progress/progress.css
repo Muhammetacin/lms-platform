@@ -1,0 +1,54 @@
+.course-progress-page h1 {
+  margin: 16px 0 0;
+}
+
+.course-progress-page > p {
+  margin: 8px 0 24px;
+  color: #4e6055;
+  overflow-wrap: anywhere;
+}
+
+.course-progress-table {
+  overflow-x: auto;
+  border: 1px solid #dce5dc;
+  border-radius: 12px;
+  background: #fffffd;
+}
+
+.course-progress-table table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.course-progress-table th,
+.course-progress-table td {
+  padding: 12px 16px;
+  overflow-wrap: anywhere;
+}
+
+.course-progress-table thead {
+  background: #eef4ee;
+}
+
+.course-progress-table tbody tr {
+  border-top: 1px solid #dce5dc;
+}
+
+.course-progress-table th span {
+  display: block;
+  font-weight: normal;
+  color: #4e6055;
+}
+
+.course-progress-pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.course-progress-pages a {
+  color: var(--green-dark);
+}
