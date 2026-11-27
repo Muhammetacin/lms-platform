@@ -43,7 +43,7 @@ export function LessonContentEditor({
   const mutation = useCourseBuilderMutation("content");
   const initialText = lessonText(lesson);
   const initialUrl = lessonUrl(lesson);
-  const initialConfigured = lessonHasConfiguredContent(lesson.type, lesson.content);
+  const initialConfigured = lesson.quizConfigured || lessonHasConfiguredContent(lesson.type, lesson.content);
   const serverKey = JSON.stringify([lesson.id, lesson.type, initialText, initialUrl, initialConfigured]);
   const [draft, setDraft] = useState<ContentDraft>(() => ({
     serverKey,
@@ -111,6 +111,7 @@ export function LessonContentEditor({
       editing={editing}
       dirty={dirty}
       configured={savedConfigured}
+      quizHref={lesson.type === "QUIZ" ? `/admin/courses/${encodeURIComponent(courseId)}/quizzes/${encodeURIComponent(lesson.id)}` : undefined}
       text={text}
       url={url}
       savedUrl={safeLink?.href ?? ""}

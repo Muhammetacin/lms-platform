@@ -10,6 +10,7 @@ export function LessonContentEditorDrawerView({
   editing = false,
   dirty = false,
   configured,
+  quizHref,
   text = "",
   url = "",
   savedUrl = "",
@@ -30,6 +31,7 @@ export function LessonContentEditorDrawerView({
   editing?: boolean;
   dirty?: boolean;
   configured: boolean;
+  quizHref?: string;
   text?: string;
   url?: string;
   savedUrl?: string;
@@ -46,8 +48,8 @@ export function LessonContentEditorDrawerView({
 }) {
   if (type === "QUIZ") {
     return h("div", { className: "lesson-content-panel" },
-      h("p", { className: "content-status" }, "Quiz not configured"),
-      h("p", null, "Quiz configuration is not available yet. Quiz Builder will be added in the Quiz epic."),
+      h("p", { className: "content-status" }, configured ? "Quiz configured" : "Quiz not configured"),
+      quizHref ? h("a", { className: "secondary-action", href: quizHref }, editable ? "Quiz bewerken" : "Quiz bekijken") : null,
     );
   }
 

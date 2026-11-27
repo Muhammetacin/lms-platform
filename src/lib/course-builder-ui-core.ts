@@ -277,7 +277,7 @@ export function mapPublishIssues(body: unknown, builder: CourseBuilderData): Pub
     if (issue.code === "quiz_not_configured" && typeof issue.lessonId === "string") {
       const title = lessonTitles.get(issue.lessonId);
       return title
-        ? `Configure or remove quiz lesson “${title}”. Quiz configuration is not available yet.`
+        ? `Configure or remove quiz lesson “${title}”. Add at least one question in Quiz Builder.`
         : generic;
     }
     return generic;

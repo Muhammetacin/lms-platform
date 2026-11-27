@@ -11,6 +11,7 @@ export type CoursePreviewLessonRecord = {
   position: number;
   textContent: string | null;
   contentUrl: string | null;
+  quizConfigured?: boolean;
 };
 
 export type CoursePreviewModuleRecord = {
@@ -38,6 +39,7 @@ export type CoursePreviewLesson = {
   type: LessonType;
   position: number;
   content: { text: string | null } | { url: string | null } | null;
+  quizConfigured?: boolean;
 };
 
 export type CoursePreviewModule = {
@@ -78,6 +80,7 @@ export function toCoursePreview(record: CoursePreviewRecord): CoursePreview {
         title: lesson.title,
         type: lesson.type,
         position: lesson.position,
+        ...(lesson.quizConfigured === undefined ? {} : { quizConfigured: lesson.quizConfigured }),
         content: lesson.type === "TEXT"
           ? { text: lesson.textContent }
           : lesson.type === "QUIZ"
