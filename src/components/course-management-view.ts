@@ -61,6 +61,10 @@ export function CourseManagementDetailView({
           className: "secondary-action",
           href: `/courses/${encodeURIComponent(course.id)}/preview`,
         }, "Preview course"),
+        course.status === "PUBLISHED" ? h("a", {
+          className: "secondary-action",
+          href: `/admin/courses/${encodeURIComponent(course.id)}/assignments`,
+        }, "Toewijzingen") : null,
       ),
     ),
     h("section", { className: "course-description-panel", "aria-labelledby": "course-description-heading" },
