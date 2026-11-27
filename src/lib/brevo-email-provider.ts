@@ -48,7 +48,7 @@ export function createBrevoEmailProvider(
           },
           body: JSON.stringify({
             sender: { email: configuration.senderEmail!.trim(), name: configuration.senderName!.trim() },
-            to: [{ email: message.to }],
+            to: [{ email: message.to, contactPixelTrackingConsent: false }],
             subject: message.subject,
             htmlContent: message.html,
             textContent: message.text,

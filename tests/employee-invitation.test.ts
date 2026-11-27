@@ -288,8 +288,7 @@ test("mock Brevo acceptance sends the activation link while persisting only its 
   assert.deepEqual(events, [{ result: "accepted" }]);
   assert.ok(serializedPayload);
   const payload = JSON.parse(serializedPayload) as Record<string, unknown>;
-  const to = payload.to as Array<{ email: string }>;
-  assert.deepEqual(to, [{ email: "employee@example.test" }]);
+  assert.deepEqual(payload.to, [{ email: "employee@example.test", contactPixelTrackingConsent: false }]);
   const html = String(payload.htmlContent);
   const token = html.match(/#token=([A-Za-z0-9_-]{43})/)?.[1];
   assert.ok(token);
@@ -372,4 +371,32 @@ test("admin invitation endpoint returns a generic success without token or tenan
   assert.equal(JSON.stringify(body).includes(organizationId), false);
   assert.equal(store.invitations.has(delivered[0]), false);
   assert.equal(store.invitations.has(hashInvitationToken(delivered[0])), true);
+});
+
+test("the invitation endpoint logs a failed invalidation with only the operation", async (t) => {
+  const store = new MemoryInvitationStore();
+  t.mock.method(store, "invalidateInvitation", async () => { throw new Error("private store error"); });
+  const log = t.mock.method(console, "error", () => {});
+  const handler = createEmployeeInvitationHandler({
+    requireTenantContext: async () => ({ userId, organizationId, role: "OWNER" }),
+    requirePermission: async () => undefined,
+    store,
+    delivery: {
+      available: true,
+      async send() { throw new EmailDeliveryError("timeout"); },
+    },
+    appUrl: "https://lms.example.test",
+    isTrustedRequest: () => true,
+    readBody: async (request) => request.json(),
+  });
+
+  const response = await handler(new Request("https://lms.example.test/api/organizations/employees", {
+    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+  }), membershipId);
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: "invitation_delivery_failed" });
+  assert.deepEqual(log.mock.calls.map((call) => call.arguments), [
+    ["Employee invitation request could not be completed.", { operation: "cleanup" }],
+  ]);
 });

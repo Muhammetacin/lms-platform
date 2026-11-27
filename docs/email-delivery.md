@@ -12,6 +12,7 @@ Complete these steps with the person responsible for the LMS and its sender doma
 4. Create a server-to-server API key with only the access needed for transactional email. Store it in the deployment's secret manager or in ignored `.env.local` during local development. Do not put it in source control, client-side variables, issue comments, or logs.
 5. Set `EMAIL_FROM_ADDRESS` to an address on the verified domain and `EMAIL_FROM_NAME` to the approved display name. The default display name is `LMS Platform`.
 6. Set `NEXT_PUBLIC_APP_URL` to the canonical HTTPS application origin. Invitation links carry the bearer token in the URL fragment. HTTP is permitted for local testing at `localhost`, `127.0.0.1`, and `[::1]`.
+7. In Brevo, enable [per-contact tracking consent](https://help.brevo.com/hc/en-us/articles/37113920427922-About-email-tracking-pixels-and-the-CNIL-recommendation-in-Brevo). The adapter sends `contactPixelTrackingConsent: false` so Brevo can apply that preference. In [transactional retention rules](https://help.brevo.com/hc/en-us/articles/4415743225746-Configure-a-custom-retention-period-for-your-transactional-logs-and-email-previews), set **Never store previews** to keep activation tokens out of retained email previews.
 
 ## Configuration
 
@@ -30,7 +31,8 @@ If provider configuration is absent or invalid, the invitation endpoint returns 
 2. For a dry run, leave `BREVO_API_KEY` blank. Automated tests inject a mock provider/fetch implementation; they never call Brevo or send email.
 3. To verify an end-to-end message manually, first use an approved Brevo account, verified sender domain, and test recipient. Add the API key only to ignored `.env.local`, set the sender values, then restart `pnpm dev` so the server reads the configuration.
 4. Sign in as an OWNER or ADMIN, open an active MEMBER employee profile, and choose **Send activation invitation**. The UI reports when the provider accepts the request; check the recipient mailbox and Brevo transaction log separately to confirm actual delivery.
-5. Remove local credentials when finished. Never use production recipients for automated tests.
+5. Inspect the activation links in the received test message. Verify that they point directly to the configured LMS origin, with the token in the fragment, and that they open the activation page and work once. Confirm that Brevo has no stored message preview for the test invitation.
+6. Remove local credentials when finished. Never use production recipients for automated tests.
 
 Run provider and invitation unit coverage with:
 
@@ -47,5 +49,5 @@ PostgreSQL invitation tests require the CI-provided, isolated `TEST_DATABASE_URL
 - The email includes the target email address, the activation link, and a statement that the link expires after 72 hours and is single use. It contains no organization-specific profile data.
 - The invitation token remains 256-bit random, hash-only in PostgreSQL, fragment-only in the activation URL, valid for 72 hours, and consumed atomically with credential creation. Existing tenant checks and `MANAGE_MEMBERS` authorization remain authoritative.
 - Provider errors are mapped to safe categories. Logs contain only the operation and a category (`configuration`, `provider_rejected`, `network`, `timeout`, or `unknown`); they omit recipient addresses, provider response bodies, activation URLs/tokens, and credentials.
-- A network timeout can leave the provider's acceptance uncertain. The invitation is invalidated on failed sends, so an email that the provider accepted just before a timeout may contain an expired invitation. Do not blindly retry provider requests inside the adapter; an administrator can submit a new invitation, which invalidates previous invitation tokens. Provider acceptance itself is not proof of delivery.
+- A network timeout can leave the provider's acceptance uncertain. The app attempts to invalidate the new invitation on failed sends, so an email that the provider accepted just before a timeout may contain an unusable link. If invalidation fails, the application logs only the `cleanup` operation. A later administrator retry creates a replacement invitation and invalidates previous tokens. Provider acceptance itself is not proof of delivery.
 - Provider-side delivery/open/bounce observability and a durable email outbox are future operational work. LMS-058 remains the shared audit-log dependency.

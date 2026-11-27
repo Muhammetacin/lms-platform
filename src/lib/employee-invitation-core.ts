@@ -209,6 +209,8 @@ function parseActivationRequest(
   };
 }
 
+type InvitationOperation = "invite" | "validate" | "activate" | "cleanup";
+
 type InvitationHandlerDependencies = {
   requireTenantContext(): Promise<TenantContext>;
   requirePermission(
@@ -220,13 +222,17 @@ type InvitationHandlerDependencies = {
   appUrl?: string;
   isTrustedRequest(request: Request): boolean;
   readBody(request: Request): Promise<unknown>;
-  logError?(operation: "invite" | "validate" | "activate" | "cleanup"): void;
+  logError?(operation: InvitationOperation): void;
   logDeliveryResult?(result: EmployeeInvitationDeliveryResult, reason?: EmailDeliveryFailureCode | "unknown"): void;
 };
 
 const privateJsonHeaders = { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: privateJsonHeaders });
+
+function logInvitationError(operation: InvitationOperation) {
+  console.error("Employee invitation request could not be completed.", { operation });
+}
 
 function errorResponse(
   error: unknown,
@@ -236,8 +242,7 @@ function errorResponse(
   if (error instanceof AuthorizationError || error instanceof TenantContextError) {
     return json({ error: error.code }, error.status);
   }
-  if (logError) logError(operation);
-  else console.error("Employee invitation request could not be completed.", { operation });
+  (logError ?? logInvitationError)(operation);
   return json({ error: "invitation_unavailable" }, 503);
 }
 
@@ -270,7 +275,7 @@ export function createEmployeeInvitationHandler(dependencies: InvitationHandlerD
         dependencies.delivery,
         dependencies.appUrl,
         new Date(),
-        () => dependencies.logError?.("cleanup"),
+        () => (dependencies.logError ?? logInvitationError)("cleanup"),
         (result, reason) => dependencies.logDeliveryResult?.(result, reason),
       );
       if (result.status === "created") return json({ success: true }, 201);

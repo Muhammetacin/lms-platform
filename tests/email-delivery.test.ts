@@ -57,7 +57,7 @@ test("Brevo adapter sends both email alternatives with server-only credentials",
   assert.equal(requestInit?.redirect, "error");
   const payload = JSON.parse(String(requestInit?.body)) as Record<string, unknown>;
   assert.deepEqual(payload.sender, { email: configuration.senderEmail, name: configuration.senderName });
-  assert.deepEqual(payload.to, [{ email: "employee@example.test" }]);
+  assert.deepEqual(payload.to, [{ email: "employee@example.test", contactPixelTrackingConsent: false }]);
   assert.equal(payload.subject, message.subject);
   assert.equal(payload.htmlContent, message.html);
   assert.equal(payload.textContent, message.text);
