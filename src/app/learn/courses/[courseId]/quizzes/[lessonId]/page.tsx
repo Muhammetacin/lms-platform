@@ -31,7 +31,7 @@ export default async function LearnerQuizPage({ params }: { params: Promise<Quiz
   return (
     <LearnerShell>
       <div className="quiz-page">
-        <Link className="back-link" href={`/learn/courses/${address.courseId}`}>← Terug naar cursus</Link>
+        <Link className="back-link" href={`/learn/courses/${address.courseId}`} prefetch={false}>← Terug naar cursus</Link>
         <h1>{quiz.title}</h1>
         <QuizPlayer address={address} quiz={quiz} />
       </div>

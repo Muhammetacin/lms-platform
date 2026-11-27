@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LearnerCourseProgress } from "@/components/learner-course-progress";
 import { LearnerShell } from "@/components/learner-shell";
 import { PortalAccessNotice } from "@/components/portal-access-notice";
-import type { Course } from "@/lib/course-core";
-import { getLearnerCourseStore } from "@/lib/learner-course-server";
+import { getLearnerCourseStore, type LearnerCourseStore } from "@/lib/learner-course-server";
 import { resolvePortalAccess } from "@/lib/portal-access";
 import { getTenantContext } from "@/lib/tenant-context";
 import "./courses.css";
@@ -21,7 +21,7 @@ export default async function LearnerPage() {
   }
   if (destination !== "/learn") redirect(destination);
 
-  let courses: Pick<Course, "id" | "title" | "description">[];
+  let courses: Awaited<ReturnType<LearnerCourseStore["list"]>>;
   try {
     courses = await (await getLearnerCourseStore()).list(access.tenant);
   } catch {
@@ -37,6 +37,7 @@ export default async function LearnerPage() {
             <li key={course.id}>
               <h2><Link href={`/learn/courses/${course.id}`} prefetch={false}>{course.title}</Link></h2>
               {course.description ? <p>{course.description}</p> : null}
+              <LearnerCourseProgress progress={course.progress} />
             </li>
           ))}
         </ul>
